@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7266768208547233429
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8497098806765931300}
+  - component: {fileID: 5780379689708237497}
+  m_Layer: 0
+  m_Name: PlayerObjective-SelfRepairingInfrastructureChallenge
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8497098806765931300
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7266768208547233429}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5780379689708237497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7266768208547233429}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08dd65beb1b314a9dbcea39ffc7af7e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  internalName: SELF-REPAIRING INFRASTRUCTURE CHALLENGE
+  prompt_situationDescription: "With synthetic biology, it might be possible for
+    buildings and city infrastructure to repair itself. You\u2019ve been wondering
+    if there are organisms in the Fringe that have self-repairing genetic properties."
+  prompt_objectiveDescription: Design organisms, such as bacteria or fungi, that
+    secrete substances to repair structural damage or enhance infrastructure, leading
+    to an evolving and self-sustaining urban environment.
+  title: Living Infrastructure
+  subtasks:
+  - Assess 3 Village infrastructure needs
+  - Engineer 1 self-repairing organism
+  - Integrate and evaluate infrastructure health

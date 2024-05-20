@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: 27f1c61d81893f243ae87336459f18ee
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _Raindrops_Flipbook: {fileID: 2800000, guid: abc00000000010402866167912182177, type: 3}
+  - _Noise_Texture: {fileID: 2800000, guid: abc00000000003618393805865562803, type: 3}
+  - _Flowmap_Texture: {fileID: 2800000, guid: abc00000000005186804306719253715, type: 3}
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

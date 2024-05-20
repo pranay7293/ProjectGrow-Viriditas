@@ -1,0 +1,185 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3634173815880444515
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1525711646980961484}
+  - component: {fileID: 5480911626300962732}
+  m_Layer: 0
+  m_Name: PreScannedData-iGEMDemo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1525711646980961484
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3634173815880444515}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5480911626300962732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3634173815880444515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cfe7cde08001014290bc5cb4f474b91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prescannedODSs:
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 96331ce616c610d44a30c0a0fce38dbd, type: 3}
+    fullyScanned: 0
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 6482f3b33ce32a84d900a98a98ae26f3, type: 3}
+    fullyScanned: 0
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 4707aede82ccd104a8e714b8cb41f084, type: 3}
+    fullyScanned: 0
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 86e2260cfb69f774e82a08310d5a4599, type: 3}
+    fullyScanned: 0
+    alsoSample: 1
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 5a57d76532626e144b97b79747f75cd7, type: 3}
+    fullyScanned: 0
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 1f76e4b227a000f48afdf2654f653a63, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 2
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 40749bc81a9f2984aaf6902891319708, type: 3}
+    fullyScanned: 1
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: c9caea2909631444da5e5f5870f8e88b, type: 3}
+    fullyScanned: 1
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 460d3f2f36734e9419973238c4e52c9e, type: 3}
+    fullyScanned: 1
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 56a7f58c30a711d4fb2997b0d28b68e3, type: 3}
+    fullyScanned: 1
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 61af5650ed469ad44be3cc7803b070a2, type: 3}
+    fullyScanned: 0
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 7bc4dc8e69ae1454a82867326f84bc61, type: 3}
+    fullyScanned: 0
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 90f36b244f8703344ae2ab8e350856dd, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 6b426b80fee53224fb525cd04f08757e, type: 3}
+    fullyScanned: 0
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 7d2068e15cbe62646b7bcb65f9d433ec, type: 3}
+    fullyScanned: 1
+    alsoSample: 0
+    timesToScan: 2
+  - organismDataSheet: {fileID: 3775500152901368978, guid: d4a63a8274b53bb48b85f552866a3efd, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: e1329a97f388cee47b36a9ce1011d3aa, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: cf2d7b7715d98d943ae2b0ece8f0b465, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 01470f53bd1afa645be75258020714e9, type: 3}
+    fullyScanned: 1
+    alsoSample: 0
+    timesToScan: 0
+  - organismDataSheet: {fileID: 3775500152901368978, guid: f3ed2b45d83ce9f459f1034b07bfdf63, type: 3}
+    fullyScanned: 1
+    alsoSample: 0
+    timesToScan: 0
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 81079beb6bb13cf4eb60bd2a5cdb37b9, type: 3}
+    fullyScanned: 1
+    alsoSample: 0
+    timesToScan: 0
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 3b8907028d1466845873423aa3586f59, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: fded0081343c4d94685e1bc743685776, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 8c9f558d57c320f48be26cad9c4af0e9, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 2
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 976c8a9c4f5800344b3f293937317044, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 5a9de845dc0e19947b0000aca4e962dc, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 1b3591556b5a9d6408158ab19c871a2e, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 56658b4d943b22e4f8cfe3a7337f20bc, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 2
+  - organismDataSheet: {fileID: 3775500152901368978, guid: c517af85ad24ab6468c268b0be149050, type: 3}
+    fullyScanned: 1
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 076254fe795d32f49aadb255675bf6f8, type: 3}
+    fullyScanned: 1
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: e54c0ead8028c474fa1186a04b861a94, type: 3}
+    fullyScanned: 1
+    alsoSample: 0
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: c2cda6bd9b2d5464a9fdaf58147832cf, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 2
+  - organismDataSheet: {fileID: 3775500152901368978, guid: d10ac966055efb340a8a3d4ec1cd75ba, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 1
+  - organismDataSheet: {fileID: 3775500152901368978, guid: 6c0252be068e48a47abd67b3577dfb77, type: 3}
+    fullyScanned: 1
+    alsoSample: 1
+    timesToScan: 1
+  prescannedEntities: []
+  presampledOrganisms: []

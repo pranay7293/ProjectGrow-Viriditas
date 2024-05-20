@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7266768208547233429
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8497098806765931300}
+  - component: {fileID: 5780379689708237497}
+  m_Layer: 0
+  m_Name: PlayerObjective-CreatureRoundup
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8497098806765931300
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7266768208547233429}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5780379689708237497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7266768208547233429}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08dd65beb1b314a9dbcea39ffc7af7e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  internalName: CREATURE ROUNDUP
+  prompt_situationDescription: "A harmless creature from the Fringe has been causing
+    chaos in the Village by ticking everyone. It\u2019s funny, but the mischief isn\u2019t
+    always welcome. Maybe someone could study this creature and genetically engineer
+    a lure to safely contain it. "
+  prompt_objectiveDescription: Study the harmless but mischievous creature from the
+    Fringe which is causing chaos in the Village with its love for tickling villagers
+    by studying the creature and designing and deploying a lure to safely contain
+    it.
+  title: Mischievous Mates Roundup
+  subtasks:
+  - Locate and study 1 mischievous creature
+  - Design lure organisms
+  - Deploy lure and safely contain creatures

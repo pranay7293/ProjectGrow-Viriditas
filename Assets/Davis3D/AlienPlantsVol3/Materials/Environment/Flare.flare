@@ -1,0 +1,77 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!121 &12100000
+Flare:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Flare
+  m_FlareTexture: {fileID: 2800000, guid: 81ca3cb88e2377646a17deabc996c6b8, type: 3}
+  m_TextureLayout: 2
+  m_Elements:
+  - m_ImageIndex: 0
+    m_Position: 2.4
+    m_Size: 14
+    m_Color: {r: 0.15, g: 0.12, b: 0.06, a: 0}
+    m_UseLightColor: 0
+    m_Rotate: 0
+    m_Zoom: 1
+    m_Fade: 1
+  - m_ImageIndex: 1
+    m_Position: 2.185
+    m_Size: 12
+    m_Color: {r: 0.1325, g: 0.1325, b: 0.0795, a: 0}
+    m_UseLightColor: 0
+    m_Rotate: 0
+    m_Zoom: 1
+    m_Fade: 1
+  - m_ImageIndex: 2
+    m_Position: 2.02
+    m_Size: 11
+    m_Color: {r: 0.092, g: 0.092, b: 0.115, a: 0}
+    m_UseLightColor: 0
+    m_Rotate: 0
+    m_Zoom: 1
+    m_Fade: 1
+  - m_ImageIndex: 3
+    m_Position: 1.61
+    m_Size: 7
+    m_Color: {r: 0.04875, g: 0.0975, b: 0.039, a: 0}
+    m_UseLightColor: 1
+    m_Rotate: 0
+    m_Zoom: 1
+    m_Fade: 1
+  - m_ImageIndex: 4
+    m_Position: 1.04
+    m_Size: 4
+    m_Color: {r: 0.03875, g: 0.062, b: 0.0775, a: 0}
+    m_UseLightColor: 0
+    m_Rotate: 0
+    m_Zoom: 1
+    m_Fade: 1
+  - m_ImageIndex: 5
+    m_Position: 0.5
+    m_Size: 1.5
+    m_Color: {r: 0.1215, g: 0.135, b: 0.108, a: 0}
+    m_UseLightColor: 0
+    m_Rotate: 0
+    m_Zoom: 1
+    m_Fade: 1
+  - m_ImageIndex: 6
+    m_Position: 0.34
+    m_Size: 1.25
+    m_Color: {r: 0.11, g: 0.088, b: 0.044, a: 0}
+    m_UseLightColor: 0
+    m_Rotate: 0
+    m_Zoom: 1
+    m_Fade: 1
+  - m_ImageIndex: 7
+    m_Position: 0.2
+    m_Size: 1
+    m_Color: {r: 0.0675, g: 0.0525, b: 0.0525, a: 0}
+    m_UseLightColor: 0
+    m_Rotate: 0
+    m_Zoom: 1
+    m_Fade: 1
+  m_UseFog: 0

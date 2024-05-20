@@ -1,0 +1,39 @@
+==== Change Render Pipeline ====
+
+To change render pipeline to Universal RP or Basic RP, please do the following:
+
+1.) Under the Davis3D/AlienPlantsVol3 Folder, Delete these folders and their contents
+- Materials
+- Meshes
+- Prefabs
+- Scenes
+- Scripts
+- Shaders
+- Sounds
+
+(You'll notice that this is everything except for the "Textures" folder)
+
+
+2.) Extract your chosen unitypackage patch file
+
+--BasicRP Patch--
+--URP Patch--
+
+3.) If installing Basic RP, please ensure that the Color Space is set to Linear.
+You can do this by going to Project Settings > Player > Other Settings > Rendering > Color Space
+
+--------------------------
+
+====Screen Space Reflections====
+
+If you are using HDRP, and want the water looking like the screenshots on the product page, be sure to enable screen space reflections in your HDRP Pipeline Asset.
+
+To do this, open your "HD Render Pipeline Asset"
+scroll down to "Lighting"
+Under "Reflections", make sure to tick these two boxes:
+- Screen Space Reflection
+- Transparent
+
+See more on Screen Space Reflections at
+https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@15.0/manual/Override-Screen-Space-Reflection.html
+ 

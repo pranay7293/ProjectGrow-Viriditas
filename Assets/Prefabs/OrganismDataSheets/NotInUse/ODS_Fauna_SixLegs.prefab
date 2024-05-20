@@ -1,0 +1,94 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1556972022730340041
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3721596143986123404}
+  - component: {fileID: 3775500152901368978}
+  - component: {fileID: 709979981155271061}
+  m_Layer: 0
+  m_Name: ODS_Fauna_SixLegs
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3721596143986123404
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1556972022730340041}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3775500152901368978
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1556972022730340041}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1a9490b4487f8148b77d6dbfde6b27c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nameScientific: Crura Multa
+  nameCommon: Maxiringus
+  organismClass: Fauna,Hexapedal
+  image: {fileID: 21300000, guid: 551b66b2ed49a3943b4b9c0828efe18f, type: 3}
+  dataEntries:
+  - textVersion: Moves by walking
+    trait: {fileID: 0}
+    behavior: {fileID: 0}
+  - textVersion: 
+    trait: {fileID: 0}
+    behavior: {fileID: 9081168877006661355, guid: 0d44c6d3eb9a3de4ab2be6c0f1f5466c, type: 3}
+  - textVersion: Max speed 2.5
+    trait: {fileID: 0}
+    behavior: {fileID: 0}
+  - textVersion: Energy consumption 2375
+    trait: {fileID: 0}
+    behavior: {fileID: 0}
+  - textVersion: Enormous strength
+    trait: {fileID: 0}
+    behavior: {fileID: 0}
+  genomeMap: {fileID: 709979981155271061}
+  sampleTime: 5
+  injectionTime: 5
+  scanUnlockOrder:
+  - indices: 00000000010000000200000003000000
+  - indices: 04000000
+--- !u!114 &709979981155271061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1556972022730340041}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc2f2854c1cb16a4b8b60a4959cf0f38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  traitSlots:
+  - currentTrait: {fileID: 0}
+    DefaultTrait: {fileID: 0}
+    Unremovable: 0
+    incompatibilities: 
+  - currentTrait: {fileID: 0}
+    DefaultTrait: {fileID: 0}
+    Unremovable: 0
+    incompatibilities: 
