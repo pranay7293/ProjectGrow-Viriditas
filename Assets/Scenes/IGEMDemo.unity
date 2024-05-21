@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 1.4506867, g: 1.1203529, b: 1.0383931, a: 1}
+  m_IndirectSpecularColor: {r: 1.4633895, g: 1.133117, b: 1.0582963, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -15533,7 +15533,8 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 5387438559767641488, guid: a1a25dbc34e975f468ee4dfac8893a4f, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a1a25dbc34e975f468ee4dfac8893a4f, type: 3}
@@ -15742,7 +15743,8 @@ PrefabInstance:
       value: Art
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 3224299565794938170, guid: 3f0869126efd28e48ba676b4cc492ab0, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3f0869126efd28e48ba676b4cc492ab0, type: 3}
@@ -15804,7 +15806,8 @@ PrefabInstance:
       value: Art
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 3665100394749165851, guid: a4d42a1218ee92d4db26191d330ae9a5, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a4d42a1218ee92d4db26191d330ae9a5, type: 3}
@@ -16176,6 +16179,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 3659330403295111899, guid: 7b32bedbfbc6b37499df45b05d5a2b8f, type: 3}
+    - {fileID: 6011154605818622666, guid: 7b32bedbfbc6b37499df45b05d5a2b8f, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7b32bedbfbc6b37499df45b05d5a2b8f, type: 3}
@@ -16237,7 +16241,8 @@ PrefabInstance:
       value: Art
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 8459272338848525972, guid: 7ad0d6b8698432b47bc41b3004cbc8fb, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7ad0d6b8698432b47bc41b3004cbc8fb, type: 3}
