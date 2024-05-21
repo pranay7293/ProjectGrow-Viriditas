@@ -15,7 +15,6 @@ public class UIManager : MonoBehaviour
 
     public ReticleHandler ReticleHandler => reticle;
 
-    public GameObject traitEditingWindow;
     public TextMeshProUGUI targetTypeDisplay;
 
     public GameObject resetMenu;
@@ -60,9 +59,6 @@ public class UIManager : MonoBehaviour
         core = GameObject.FindGameObjectWithTag("GameCore").GetComponent<Karyo_GameCore>();
         if (core == null)
             Debug.LogError(this + " cannot find Game Core.");
-
-        if (traitEditingWindow == null)
-            Debug.LogWarning("traitEditingWindow not assigned in " + this);
 
         if (targetTypeDisplay == null)
             Debug.LogWarning("targetTypeDisplay not assigned in " + this);
@@ -111,29 +107,12 @@ public class UIManager : MonoBehaviour
     }
 
     // TODO: Make more robust... We should have these stack or do something better - this is not great
-    public bool InMenu => resetMenu.activeInHierarchy || traitEditingWindow.activeInHierarchy
+    public bool InMenu => resetMenu.activeInHierarchy
         || treeOfLifeWindow.gameObject.activeInHierarchy || circuitSelectionUI.gameObject.activeInHierarchy ||
         biofoundryMainMenu.gameObject.activeInHierarchy || geneticDesignWindow.gameObject.activeInHierarchy ||
         bioreactorWindow.gameObject.activeInHierarchy || dialogInputWindow.activeInHierarchy || idlePlayerDialogWindow.gameObject.activeInHierarchy ||
         genericDialogWindow.activeInHierarchy;
 
-
-    // it's DEBUG only because this window is temp
-    public void DEBUG_DisplayTraitEditingWindow(Entity focus)
-    {
-        if (focus != null)
-        {
-            string entityType = "Target Type: " + core.targetAcquisition.CurrentFocus.entityType;
-            targetTypeDisplay.text = entityType;
-            traitEditor.SetFocus(focus);
-            traitEditingWindow.SetActive(true);
-        }
-    }
-
-    public void DEBUG_HideTraitEditingWindow()
-    {
-        traitEditingWindow.SetActive(false);
-    }
 
     public void SetCurrentToolText(string text)
     {
@@ -150,7 +129,6 @@ public class UIManager : MonoBehaviour
     public void CloseOpenWindows()
     {
         resetMenu.SetActive(false);
-        traitEditingWindow.SetActive(false);
         treeOfLifeWindow.gameObject.SetActive(false);
         circuitSelectionUI.CloseAndCancelIfOpen();
         biofoundryMainMenu.SetActive(false);
