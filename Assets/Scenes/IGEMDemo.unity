@@ -2513,7 +2513,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 158832702478782297, guid: 0c136c10dc4904e4fa48fba08faa448a, type: 3}
       propertyPath: apiKey
-      value: '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       '
+      value: sk-proj-aXuIjcg3QIRkxFJ7ATH6T3BlbkFJ85U7ukXyDvMLmZWj6GaJ
       objectReference: {fileID: 0}
     - target: {fileID: 3767188924470239723, guid: 0c136c10dc4904e4fa48fba08faa448a, type: 3}
       propertyPath: m_Name
@@ -16268,7 +16268,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Challenge Title
+  m_text: Model Real-World Synbio Challenge
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f7e771ee2cc324d71a4787b67bcdef84, type: 2}
   m_sharedMaterial: {fileID: 8924705209787441560, guid: f7e771ee2cc324d71a4787b67bcdef84, type: 2}
