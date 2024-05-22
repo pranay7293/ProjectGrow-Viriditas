@@ -36,7 +36,7 @@ public class Karyo_GameCore : MonoBehaviour
         }
         Instance = this;
 
-        if (player == null)
+        if (player == null) 
             player = GameObject.FindFirstObjectByType<Player>();  // could also get Player.Instance depending on the script order
         if (player == null)
             Debug.LogError("GameCore can't find Player.");
