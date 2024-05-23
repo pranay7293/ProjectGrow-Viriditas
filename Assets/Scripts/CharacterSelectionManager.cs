@@ -56,11 +56,16 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
 
             // Update player ready status
             playerReadyStatus[PhotonNetwork.LocalPlayer.ActorNumber] = true;
+            playerListManager.UpdatePlayerVotingStatus(PhotonNetwork.LocalPlayer.ActorNumber, true);
 
-            // Check if all players are ready
-            if (CheckAllPlayersReady())
+            // If there is only one player, start the game immediately
+            if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
             {
-                // Load the game scene for all players
+                PhotonNetwork.LoadLevel("TransitionScene");
+            }
+            else if (CheckAllPlayersReady())
+            {
+                // Load the transition scene for all players
                 PhotonNetwork.LoadLevel("TransitionScene");
             }
         }
@@ -75,6 +80,7 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
 
             // Update player ready status
             playerReadyStatus[PhotonNetwork.LocalPlayer.ActorNumber] = false;
+            playerListManager.UpdatePlayerVotingStatus(PhotonNetwork.LocalPlayer.ActorNumber, false);
         }
     }
 
@@ -93,6 +99,7 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
 
         // Update player ready status
         playerReadyStatus[playerActorNumber] = true;
+        playerListManager.UpdatePlayerVotingStatus(playerActorNumber, true);
     }
 
     private bool CheckAllPlayersReady()
@@ -109,19 +116,12 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
 
     public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
     {
-        if (playerListManager != null)
-        {
-            playerListManager.UpdatePlayerList();
-        }
+        playerListManager.UpdatePlayerList();
     }
 
     public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
     {
         playerReadyStatus.Remove(otherPlayer.ActorNumber);
-
-        if (playerListManager != null)
-        {
-            playerListManager.UpdatePlayerList();
-        }
+        playerListManager.UpdatePlayerList();
     }
 }
