@@ -248,7 +248,6 @@ public class NPC : MonoBehaviour
         return NPC_RandomGoal.GenerateRandomGoal(this, npc_data, player);
     }
 
-
     // generates a prompt and sends it to openAI.  waits for a response.  parses the response for a goal and returns it.
     private async Task<NPC_Goal> GetNewGoalFromOpenAI()
     {

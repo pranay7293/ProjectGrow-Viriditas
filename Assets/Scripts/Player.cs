@@ -7,7 +7,7 @@ using Tools;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// right now the Player class is ony responsible for movement and startPoint management
+// right now the Player class is only responsible for movement and startPoint management
 
 public class Player : MonoBehaviour, KinematicCharacterController.ICharacterController
 {
