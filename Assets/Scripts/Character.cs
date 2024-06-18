@@ -1,23 +1,34 @@
 using UnityEngine;
 using Photon.Pun;
 
-public class Character : MonoBehaviourPun
+public abstract class Character : MonoBehaviourPunCallbacks, IPunObservable
 {
     public string characterName;
-    public int characterID;
-    public Vector3 startPosition;
+    public float health;
+    public float speed;
+    public Transform characterTransform;
 
-    protected virtual void Start()
+    protected virtual void Awake()
     {
-        if (photonView.IsMine)
-        {
-            // Initialize player-specific settings
-            InitializeCharacter();
-        }
+        characterTransform = transform;
     }
 
-    protected virtual void InitializeCharacter()
+    public abstract void Move(Vector3 direction);
+    public abstract void TakeDamage(float amount);
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
-        transform.position = startPosition;
+        if (stream.IsWriting)
+        {
+            // Send data to other players
+            stream.SendNext(characterName);
+            stream.SendNext(health);
+        }
+        else
+        {
+            // Receive data from other players
+            characterName = (string)stream.ReceiveNext();
+            health = (float)stream.ReceiveNext();
+        }
     }
 }

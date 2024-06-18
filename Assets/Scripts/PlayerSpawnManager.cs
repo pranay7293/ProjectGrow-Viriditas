@@ -1,24 +1,54 @@
-using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
 public class PlayerSpawnManager : MonoBehaviourPunCallbacks
 {
-    public GameObject playerPrefab;
     public Transform[] spawnPoints;
 
-    private void Start()
+    void Start()
     {
-        if (PhotonNetwork.IsConnectedAndReady)
+        if (PhotonNetwork.IsConnected)
         {
             SpawnPlayer();
         }
     }
 
-    private void SpawnPlayer()
+    void SpawnPlayer()
     {
-        int selectedCharacterIndex = (int)PhotonNetwork.LocalPlayer.CustomProperties["SelectedCharacterIndex"];
-        Transform spawnPoint = spawnPoints[selectedCharacterIndex];
-        PhotonNetwork.Instantiate(playerPrefab.name, spawnPoint.position, spawnPoint.rotation);
+        int selectedCharacterIndex = PlayerPrefs.GetInt("SelectedCharacterIndex");
+        string selectedCharacterPrefab = GetCharacterPrefabName(selectedCharacterIndex);
+
+        if (!string.IsNullOrEmpty(selectedCharacterPrefab))
+        {
+            Transform spawnPoint = GetSpawnPoint(selectedCharacterIndex);
+            PhotonNetwork.Instantiate(selectedCharacterPrefab, spawnPoint.position, spawnPoint.rotation);
+        }
+    }
+
+    string GetCharacterPrefabName(int index)
+    {
+        switch (index)
+        {
+            case 0: return "Indigo";
+            case 1: return "Astra";
+            case 2: return "DrCobalt";
+            case 3: return "Aspen";
+            case 4: return "DrEden";
+            case 5: return "Celeste";
+            case 6: return "Sierra";
+            case 7: return "Lilith";
+            case 8: return "River";
+            case 9: return "DrFlora";
+            default: return null;
+        }
+    }
+
+    Transform GetSpawnPoint(int index)
+    {
+        if (spawnPoints != null && spawnPoints.Length > index)
+        {
+            return spawnPoints[index];
+        }
+        return spawnPoints[0];
     }
 }

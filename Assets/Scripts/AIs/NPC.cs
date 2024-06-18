@@ -7,7 +7,7 @@ using System;
 
 
 // TODO - should NPC inherit from AI and the behaviors identified here should be Behaviors?
-public class NPC : MonoBehaviour
+public class NPC : Character
 {
     // these identify the NPC relative to other NPCs
     public new string name;
@@ -957,6 +957,14 @@ public class NPC : MonoBehaviour
 
         return dialog_options;
     }
+public override void TakeDamage(float damage)
+    {
+        // Implement your damage logic here for NPCs
+    }
 
+    public override void Move(Vector3 direction)
+    {
+        // Implement your movement logic here for NPCs
+    }
 
 }

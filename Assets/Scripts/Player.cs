@@ -1,23 +1,17 @@
-using System.Collections;
-using System.Collections.Generic;
 using KinematicCharacterController;
 using PlayerData;
 using Systems.Toxin;
 using Tools;
 using UnityEngine;
-using UnityEngine.Rendering;
+using Photon.Pun;
 
-// right now the Player class is only responsible for movement and startPoint management
-
-public class Player : MonoBehaviour, KinematicCharacterController.ICharacterController
+public class Player : Character, ICharacterController
 {
     private Karyo_GameCore core;
     public static Player Instance;
 
     public string playerName; // used by NPCs
-
     [SerializeField] private Camera lookCamera;
-
     public GameObject startPoint;
 
     private KinematicCharacterMotor motor;
@@ -30,8 +24,8 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
     [SerializeField] private Light playerSpotLight;
 
     [Header("Locomotion")]
-    public float walkSpeed = 5f;  //  units per sec
-    public float runSpeed = 15f;  //  units per sec
+    public float walkSpeed = 5f;  // units per sec
+    public float runSpeed = 15f;  // units per sec
     public float backwardsSpeedModifier = 0.6f;
     public float turnSpeed = 20f; // degrees per sec
     public float jumpHeight = 1f;  // roughly meters
@@ -53,11 +47,10 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
     private Vector3 FeetPosition => transform.position;
     private bool IsGrounded => motor.GroundingStatus.IsStableOnGround;
 
-    // The movement state the player is currently in.
     private enum LocomotionState
     {
-        PLAYER_CONTROL,  // The player is being fully controlled by input.
-        MANTLING         // The player is in a mantling animation.
+        PLAYER_CONTROL,
+        MANTLING
     }
     private LocomotionState locomotionState = LocomotionState.PLAYER_CONTROL;
 
@@ -70,14 +63,15 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
     private float mantlingTimer;
     private bool jumpHeldLastPhysicsFrame;
 
-    // TODO - NPC stuff that might want to live somewhere else
     private NPC currentNPCSelection;
     private NPC lockedDialogTarget;
     public string currentLocation;
 
-
-    private void Awake()
+    // Override keyword added here
+    protected override void Awake()
     {
+        base.Awake();
+
         if (Instance != null)
             Debug.LogWarning("More than one Player object exists.");
         else
@@ -110,12 +104,9 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
         if (startPoint != null)
             UseStartPoint(startPoint);
 
-        currentLocation = "starting location";  // see NPC comment in the same place, set this to a valid location name if the player starts inside the relevant volume
+        currentLocation = "starting location";
     }
 
-
-    // TODO: This is probably not the best location for this method, find a better
-    // way to pass this data between system.s
     public CircuitResources GetPlayerCircuitResources()
     {
         return inventoryCircuits.Resources;
@@ -134,14 +125,11 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
 
     private void Update()
     {
-        // Check if there are toxin effects to apply.
         normalizedToxinLevel = Mathf.Clamp01(ToxinSystem.GetTotalToxinLevel(transform.position));
         playerVisualEffects.SetToxinEffectLevel(normalizedToxinLevel);
         playerSpotLight.enabled = TimeOfDay.Instance?.IsDay == false;
 
-        // TODO - this is very NPC interaction specific and probably should live elsewhere instead
-        // cast to find an NPC in front of the player
-        if (lockedDialogTarget == null)  // if you have a locked dialog target, you don't switch selections
+        if (lockedDialogTarget == null)
         {
             Vector3 lookPosition = lookCamera.transform.position;
             Vector3 lookVector = lookCamera.transform.forward;
@@ -154,37 +142,35 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
                 {
                     if (npc != currentNPCSelection)
                     {
-                        if (currentNPCSelection == null)  // newly found an NPC
+                        if (currentNPCSelection == null)
                         {
                             npc.StartSelection();
                             currentNPCSelection = npc;
                         }
-                        else  // switched immediately from one NPC to another
+                        else
                         {
                             currentNPCSelection.StopSelection();
                             npc.StartSelection();
                             currentNPCSelection = npc;
                         }
                     }
-                    // otherwise we're still on the same NPC, so no change is needed
                 }
-                else  // found something but not an NPC
+                else
                 {
                     if (currentNPCSelection != null)
                         currentNPCSelection.StopSelection();
                     currentNPCSelection = null;
                 }
             }
-            else  // didn't find anything
+            else
             {
                 if (currentNPCSelection != null)
                     currentNPCSelection.StopSelection();
                 currentNPCSelection = null;
             }
         }
-        else // you do have a locked dialog target
+        else
         {
-            // if they are no longer nearby, break off the lock and tell themn they are no longer talking to you if they were
             if (!lockedDialogTarget.IsNearby(lockedDialogTarget.transform.position, transform.position, lockedDialogTarget.currentLocation, currentLocation))
             {
                 if (lockedDialogTarget.IsInDialogWithCharacter(playerName))
@@ -193,13 +179,8 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
                 lockedDialogTarget = null;
             }
         }
-
-
     }
 
-
-    // TODO - this is very NPC specific and maybe should live elsewhere
-    // called by InputManager when player presses the correct key
     public async void InitiatePlayerDialog()
     {
         if (currentNPCSelection == null)
@@ -218,7 +199,6 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
         core.uiManager.OpenDialogInputWindow(lockedDialogTarget.name);
         lockedDialogTarget.BeingSpokenTo(playerName);
 
-        // if we are currently supporting AI generated dialog options, then request some from the NPC targeted for dialog
         if (core.uiManager.aiGeneratedDialogOptions)
         {
             string dots = new string("...");
@@ -230,17 +210,12 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
 
             string[] dialogOptions = await lockedDialogTarget.RequestDialogOptions();
 
-            // control resumes down here when dialog options are returned
-
-            // it always returns an array of exactly 3 strings
             core.uiManager.PopulateDialogOptionButtons(dialogOptions, true);
         }
     }
 
-    // called by UIManager when player cancels dialog submission by pressing esc or clicking outside the window to close the window
     public void PlayerDialogCancelled()
     {
-        // the ui manager already closed the ui window
         if (lockedDialogTarget != null)
         {
             if (lockedDialogTarget.IsInDialogWithCharacter(playerName))
@@ -250,25 +225,18 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
         }
     }
 
-    // called by UIManager when player presses submit button or presses one of the dialog option buttons
-    public void PlayerDialogSubmitted (string dialog)
+    public void PlayerDialogSubmitted(string dialog)
     {
         if (lockedDialogTarget != null)
         {
-            // tell the NPC to remember this dialog event in their history
             NPC.DialogEvent dialogEvent = new NPC.DialogEvent(playerName, lockedDialogTarget.name, dialog, lockedDialogTarget.currentLocation);
             lockedDialogTarget.RememberDialogEvent(dialogEvent);
 
-            // remember dialog history first, call WasSpokenTo second, since the latter generates a prompt
             lockedDialogTarget.WasSpokenToBy(playerName, dialog);
         }
 
         lockedDialogTarget = null;
     }
-
-
-
-
 
     private float GetGroundMoveSpeed()
     {
@@ -308,7 +276,6 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
 
     private void OnDrawGizmosSelected()
     {
-        // Visualize the mantle scan ray.
         Gizmos.color = Color.green;
         var ray = GetMantleScanRay();
         Gizmos.DrawLine(ray.origin, ray.origin + ray.direction * mantleScanDistance);
@@ -316,31 +283,24 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
 
     private void UpdatePlayerControlMovement(ref Vector3 currentVelocity, float deltaTime, bool jumpedThisFrame)
     {
-        // Determine the move vector.
         var relativeMoveDirection = core.inputManager.PlayerRelativeMoveDirection;
         var moveVector = lookCamera.transform.rotation * relativeMoveDirection;
         var moveSpeed = GetGroundMoveSpeed();
         var jumpVector = Vector3.zero;
 
-        // Check grounded status.
         if (IsGrounded)
         {
             if (jumpedThisFrame)
             {
-                // Force the motor to detach itself from the ground before we apply further force.
                 motor.ForceUnground(0.1f);
                 jumpVector.y = Mathf.Sqrt(jumpHeight * WorldRep.gravity * -3f * gravityScale);
             }
-            // For ground movement we assign lateral velocity directly.
             currentVelocity.x = moveVector.x * moveSpeed;
             currentVelocity.z = moveVector.z * moveSpeed;
-
-            // Clamp vertical velocity.
             currentVelocity.y = Mathf.Max(0, currentVelocity.y);
         }
         else
         {
-            // For air movement we apply an acceleration, clamped at moveSpeed.
             var accel = moveVector * moveSpeed * airAcceleration * deltaTime;
             var airLateralMoveVector = Vector3.ClampMagnitude(
                 new Vector3(currentVelocity.x, 0, currentVelocity.z) + accel, moveSpeed);
@@ -348,22 +308,17 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
             currentVelocity.z = airLateralMoveVector.z;
         }
 
-        // Handle vertical velocity.
         currentVelocity.y += jumpVector.y + WorldRep.gravity * gravityScale * deltaTime;
-
-        // Handle mantling push force, decayed over time.
         currentVelocity += mantlePushVector;
         mantlePushVector = Vector3.Lerp(mantlePushVector, Vector3.zero, mantlePushDecay * deltaTime);
 
         const float minMoveDirectionToTurnToView = .1f;
         const float minMoveDirectionToTurnToViewSq = minMoveDirectionToTurnToView * minMoveDirectionToTurnToView;
 
-        // Rotate to the camera if we are moving at all
         if (relativeMoveDirection.sqrMagnitude > minMoveDirectionToTurnToViewSq)
         {
-            // Turn to face towards the movement direction.
             var faceDirection = moveVector;
-            faceDirection.y = 0; // TODO: Make relative to player instead of world?
+            faceDirection.y = 0;
             targetRotation = Quaternion.LookRotation(faceDirection);
             isTurning = true;
         }
@@ -378,7 +333,6 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
         mantlingTimer -= deltaTime;
         if (mantlingTimer < 0)
         {
-            // Escape hatch.
             locomotionState = LocomotionState.PLAYER_CONTROL;
             return;
         }
@@ -386,42 +340,46 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
         var diff = targetMantlePosition.y - FeetPosition.y;
         if (Mathf.Abs(diff) > mantleTargetDistanceEpisloon)
         {
-            // Rise action.
             currentVelocity = Vector3.up * mantleRiseSpeed;
             return;
         }
 
-
-        // End mantling state and queue a forwards push vector.
         locomotionState = LocomotionState.PLAYER_CONTROL;
         var towards = Vector3.Normalize(targetMantlePosition - FeetPosition);
         mantlePushVector = towards * mantlePushForce;
     }
 
+    public override void Move(Vector3 direction)
+    {
+        // Implement the movement logic specific to the Player
+        // Example:
+        // Use the correct method available in KinematicCharacterMotor
+        motor.BaseVelocity = direction * speed;
+    }
 
-
-    ////////////////////////////////////////////////////////////////////////////
-    // KinematicCharacterController.ICharacterController interface
-    ////////////////////////////////////////////////////////////////////////////
+    public override void TakeDamage(float amount)
+    {
+        // Implement the damage logic specific to the Player
+        // Example:
+        health -= amount;
+        if (health <= 0)
+        {
+            // Handle player death
+        }
+    }
 
     public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
     {
-        // Read the jump input. Note that we cannot use GetKeyDown in physics frames, so we 
-        // need to wrap this logic ourselves.
         var jumpHeld = core.inputManager.PlayerJumpHeld;
         var jumpedThisFrame = jumpHeld && !jumpHeldLastPhysicsFrame;
         jumpHeldLastPhysicsFrame = jumpHeld;
 
-        // Check for a mantling state change.
         if (locomotionState != LocomotionState.MANTLING && CheckMantleSurface(out var position))
         {
             core.uiManager.ReticleHandler.SetText(UI.TextLocation.BottomPlayer, "Climb (space)");
             if (jumpedThisFrame)
             {
-                // Force the motor to detach itself from the ground before we apply further force.
                 motor.ForceUnground(0.1f);
-
-                // Start mantling.
                 locomotionState = LocomotionState.MANTLING;
                 targetMantlePosition = position;
                 mantlingTimer = 2f;
@@ -450,9 +408,7 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
         {
             return;
         }
-        // Smoothly rotate towards the target we've set.
-        currentRotation =
-            Quaternion.RotateTowards(currentRotation, targetRotation, turnSpeed * deltaTime);
+        currentRotation = Quaternion.RotateTowards(currentRotation, targetRotation, turnSpeed * deltaTime);
     }
 
     public bool IsColliderValidForCollisions(Collider coll)
@@ -467,5 +423,4 @@ public class Player : MonoBehaviour, KinematicCharacterController.ICharacterCont
     public void OnMovementHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport) { }
     public void ProcessHitStabilityReport(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, Vector3 atCharacterPosition, Quaternion atCharacterRotation, ref HitStabilityReport hitStabilityReport) { }
     public void OnDiscreteCollisionDetected(Collider hitCollider) { }
-
 }
