@@ -10,7 +10,7 @@ public class Player : Character, ICharacterController
     private Karyo_GameCore core;
     public static Player Instance;
 
-    public string playerName; // used by NPCs
+    public string playerName; // used by NPCs 
     [SerializeField] private Camera lookCamera;
     public GameObject startPoint;
 
