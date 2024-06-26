@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using UI;
 using Tools;
+using Photon.Pun;
 
 
 public class UIManager : MonoBehaviour
@@ -255,30 +256,41 @@ public class UIManager : MonoBehaviour
     }
     // this one is called when the player clicks outside the window or presses escape to close the window without submitting any dialog
     private void DialogWindowClosedByPlayer()
+{
+    if (dialogInputWindow != null)
     {
         dialogInputWindow.SetActive(false);
-        core.player.PlayerDialogCancelled();
     }
+    var localPlayer = Karyo_GameCore.Instance?.GetLocalPlayerCharacter();
+    if (localPlayer != null)
+    {
+        var playerComponent = localPlayer.GetComponent<Player>();
+        if (playerComponent != null)
+        {
+            playerComponent.PlayerDialogCancelled();
+        }
+    }
+}
 
     // called by the submit button on the dialog input window
     public void FreeformDialogSubmitted()
     {
-        core.player.PlayerDialogSubmitted(dialogWindowInputField.text);
+        Karyo_GameCore.Instance.GetLocalPlayerCharacter().GetComponent<Player>().PlayerDialogSubmitted(dialogWindowInputField.text);
         CloseDialogInputWindow();
     }
     public void DialogOption1ButtonClicked()
     {
-        core.player.PlayerDialogSubmitted(dialogOption1Button.GetComponentInChildren<TextMeshProUGUI>().text);
+        Karyo_GameCore.Instance.GetLocalPlayerCharacter().GetComponent<Player>().PlayerDialogSubmitted(dialogOption1Button.GetComponentInChildren<TextMeshProUGUI>().text);
         CloseDialogInputWindow();
     }
     public void DialogOption2ButtonClicked()
     {
-        core.player.PlayerDialogSubmitted(dialogOption2Button.GetComponentInChildren<TextMeshProUGUI>().text);
+        Karyo_GameCore.Instance.GetLocalPlayerCharacter().GetComponent<Player>().PlayerDialogSubmitted(dialogOption2Button.GetComponentInChildren<TextMeshProUGUI>().text);
         CloseDialogInputWindow();
     }
     public void DialogOption3ButtonClicked()
     {
-        core.player.PlayerDialogSubmitted(dialogOption3Button.GetComponentInChildren<TextMeshProUGUI>().text);
+        Karyo_GameCore.Instance.GetLocalPlayerCharacter().GetComponent<Player>().PlayerDialogSubmitted(dialogOption3Button.GetComponentInChildren<TextMeshProUGUI>().text);
         CloseDialogInputWindow();
     }
 
@@ -340,23 +352,31 @@ public class UIManager : MonoBehaviour
 
     public void ToggleObjectiveWindow()
     {
-        // TODO - this won't work right if the window is already open doing something else
         if (genericDialogWindow.activeInHierarchy)
         {
             CloseGenericDialogWindow();
             return;
         }
-        if (core.DoesPlayerCurrentlyHaveAnObjective())
-            LaunchGenericDialogWindow("Current Objective", core.currentPlayerObjective.GetObjectiveAsText(), false);
+        if (Karyo_GameCore.Instance.DoesPlayerCurrentlyHaveAnObjective(PhotonNetwork.LocalPlayer.ActorNumber))
+        {
+            NPC_PlayerObjective currentObjective = Karyo_GameCore.Instance.GetCurrentPlayerObjective();
+            if (currentObjective != null)
+            {
+                LaunchGenericDialogWindow("Current Objective", currentObjective.GetObjectiveAsText(), false);
+            }
+            else
+            {
+                LaunchGenericDialogWindow("Current Objective", "An error occurred while retrieving your current objective.", false);
+            }
+        }
         else
         {
-            string fulfilledObjectives = core.CompletedObjectivesAsString();
+            string fulfilledObjectives = Karyo_GameCore.Instance.CompletedObjectivesAsString();
 
             if (string.IsNullOrEmpty(fulfilledObjectives))
                 LaunchGenericDialogWindow("Current Objective", "You do not currently have any Objectives. Try talking to your colleagues in the Village!", false);
             else
-                LaunchGenericDialogWindow("Current Objective", "You do not currently have any Objectives. Try talking to your colleagues in the Village!\n\nCompleted objectives:\n"+fulfilledObjectives, false);
-
+                LaunchGenericDialogWindow("Current Objective", "You do not currently have any Objectives. Try talking to your colleagues in the Village!\n\nCompleted objectives:\n" + fulfilledObjectives, false);
         }
     }
 

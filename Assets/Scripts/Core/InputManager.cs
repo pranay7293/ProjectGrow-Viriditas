@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
 // this handles all input
 
@@ -142,12 +143,14 @@ public class InputManager : MonoBehaviour
                 core.uiManager.ToggleObjectiveWindow();
 
             if (Input.GetKeyDown(KeyCode.R))
-                core.player.InitiatePlayerDialog();
+                Karyo_GameCore.Instance.GetLocalPlayerCharacter().GetComponent<Player>().InitiatePlayerDialog();
 
             // note you have to hold shift first and then press 8 to make this work
             if ((Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) &&
                 Input.GetKeyDown(KeyCode.Alpha8))
-                core.PlayerHasFulfilledObjective();
+            {
+                Karyo_GameCore.Instance.PlayerHasFulfilledObjective();
+            }
         }
     }
 }

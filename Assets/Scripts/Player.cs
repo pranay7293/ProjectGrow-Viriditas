@@ -1,34 +1,30 @@
+using UnityEngine;
 using KinematicCharacterController;
 using PlayerData;
 using Systems.Toxin;
 using Tools;
-using UnityEngine;
 using Photon.Pun;
+using com.ootii.Cameras;
 
 public class Player : Character, ICharacterController
 {
     private Karyo_GameCore core;
-    public static Player Instance;
 
-    public string playerName; // used by NPCs 
+    public string playerName;
     [SerializeField] private Camera lookCamera;
     public GameObject startPoint;
 
     private KinematicCharacterMotor motor;
-    private PlayerVisualEffects playerVisualEffects;
     private CapsuleCollider capsuleCollider;
     private ToolHandler toolHandler;
     private PlayerData.PlayerInventoryCircuits inventoryCircuits;
 
-    [Header("References")]
-    [SerializeField] private Light playerSpotLight;
-
     [Header("Locomotion")]
-    public float walkSpeed = 5f;  // units per sec
-    public float runSpeed = 15f;  // units per sec
+    public float walkSpeed = 5f;
+    public float runSpeed = 15f;
     public float backwardsSpeedModifier = 0.6f;
-    public float turnSpeed = 20f; // degrees per sec
-    public float jumpHeight = 1f;  // roughly meters
+    public float turnSpeed = 20f;
+    public float jumpHeight = 1f;
     public float gravityScale = 1.5f;
     public float airAcceleration = 1f;
 
@@ -67,15 +63,9 @@ public class Player : Character, ICharacterController
     private NPC lockedDialogTarget;
     public string currentLocation;
 
-    // Override keyword added here
     protected override void Awake()
     {
         base.Awake();
-
-        if (Instance != null)
-            Debug.LogWarning("More than one Player object exists.");
-        else
-            Player.Instance = this;
 
         core = GameObject.FindGameObjectWithTag("GameCore").GetComponent<Karyo_GameCore>();
         if (core == null)
@@ -93,10 +83,6 @@ public class Player : Character, ICharacterController
         if (toolHandler == null)
             Debug.LogError("Player does not have ToolHandler component.");
 
-        playerVisualEffects = GetComponent<PlayerVisualEffects>();
-        if (playerVisualEffects == null)
-            Debug.LogError("Player does not have PlayerVisualEffects component.");
-
         inventoryCircuits = GetComponent<PlayerInventoryCircuits>();
         if (inventoryCircuits == null)
             Debug.LogError("Player does not have PlayerInventoryCircuits component.");
@@ -105,7 +91,35 @@ public class Player : Character, ICharacterController
             UseStartPoint(startPoint);
 
         currentLocation = "starting location";
+
+        SetupCamera();
     }
+
+    public void SetupCamera()
+{
+    if (photonView.IsMine)
+    {
+        GameObject cameraRigPrefab = Resources.Load<GameObject>("CameraRig");
+        if (cameraRigPrefab != null)
+        {
+            GameObject cameraRigInstance = Instantiate(cameraRigPrefab, transform.position, Quaternion.identity);
+            CameraController cameraController = cameraRigInstance.GetComponent<CameraController>();
+            if (cameraController != null)
+            {
+                cameraController.Anchor = this.transform;
+            }
+            else
+            {
+                Debug.LogError("CameraController component not found on CameraRig prefab");
+            }
+            lookCamera = cameraRigInstance.GetComponentInChildren<Camera>();
+        }
+        else
+        {
+            Debug.LogError("CameraRig prefab not found in Resources folder");
+        }
+    }
+}
 
     public CircuitResources GetPlayerCircuitResources()
     {
@@ -125,10 +139,17 @@ public class Player : Character, ICharacterController
 
     private void Update()
     {
-        normalizedToxinLevel = Mathf.Clamp01(ToxinSystem.GetTotalToxinLevel(transform.position));
-        playerVisualEffects.SetToxinEffectLevel(normalizedToxinLevel);
-        playerSpotLight.enabled = TimeOfDay.Instance?.IsDay == false;
+        if (!photonView.IsMine) return;
 
+        normalizedToxinLevel = Mathf.Clamp01(ToxinSystem.GetTotalToxinLevel(transform.position));
+        // playerVisualEffects.SetToxinEffectLevel(normalizedToxinLevel);
+        // playerSpotLight.enabled = TimeOfDay.Instance?.IsDay == false;
+
+        HandleNPCSelection();
+    }
+
+    private void HandleNPCSelection()
+    {
         if (lockedDialogTarget == null)
         {
             Vector3 lookPosition = lookCamera.transform.position;
@@ -181,6 +202,7 @@ public class Player : Character, ICharacterController
         }
     }
 
+    [PunRPC]
     public async void InitiatePlayerDialog()
     {
         if (currentNPCSelection == null)
@@ -214,6 +236,7 @@ public class Player : Character, ICharacterController
         }
     }
 
+    [PunRPC]
     public void PlayerDialogCancelled()
     {
         if (lockedDialogTarget != null)
@@ -225,6 +248,7 @@ public class Player : Character, ICharacterController
         }
     }
 
+    [PunRPC]
     public void PlayerDialogSubmitted(string dialog)
     {
         if (lockedDialogTarget != null)
@@ -351,16 +375,11 @@ public class Player : Character, ICharacterController
 
     public override void Move(Vector3 direction)
     {
-        // Implement the movement logic specific to the Player
-        // Example:
-        // Use the correct method available in KinematicCharacterMotor
         motor.BaseVelocity = direction * speed;
     }
 
     public override void TakeDamage(float amount)
     {
-        // Implement the damage logic specific to the Player
-        // Example:
         health -= amount;
         if (health <= 0)
         {
@@ -370,6 +389,8 @@ public class Player : Character, ICharacterController
 
     public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
     {
+        if (!photonView.IsMine) return;
+
         var jumpHeld = core.inputManager.PlayerJumpHeld;
         var jumpedThisFrame = jumpHeld && !jumpHeldLastPhysicsFrame;
         jumpHeldLastPhysicsFrame = jumpHeld;
@@ -423,4 +444,31 @@ public class Player : Character, ICharacterController
     public void OnMovementHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport) { }
     public void ProcessHitStabilityReport(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, Vector3 atCharacterPosition, Quaternion atCharacterRotation, ref HitStabilityReport hitStabilityReport) { }
     public void OnDiscreteCollisionDetected(Collider hitCollider) { }
+
+    public void HandleInput()
+    {
+        if (!photonView.IsMine) return;
+
+        // Add your player input handling code here
+        // This method should be called from Update() or FixedUpdate()
+    }
+
+    public override void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // We own this player: send the others our data
+            stream.SendNext(transform.position);
+            stream.SendNext(transform.rotation);
+            stream.SendNext(currentLocation);
+        }
+        else
+        {
+            // Network player, receive data
+            transform.position = (Vector3)stream.ReceiveNext();
+            transform.rotation = (Quaternion)stream.ReceiveNext();
+            currentLocation = (string)stream.ReceiveNext();
+        }
+    }
 }
+

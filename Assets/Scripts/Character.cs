@@ -16,7 +16,7 @@ public abstract class Character : MonoBehaviourPunCallbacks, IPunObservable
     public abstract void Move(Vector3 direction);
     public abstract void TakeDamage(float amount);
 
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    public virtual void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
         {

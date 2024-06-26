@@ -1,17 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
-// right now this is just the switch board between various components
-// UPDATE: it also tracks player objectives
-
-[DefaultExecutionOrder(-1000)] // Execute first so awake is triggered before others
-public class Karyo_GameCore : MonoBehaviour
+[DefaultExecutionOrder(-1000)]
+public class Karyo_GameCore : MonoBehaviourPunCallbacks
 {
     public static Karyo_GameCore Instance { get; private set; }
 
     [Header("Subcomponent references")]
-    public Player player;
     public WorldRep worldRep;
     public InputManager inputManager;
     public UIManager uiManager;
@@ -23,8 +20,8 @@ public class Karyo_GameCore : MonoBehaviour
 
     public float DEBUG_TimeScale = 1f;
 
-    public NPC_PlayerObjective currentPlayerObjective { get; private set; }
-    private List<NPC_PlayerObjective> completedObjectives;
+    private Dictionary<int, NPC_PlayerObjective> currentPlayerObjectives = new Dictionary<int, NPC_PlayerObjective>();
+    private Dictionary<int, List<NPC_PlayerObjective>> completedObjectives = new Dictionary<int, List<NPC_PlayerObjective>>();
 
     private void Awake()
     {
@@ -36,157 +33,150 @@ public class Karyo_GameCore : MonoBehaviour
         }
         Instance = this;
 
-        if (player == null) 
-            player = GameObject.FindFirstObjectByType<Player>();  // could also get Player.Instance depending on the script order
-        if (player == null)
-            Debug.LogError("GameCore can't find Player.");
-
-        if (worldRep == null)
-            worldRep = GameObject.FindFirstObjectByType<WorldRep>();
-        if (worldRep == null)
-            Debug.LogError("GameCore can't find WorldRep.");
-
-        if (inputManager == null)
-            inputManager = GameObject.FindFirstObjectByType<InputManager>();
-        if (inputManager == null)
-            Debug.LogError("GameCore can't find InputManager.");
-
-        if (uiManager == null)
-            uiManager = GameObject.FindFirstObjectByType<UIManager>();
-        if (uiManager == null)
-            Debug.LogError("GameCore can't find UIManager.");
-
-        if (karyoUnityInputSource == null)
-            karyoUnityInputSource = GameObject.FindFirstObjectByType<KaryoUnityInputSource>();
-        if (karyoUnityInputSource == null)
-            Debug.LogError("GameCore can't find KaryoUnityInputSource.");
-
-        if (targetAcquisition == null)
-            targetAcquisition = GameObject.FindFirstObjectByType<TargetAcquisition>();
-        if (targetAcquisition == null)
-            Debug.LogError("GameCore can't find targetAcquisition.");
-
-        if (persistentData == null)
-            persistentData = GameObject.FindFirstObjectByType<PersistentData>();
-        if (persistentData == null)
-            Debug.LogError("GameCore can't find persistentData.");
-
-        if (sceneConfiguration == null)
-            sceneConfiguration = GameObject.FindFirstObjectByType<SceneConfiguration>();
-        if (sceneConfiguration == null)
-            Debug.LogError("GameCore can't find sceneConfiguration.");
-
-        if (openAiService == null)
-            openAiService = GameObject.FindFirstObjectByType<OpenAIService>();
-        if (openAiService == null)
-            Debug.LogError("GameCore can't find openAiService.");
+        InitializeComponents();
 
         if (DEBUG_TimeScale != 1f)
         {
             Debug.Log($"Setting time scale to {DEBUG_TimeScale}. Set it to 1.0 in GameCore to prevent this.");
             Time.timeScale = DEBUG_TimeScale;
         }
+    }
 
-        completedObjectives = new List<NPC_PlayerObjective>();
+    private void InitializeComponents()
+    {
+        worldRep = FindOrLogError<WorldRep>("WorldRep");
+        inputManager = FindOrLogError<InputManager>("InputManager");
+        uiManager = FindOrLogError<UIManager>("UIManager");
+        karyoUnityInputSource = FindOrLogError<KaryoUnityInputSource>("KaryoUnityInputSource");
+        targetAcquisition = FindOrLogError<TargetAcquisition>("TargetAcquisition");
+        persistentData = FindOrLogError<PersistentData>("PersistentData");
+        sceneConfiguration = FindOrLogError<SceneConfiguration>("SceneConfiguration");
+        openAiService = FindOrLogError<OpenAIService>("OpenAIService");
+    }
+
+    private T FindOrLogError<T>(string componentName) where T : Component
+    {
+        T component = FindObjectOfType<T>();
+        if (component == null)
+            Debug.LogError($"GameCore can't find {componentName}.");
+        return component;
     }
 
     private void OnDestroy()
     {
-        // This shouldn't be necessary, but still nice to cleanup
         Instance = null;
     }
 
-
-
-    public void CreateObjective (NPC_PlayerObjective objective)
+    public void CreateObjective(NPC_PlayerObjective objective)
     {
-        if (DoesPlayerCurrentlyHaveAnObjective())
-            Debug.LogWarning($"Player is being given an objective, but they already have an active objective which is {objective} ");
+        int localPlayerActorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+        if (DoesPlayerCurrentlyHaveAnObjective(localPlayerActorNumber))
+            Debug.LogWarning($"Player {localPlayerActorNumber} is being given an objective, but they already have an active objective which is {objective}");
 
-        currentPlayerObjective = objective;
-
-        uiManager.DisplayObjectivePopupNotification(objective);
-
+        photonView.RPC("RPC_CreateObjective", RpcTarget.All, localPlayerActorNumber, objective);
     }
 
-    public void PlayerHasFulfilledObjective ()
+    [PunRPC]
+    private void RPC_CreateObjective(int playerActorNumber, NPC_PlayerObjective objective)
     {
-        if (currentPlayerObjective == null)
+        currentPlayerObjectives[playerActorNumber] = objective;
+
+        if (PhotonNetwork.LocalPlayer.ActorNumber == playerActorNumber)
+            uiManager.DisplayObjectivePopupNotification(objective);
+    }
+
+    public bool DoesPlayerCurrentlyHaveAnObjective()
+    {
+        return DoesPlayerCurrentlyHaveAnObjective(PhotonNetwork.LocalPlayer.ActorNumber);
+    }
+
+    public bool DoesPlayerCurrentlyHaveAnObjective(int playerActorNumber)
+    {
+        return currentPlayerObjectives.ContainsKey(playerActorNumber);
+    }
+
+    public bool HasPlayerAlreadyFulfilledThisObjective(NPC_PlayerObjective objective)
+    {
+        int localPlayerActorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+        return completedObjectives.TryGetValue(localPlayerActorNumber, out var playerCompletedObjectives) && 
+               playerCompletedObjectives.Contains(objective);
+    }
+
+    public void PlayerHasFulfilledObjective()
+    {
+        int localPlayerActorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+        photonView.RPC("RPC_PlayerHasFulfilledObjective", RpcTarget.All, localPlayerActorNumber);
+    }
+
+    [PunRPC]
+    private void RPC_PlayerHasFulfilledObjective(int playerActorNumber)
+    {
+        if (!currentPlayerObjectives.TryGetValue(playerActorNumber, out NPC_PlayerObjective objective))
         {
-            Debug.LogWarning($"PlayerHasFulfilledObjective() being called, but player did not have a current objective.");
+            Debug.LogWarning($"PlayerHasFulfilledObjective() being called for player {playerActorNumber}, but they did not have a current objective.");
             return;
         }
 
-        string body_text = new string("");
+        string body_text = $"Great work! Player {playerActorNumber} finished the objective:\n" + objective.title;
 
-        body_text = body_text + "Great work! You finished the objective:\n" + currentPlayerObjective.title;
+        if (PhotonNetwork.LocalPlayer.ActorNumber == playerActorNumber)
+            uiManager.LaunchGenericDialogWindow("Objective Complete", body_text, true);
 
-        uiManager.LaunchGenericDialogWindow("Objective Complete", body_text, true);
+        if (!completedObjectives.ContainsKey(playerActorNumber))
+            completedObjectives[playerActorNumber] = new List<NPC_PlayerObjective>();
 
-        completedObjectives.Add(currentPlayerObjective);
-        currentPlayerObjective = null;
-    }
-
-    public bool DoesPlayerCurrentlyHaveAnObjective ()
-    {
-        return (currentPlayerObjective != null);
-    }
-
-    public bool HasPlayerAlreadyFulfilledThisObjective (NPC_PlayerObjective objective)
-    {
-        return completedObjectives.Contains(objective);
+        completedObjectives[playerActorNumber].Add(objective);
+        currentPlayerObjectives.Remove(playerActorNumber);
     }
 
     public string CompletedObjectivesAsString()
     {
-        string toReturn = new string("");
+        int localPlayerActorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+        if (!completedObjectives.TryGetValue(localPlayerActorNumber, out var playerCompletedObjectives))
+            return "";
 
-        foreach (NPC_PlayerObjective objective in completedObjectives)
-            toReturn = toReturn + objective.title + "\n";
-
-        return toReturn;
+        return string.Join("\n", playerCompletedObjectives.ConvertAll(obj => obj.title));
     }
 
+    public NPC_PlayerObjective GetCurrentPlayerObjective()
+    {
+        int localPlayerActorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+        if (currentPlayerObjectives.TryGetValue(localPlayerActorNumber, out NPC_PlayerObjective objective))
+        {
+            return objective;
+        }
+        return null;
+    }
 
-    // shuffles the list in place
     public static void Shuffle<T>(List<T> list)
     {
-        if (list.Count <= 1)
-            return;
+        if (list.Count <= 1) return;
 
-        for (int times = 0; times < 2; times++)
+        for (int i = 0; i < list.Count - 1; i++)
         {
-            // fisher-yates
-            T tmp;
-            for (int i = 0; i < list.Count - 1; i++)
-            {
-                int j = Random.Range(i, list.Count);
-                tmp = list[i];
-                list[i] = list[j];
-                list[j] = tmp;
-            }
+            int j = Random.Range(i, list.Count);
+            T tmp = list[i];
+            list[i] = list[j];
+            list[j] = tmp;
         }
     }
 
-    // shuffles the array in place
     public static void Shuffle<T>(T[] array)
     {
-        if (array.Length <= 1)
-            return;
+        if (array.Length <= 1) return;
 
-        for (int times = 0; times < 2; times++)
+        for (int i = 0; i < array.Length - 1; i++)
         {
-            // fisher-yates
-            T tmp;
-            for (int i = 0; i < array.Length - 1; i++)
-            {
-                int j = Random.Range(i, array.Length);
-                tmp = array[i];
-                array[i] = array[j];
-                array[j] = tmp;
-            }
+            int j = Random.Range(i, array.Length);
+            T tmp = array[i];
+            array[i] = array[j];
+            array[j] = tmp;
         }
     }
 
-
+    public UniversalCharacterController GetLocalPlayerCharacter()
+    {
+        UniversalCharacterController[] characters = FindObjectsOfType<UniversalCharacterController>();
+        return System.Array.Find(characters, c => c.photonView.IsMine && c.IsPlayerControlled);
+    }
 }

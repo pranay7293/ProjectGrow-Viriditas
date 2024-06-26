@@ -11,7 +11,7 @@ public class WorldObjectLabel : MonoBehaviour
 
     public void Update()
     {
-        var dist = Vector3.Distance(Karyo_GameCore.Instance.player.transform.position, transform.position);
+        var dist = Vector3.Distance(Karyo_GameCore.Instance.GetLocalPlayerCharacter().transform.position, transform.position);
         if (dist < range)
         {
             Karyo_GameCore.Instance.uiManager.worldLabelUI.ShowWorldLabel(this);

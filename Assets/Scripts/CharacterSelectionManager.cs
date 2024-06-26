@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using TMPro;
 using Photon.Pun;
 using Photon.Realtime;
+using UnityEngine.SceneManagement;
 
 public class CharacterSelectionManager : MonoBehaviourPunCallbacks
 {
@@ -11,24 +12,30 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
     public Color selectedColor = Color.green;
     public Color defaultColor = Color.white;
     public PlayerListManager playerListManager;
+    public UniversalCharacterController characterPrefab;
+    public Transform[] spawnPoints;
 
     private Button[] characterButtons;
     private int selectedCharacterIndex = -1;
     private Dictionary<int, bool> playerReadyStatus = new Dictionary<int, bool>();
 
+    private string[] characterNames = new string[]
+    {
+        "Dr. Flora Tremblay", "Sierra Nakamura", "Dr. Eden Kapoor", "Indigo", "Dr. Cobalt Johnson",
+        "Aspen Rodriguez", "River Osei", "Celeste Dubois", "Astra Kim", "Lilith Fernandez"
+    };
+
     private void Start()
     {
-        // Get all the character buttons from the CharacterButtonsContainer
         characterButtons = characterButtonsContainer.GetComponentsInChildren<Button>();
 
-        // Assign click listeners to character buttons
         for (int i = 0; i < characterButtons.Length; i++)
         {
             int index = i;
+            characterButtons[i].GetComponentInChildren<TextMeshProUGUI>().text = characterNames[i];
             characterButtons[i].onClick.AddListener(() => SelectCharacter(index));
         }
 
-        // Initialize player ready status
         foreach (Photon.Realtime.Player player in PhotonNetwork.PlayerList)
         {
             playerReadyStatus[player.ActorNumber] = false;
@@ -39,34 +46,32 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
     {
         if (selectedCharacterIndex == index)
         {
-            // Deselect the character if already selected
             DeselectCharacter();
         }
         else
         {
-            // Deselect the previously selected character
             DeselectCharacter();
 
-            // Select the new character
             selectedCharacterIndex = index;
             characterButtons[index].GetComponent<Image>().color = selectedColor;
 
-            // Notify other players about the character selection
-            photonView.RPC("UpdateCharacterSelection", RpcTarget.Others, PhotonNetwork.LocalPlayer.ActorNumber, index);
+            string characterName = characterNames[index];
+            ExitGames.Client.Photon.Hashtable playerProps = new ExitGames.Client.Photon.Hashtable();
+            playerProps["SelectedCharacter"] = characterName;
+            PhotonNetwork.LocalPlayer.SetCustomProperties(playerProps);
 
-            // Update player ready status
+            photonView.RPC("UpdateCharacterSelection", RpcTarget.All, PhotonNetwork.LocalPlayer.ActorNumber, index, characterName);
+
             playerReadyStatus[PhotonNetwork.LocalPlayer.ActorNumber] = true;
             playerListManager.UpdatePlayerVotingStatus(PhotonNetwork.LocalPlayer.ActorNumber, true);
 
-            // If there is only one player, start the game immediately
             if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
             {
-                PhotonNetwork.LoadLevel("TransitionScene");
+                StartGame();
             }
             else if (CheckAllPlayersReady())
             {
-                // Load the transition scene for all players
-                PhotonNetwork.LoadLevel("TransitionScene");
+                StartGame();
             }
         }
     }
@@ -78,26 +83,22 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
             characterButtons[selectedCharacterIndex].GetComponent<Image>().color = defaultColor;
             selectedCharacterIndex = -1;
 
-            // Update player ready status
             playerReadyStatus[PhotonNetwork.LocalPlayer.ActorNumber] = false;
             playerListManager.UpdatePlayerVotingStatus(PhotonNetwork.LocalPlayer.ActorNumber, false);
         }
     }
 
     [PunRPC]
-    private void UpdateCharacterSelection(int playerActorNumber, int characterIndex)
+    private void UpdateCharacterSelection(int playerActorNumber, int characterIndex, string characterName)
     {
-        // Update the character selection for other players
         characterButtons[characterIndex].GetComponent<Image>().color = Color.red;
 
-        // Display player name on the character button
         Photon.Realtime.Player player = PhotonNetwork.CurrentRoom.GetPlayer(playerActorNumber);
         if (player != null)
         {
-            characterButtons[characterIndex].GetComponentInChildren<TextMeshProUGUI>().text = player.NickName;
+            characterButtons[characterIndex].GetComponentInChildren<TextMeshProUGUI>().text = player.NickName + " - " + characterName;
         }
 
-        // Update player ready status
         playerReadyStatus[playerActorNumber] = true;
         playerListManager.UpdatePlayerVotingStatus(playerActorNumber, true);
     }
@@ -123,5 +124,13 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
     {
         playerReadyStatus.Remove(otherPlayer.ActorNumber);
         playerListManager.UpdatePlayerList();
+    }
+
+    private void StartGame()
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            PhotonNetwork.LoadLevel("TransitionScene");
+        }
     }
 }

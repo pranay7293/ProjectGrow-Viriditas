@@ -48,7 +48,7 @@ public class PersistentData : MonoBehaviour
             Debug.LogError(this + " cannot find Game Core.");
 
         if (playerStartPoint != null)
-            core.player.UseStartPoint(playerStartPoint);
+            Karyo_GameCore.Instance.GetLocalPlayerCharacter().GetComponent<Player>().UseStartPoint(playerStartPoint);
     }
 
 

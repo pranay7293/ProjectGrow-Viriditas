@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Tools;
 using PlayerData;
+using Photon.Pun;
 
 public class BioreactorUI : MonoBehaviour
 {
@@ -41,11 +42,15 @@ public class BioreactorUI : MonoBehaviour
 
     public void HarvestButtonClicked()
     {
-        PlayerInventoryCircuits inventory = Karyo_GameCore.Instance.player.GetComponent<PlayerInventoryCircuits>();
+        PlayerInventoryCircuits inventory = Karyo_GameCore.Instance.GetLocalPlayerCharacter().GetComponent<PlayerInventoryCircuits>();
         if (inventory == null)
+        {
             Debug.LogError("Bioreactor couldn't find PlayerInventoryCircuits component on player.");
-        else
-            inventory.Add(myCircuit);
+            return;
+        }
+        
+        inventory.Add(myCircuit);
+        resources = inventory.Resources;
 
         Karyo_GameCore.Instance.uiManager.CloseOpenWindows();
     }
@@ -78,9 +83,17 @@ public class BioreactorUI : MonoBehaviour
         growth += ConsumeResource(energySlider, energyConsumed, energyGrowthProduced, () => resources.Energy, v => resources.Energy = v);
     }
 
-    public void DisplayCircuit(Circuit circuit)
+     public void DisplayCircuit(Circuit circuit)
     {
-        resources = Karyo_GameCore.Instance.player.GetPlayerCircuitResources();
+        PlayerInventoryCircuits inventory = Karyo_GameCore.Instance.GetLocalPlayerCharacter().GetComponent<PlayerInventoryCircuits>();
+        if (inventory == null)
+        {
+            Debug.LogError("Bioreactor couldn't find PlayerInventoryCircuits component on player.");
+            return;
+        }
+        
+        resources = inventory.Resources;
+        
         if (!circuit.IsValid())
             Debug.LogWarning("BioReactor called but passed-in circuit is not valid.");  // TODO - disallow
 

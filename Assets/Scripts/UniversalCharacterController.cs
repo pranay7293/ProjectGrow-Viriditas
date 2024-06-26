@@ -1,79 +1,82 @@
 using UnityEngine;
 using Photon.Pun;
-using System.Collections.Generic;
+using KinematicCharacterController;
 
 public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObservable
 {
-    [SerializeField] private bool isPlayerControlled = false;
+    public bool IsPlayerControlled { get; private set; }
     [SerializeField] private string characterName;
     
     private KinematicCharacterMotor motor;
-    private AIController aiController;
+    private NPC npcController;
+    private Player playerController;
+    private PhotonView photonView;
+    private Camera playerCamera;
     
     private void Awake()
     {
         motor = GetComponent<KinematicCharacterMotor>();
-        aiController = GetComponent<AIController>();
-        
+        npcController = GetComponent<NPC>();
+        playerController = GetComponent<Player>();
+        photonView = GetComponent<PhotonView>();
+
         if (photonView.IsMine)
         {
-            // Initialize player-specific components if this is a local player
-            if (isPlayerControlled)
-            {
-                InitializePlayerComponents();
-            }
-            else
-            {
-                InitializeAIComponents();
-            }
+            // Initialize local player components
+            playerController.enabled = true;
+            npcController.enabled = false;
+            IsPlayerControlled = true;
+            SetupCamera();
+        }
+        else
+        {
+            // Initialize AI components for non-local players
+            playerController.enabled = false;
+            npcController.enabled = true;
+            IsPlayerControlled = false;
         }
     }
     
-    private void InitializePlayerComponents()
+    [PunRPC]
+    public void Initialize(string name, bool isPlayer)
     {
-        // Add player-specific initialization here
+        characterName = name;
+        IsPlayerControlled = isPlayer;
     }
     
-    private void InitializeAIComponents()
+    private void SetupCamera()
     {
-        // Add AI-specific initialization here
+        playerCamera = Camera.main;
+        if (playerCamera != null)
+        {
+            playerCamera.transform.SetParent(transform);
+            playerCamera.transform.localPosition = new Vector3(0, 1.6f, 0);
+        }
     }
     
     private void Update()
     {
         if (!photonView.IsMine) return;
         
-        if (isPlayerControlled)
+        if (IsPlayerControlled)
         {
-            HandlePlayerInput();
+            playerController.HandleInput();
         }
         else
         {
-            HandleAIBehavior();
+            npcController.HandleAI();
         }
-    }
-    
-    private void HandlePlayerInput()
-    {
-        // Implement player input handling
-    }
-    
-    private void HandleAIBehavior()
-    {
-        // Implement AI behavior handling
     }
     
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
         {
-            // Send data
             stream.SendNext(transform.position);
             stream.SendNext(transform.rotation);
         }
         else
         {
-            // Receive data
             transform.position = (Vector3)stream.ReceiveNext();
             transform.rotation = (Quaternion)stream.ReceiveNext();
         }
