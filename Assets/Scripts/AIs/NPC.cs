@@ -84,6 +84,24 @@ public class NPC : Character
     }
     private List<DialogEvent> dialogHistory;
 
+    public void InitializeNPCData(object[] npcData)
+{
+
+    npc_data.genericPrompt_part1 = (string)npcData[0];
+    npc_data.requestPrompt_part5 = (string)npcData[1];
+    npc_data.requestPrompt_part5_w_objectives = (string)npcData[2];
+    npc_data.requestPrompt_part5_dialogOptions = (string)npcData[3];
+    npc_data.objectiveInclusionPercentChance = (float)npcData[4];
+    npc_data.objectiveExclusionDuration = (float)npcData[5];
+    npc_data.requiredConversationDepth = (int)npcData[6];
+    npc_data.distanceToUseRandomActions = (float)npcData[7];
+    npc_data.duration_SecPerWord = (float)npcData[8];
+    npc_data.minDialogDuration = (float)npcData[9];
+    npc_data.maxDialogDuration = (float)npcData[10];
+    npc_data.idleDurationMin = (float)npcData[11];
+    npc_data.idleDurationMax = (float)npcData[12];
+    npc_data.nearbyThreshold = (float)npcData[13];
+}
     protected override void Awake()
 {
     base.Awake();
@@ -92,23 +110,7 @@ public class NPC : Character
     {
         name = (string)photonView.InstantiationData[0];
         bool isPlayerControlled = (bool)photonView.InstantiationData[1];
-
-        // Create a new NPC_Data object and populate it with the received data
-        npc_data = ScriptableObject.CreateInstance<NPC_Data>();
-        npc_data.genericPrompt_part1 = (string)photonView.InstantiationData[2];
-        npc_data.requestPrompt_part5 = (string)photonView.InstantiationData[3];
-        npc_data.requestPrompt_part5_w_objectives = (string)photonView.InstantiationData[4];
-        npc_data.requestPrompt_part5_dialogOptions = (string)photonView.InstantiationData[5];
-        npc_data.objectiveInclusionPercentChance = (float)photonView.InstantiationData[6];
-        npc_data.objectiveExclusionDuration = (float)photonView.InstantiationData[7];
-        npc_data.requiredConversationDepth = (int)photonView.InstantiationData[8];
-        npc_data.distanceToUseRandomActions = (float)photonView.InstantiationData[9];
-        npc_data.duration_SecPerWord = (float)photonView.InstantiationData[10];
-        npc_data.minDialogDuration = (float)photonView.InstantiationData[11];
-        npc_data.maxDialogDuration = (float)photonView.InstantiationData[12];
-        npc_data.idleDurationMin = (float)photonView.InstantiationData[13];
-        npc_data.idleDurationMax = (float)photonView.InstantiationData[14];
-        npc_data.nearbyThreshold = (float)photonView.InstantiationData[15];
+        InitializeNPCData((object[])photonView.InstantiationData[2]);
     }
 
         if (PhotonNetwork.IsMessageQueueRunning)

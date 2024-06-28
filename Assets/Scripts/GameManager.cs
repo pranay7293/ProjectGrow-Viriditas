@@ -6,19 +6,9 @@ public class GameManager : MonoBehaviourPunCallbacks
 {
     public string characterPrefabName = "Character";
     public NPC_Data npcData;
-    private PlayerSpawnManager spawnManager;
     private Dictionary<int, UniversalCharacterController> spawnedCharacters = new Dictionary<int, UniversalCharacterController>();
 
     [SerializeField] private GameObject cameraRigPrefab;
-
-    private void Awake()
-    {
-        spawnManager = GetComponent<PlayerSpawnManager>();
-        if (spawnManager == null)
-        {
-            Debug.LogError("PlayerSpawnManager not found on GameManager object.");
-        }
-    }
 
     private void Start()
     {
@@ -30,13 +20,13 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void SpawnCharacters()
     {
-        if (npcData == null || npcData.characterNames == null)
+        if (npcData == null || npcData.characters == null)
         {
-            Debug.LogError("NPC_Data or character names are missing.");
+            Debug.LogError("NPC_Data or characters are missing.");
             return;
         }
 
-        List<string> availableCharacters = new List<string>(npcData.characterNames);
+        List<string> availableCharacters = npcData.GetAllCharacterNames();
         
         // Spawn player-controlled characters
         foreach (var player in PhotonNetwork.PlayerList)
@@ -57,35 +47,48 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     private void SpawnCharacter(string characterName, bool isPlayerControlled, int spawnIndex)
-{
-    Transform spawnPoint = spawnManager.GetSpawnPoint(spawnIndex);
-    if (spawnPoint == null)
     {
-        Debug.LogError($"No spawn point available for character {characterName}");
-        return;
-    }
+        NPC_Data.CharacterData characterData = npcData.GetCharacterData(characterName);
+        if (characterData == null)
+        {
+            Debug.LogError($"Character data not found for {characterName}");
+            return;
+        }
 
-    // Pass only essential data
-    object[] instantiationData = new object[] 
-    { 
-        characterName,
-        isPlayerControlled,
-        npcData.genericPrompt_part1,
-        npcData.requestPrompt_part5,
-        npcData.requestPrompt_part5_w_objectives,
-        npcData.requestPrompt_part5_dialogOptions,
-        npcData.objectiveInclusionPercentChance,
-        npcData.objectiveExclusionDuration,
-        npcData.requiredConversationDepth,
-        npcData.distanceToUseRandomActions,
-        npcData.duration_SecPerWord,
-        npcData.minDialogDuration,
-        npcData.maxDialogDuration,
-        npcData.idleDurationMin,
-        npcData.idleDurationMax,
-        npcData.nearbyThreshold
-    };
-        GameObject characterGO = PhotonNetwork.Instantiate(characterPrefabName, spawnPoint.position, spawnPoint.rotation, 0, instantiationData);
+        if (characterData.spawnLocation == null)
+        {
+            Debug.LogError($"Spawn location not set for character {characterName}");
+            return;
+        }
+
+        Vector3 spawnPosition = characterData.spawnLocation.transform.position;
+        Quaternion spawnRotation = characterData.spawnLocation.transform.rotation;
+
+        object[] instantiationData = new object[] 
+        { 
+            characterName,
+            isPlayerControlled,
+            characterData.specificCharacterPrompt_part2,
+            characterData.customActionTextDescription,
+            // characterData.playerObjectives,
+            npcData.genericPrompt_part1,
+            npcData.requestPrompt_part5,
+            npcData.requestPrompt_part5_w_objectives,
+            npcData.requestPrompt_part5_dialogOptions,
+            npcData.objectiveInclusionPercentChance,
+            npcData.objectiveExclusionDuration,
+            npcData.requiredConversationDepth,
+            npcData.distanceToUseRandomActions,
+            npcData.duration_SecPerWord,
+            npcData.minDialogDuration,
+            npcData.maxDialogDuration,
+            npcData.idleDurationMin,
+            npcData.idleDurationMax,
+            npcData.nearbyThreshold
+        };
+
+        string prefabName = $"Character-{characterName}";
+        GameObject characterGO = PhotonNetwork.Instantiate(prefabName, spawnPosition, spawnRotation, 0, instantiationData);
         if (characterGO == null)
         {
             Debug.LogError($"Failed to instantiate character {characterName}");
@@ -122,14 +125,12 @@ public class GameManager : MonoBehaviourPunCallbacks
             Debug.LogError("CameraController component not found on CameraRig prefab");
         }
 
-        // Disable AudioListener on all but the local player's camera
         AudioListener audioListener = cameraRig.GetComponentInChildren<AudioListener>();
         if (audioListener != null)
         {
             audioListener.enabled = true;
         }
 
-        // Disable all other AudioListeners in the scene
         AudioListener[] allListeners = FindObjectsOfType<AudioListener>();
         foreach (AudioListener listener in allListeners)
         {
@@ -147,5 +148,13 @@ public class GameManager : MonoBehaviourPunCallbacks
             return character;
         }
         return null;
+    }
+
+    public void SwitchCharacterControl(int characterIndex, bool toPlayerControl)
+    {
+        if (spawnedCharacters.TryGetValue(characterIndex, out UniversalCharacterController character))
+        {
+            character.SwitchControlMode(toPlayerControl);
+        }
     }
 }

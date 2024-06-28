@@ -5,12 +5,20 @@ using Sirenix.OdinInspector;
 [System.Serializable]
 public class NPC_Data : MonoBehaviour
 {
-    [Title("Character Names", bold: true)]
-    public string[] characterNames = new string[]
+    [System.Serializable]
+    public class CharacterData
     {
-        "Dr. Flora Tremblay", "Sierra Nakamura", "Dr. Eden Kapoor", "Indigo", "Dr. Cobalt Johnson",
-        "Aspen Rodriguez", "River Osei", "Celeste Dubois", "Astra Kim", "Lilith Fernandez"
-    };
+        public string name;
+        public GameObject spawnLocation;
+        [MultiLineProperty(4)]
+        public string specificCharacterPrompt_part2;
+        [MultiLineProperty(4)]
+        public string customActionTextDescription;
+        public NPC_PlayerObjective[] playerObjectives;
+    }
+
+    [Title("Character Data", bold: true)]
+    public CharacterData[] characters;
 
     [Title("Generic prompt part 1", bold: false)]
     [HideLabel]
@@ -78,6 +86,11 @@ public class NPC_Data : MonoBehaviour
         requestPrompt_part5 = requestPrompt_part5.Replace("[PLAYERNAME]", playerName);
         requestPrompt_part5_w_objectives = requestPrompt_part5_w_objectives.Replace("[PLAYERNAME]", playerName);
         requestPrompt_part5_dialogOptions = requestPrompt_part5_dialogOptions.Replace("[PLAYERNAME]", playerName);
+
+        foreach (var character in characters)
+        {
+            character.specificCharacterPrompt_part2 = character.specificCharacterPrompt_part2.Replace("[PLAYERNAME]", playerName);
+        }
     }
 
     public bool IsOneOfTheNamedLocations(string location)
@@ -101,7 +114,12 @@ public class NPC_Data : MonoBehaviour
 
     public List<string> GetAllCharacterNames()
     {
-        return new List<string>(characterNames);
+        List<string> names = new List<string>();
+        foreach (var character in characters)
+        {
+            names.Add(character.name);
+        }
+        return names;
     }
 
     public Vector3 GetPositionByCharacterName(string characterName)
@@ -115,5 +133,18 @@ public class NPC_Data : MonoBehaviour
             return character.transform.position;
 
         return Vector3.zero;
+    }
+
+    public CharacterData GetCharacterData(string characterName)
+    {
+        foreach (var character in characters)
+        {
+            if (character.name == characterName)
+            {
+                return character;
+            }
+        }
+        Debug.LogError($"Character data not found for: {characterName}");
+        return null;
     }
 }

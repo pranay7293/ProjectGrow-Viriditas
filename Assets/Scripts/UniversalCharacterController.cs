@@ -11,7 +11,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private NPC npcController;
     private Player playerController;
     private PhotonView photonView;
-    private Camera playerCamera;
     
     private void Awake()
     {
@@ -20,20 +19,13 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         playerController = GetComponent<Player>();
         photonView = GetComponent<PhotonView>();
 
-        if (photonView.IsMine)
+        if (photonView.InstantiationData != null)
         {
-            // Initialize local player components
-            playerController.enabled = true;
-            npcController.enabled = false;
-            IsPlayerControlled = true;
-            SetupCamera();
-        }
-        else
-        {
-            // Initialize AI components for non-local players
-            playerController.enabled = false;
-            npcController.enabled = true;
-            IsPlayerControlled = false;
+            Initialize((string)photonView.InstantiationData[0], (bool)photonView.InstantiationData[1]);
+            if (!IsPlayerControlled)
+            {
+                InitializeNPCData(photonView.InstantiationData);
+            }
         }
     }
     
@@ -42,15 +34,60 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         characterName = name;
         IsPlayerControlled = isPlayer;
+
+        if (photonView.IsMine)
+        {
+            if (IsPlayerControlled)
+            {
+                playerController.enabled = true;
+                npcController.enabled = false;
+                SetupCamera();
+            }
+            else
+            {
+                playerController.enabled = false;
+                npcController.enabled = true;
+            }
+        }
+        else
+        {
+            playerController.enabled = false;
+            npcController.enabled = !IsPlayerControlled;
+        }
+    }
+
+    private void InitializeNPCData(object[] instantiationData)
+    {
+        if (npcController != null)
+        {
+            npcController.InitializeNPCData(instantiationData);
+        }
     }
     
     private void SetupCamera()
     {
-        playerCamera = Camera.main;
-        if (playerCamera != null)
+        if (Camera.main != null)
         {
-            playerCamera.transform.SetParent(transform);
-            playerCamera.transform.localPosition = new Vector3(0, 1.6f, 0);
+            Camera.main.gameObject.SetActive(false);
+        }
+
+        GameObject cameraRigPrefab = Resources.Load<GameObject>("CameraRig");
+        if (cameraRigPrefab != null)
+        {
+            GameObject cameraRig = Instantiate(cameraRigPrefab, transform.position, Quaternion.identity);
+            com.ootii.Cameras.CameraController cameraController = cameraRig.GetComponent<com.ootii.Cameras.CameraController>();
+            if (cameraController != null)
+            {
+                cameraController.Anchor = this.transform;
+            }
+            else
+            {
+                Debug.LogError("CameraController component not found on CameraRig prefab");
+            }
+        }
+        else
+        {
+            Debug.LogError("CameraRig prefab not found in Resources folder");
         }
     }
     
@@ -79,6 +116,21 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         {
             transform.position = (Vector3)stream.ReceiveNext();
             transform.rotation = (Quaternion)stream.ReceiveNext();
+        }
+    }
+
+    public void SwitchControlMode(bool toPlayerControl)
+    {
+        if (photonView.IsMine)
+        {
+            IsPlayerControlled = toPlayerControl;
+            playerController.enabled = toPlayerControl;
+            npcController.enabled = !toPlayerControl;
+
+            if (toPlayerControl)
+            {
+                SetupCamera();
+            }
         }
     }
 }

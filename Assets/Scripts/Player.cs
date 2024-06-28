@@ -63,9 +63,25 @@ public class Player : Character, ICharacterController
     private NPC lockedDialogTarget;
     public string currentLocation;
 
+    public void InitializePlayerData(string playerName)
+{
+    this.playerName = playerName;
+    // Add any other player-specific initialization here
+}
     protected override void Awake()
     {
         base.Awake();
+
+        if (photonView.InstantiationData != null && photonView.InstantiationData.Length > 0)
+        {
+        string characterName = (string)photonView.InstantiationData[0];
+        bool isPlayerControlled = (bool)photonView.InstantiationData[1];
+        
+        if (isPlayerControlled)
+        {
+            InitializePlayerData(characterName);
+        }
+        }
 
         core = GameObject.FindGameObjectWithTag("GameCore").GetComponent<Karyo_GameCore>();
         if (core == null)

@@ -13,11 +13,11 @@ public class TransitionSceneManager : MonoBehaviourPunCallbacks
     {
         if (PhotonNetwork.IsMasterClient)
         {
-            StartCoroutine(LoadIGEMDemoScene());
+            StartCoroutine(LoadGameSceneScene());
         }
     }
 
-    private System.Collections.IEnumerator LoadIGEMDemoScene()
+    private System.Collections.IEnumerator LoadGameSceneScene()
     {
         while (elapsedTime < loadingDelay)
         {
@@ -26,6 +26,6 @@ public class TransitionSceneManager : MonoBehaviourPunCallbacks
             yield return null;
         }
 
-        PhotonNetwork.LoadLevel("IGEMDemo");
+        PhotonNetwork.LoadLevel("GameScene");
     }
 }
