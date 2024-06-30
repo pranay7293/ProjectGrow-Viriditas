@@ -19,7 +19,7 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
     private int selectedCharacterIndex = -1;
     private Dictionary<int, bool> playerReadyStatus = new Dictionary<int, bool>();
 
-    private string[] characterNames = new string[]
+    public static string[] characterNames = new string[]
     {
         "Dr. Flora Tremblay", "Sierra Nakamura", "Dr. Eden Kapoor", "Indigo", "Dr. Cobalt Johnson",
         "Aspen Rodriguez", "River Osei", "Celeste Dubois", "Astra Kim", "Lilith Fernandez"

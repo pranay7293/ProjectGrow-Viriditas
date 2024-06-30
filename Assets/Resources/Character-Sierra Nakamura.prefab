@@ -1004,14 +1004,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1423302142698512507}
   - component: {fileID: 602980681184985677}
-  - component: {fileID: 6264250979398691684}
   - component: {fileID: 3609376687421678756}
-  - component: {fileID: 7120675276646602428}
   - component: {fileID: 8601819358753334523}
   - component: {fileID: 8557344917654247506}
-  - component: {fileID: -2814405978122134163}
-  - component: {fileID: -7774577612373637944}
-  - component: {fileID: 6251110753993149187}
   - component: {fileID: 1155668115854012151}
   - component: {fileID: 1554460725892305595}
   - component: {fileID: -9078543048310780754}
@@ -1101,21 +1096,6 @@ MonoBehaviour:
   currentLocation: 
   timeBehaviorWillConclude: 0
   timeDialogUiShouldClose: 0
---- !u!114 &6264250979398691684
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0db7ecb85b6fbc4cadc66f9de3517b0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DEBUG_verbose: 0
-  canMoveWhenAntigravity: 0
-  fleeSpeedFactor: 3
 --- !u!195 &3609376687421678756
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -1138,29 +1118,6 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &7120675276646602428
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 986cdb6f34d3adb4bbfd3ba8ca28c961, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _behaviorEnabled: 1
-  _paused: 0
-  strength: 0
-  ODS_text: 
-  DEBUG_Verbose: 0
-  EPSILON_CloseEnoughToDestination: 0.15
-  DEBUG_maxTimeToTravel: 60
-  moveSpeed: 2.5
-  rotationSpeed: 300
-  gravityMultiplier: 3
-  hoverHeight: 0
 --- !u!114 &8601819358753334523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1212,50 +1169,6 @@ MonoBehaviour:
   mantlePushForce: 5
   mantlePushDecay: 100
   currentLocation: 
---- !u!114 &-2814405978122134163
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e44b3323ee7da1419f053687665aa42, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DEBUG_verbose: 0
---- !u!114 &-7774577612373637944
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d1a77847feb1b6a468013ba7a5e65643, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  tools: []
-  lookCamera: {fileID: 0}
---- !u!114 &6251110753993149187
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb7a0646fb6a0bb48a2e9e0869c6ee2b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _resources:
-    Dna: 0
-    Media: 0
-    Energy: 0
-  _circuits: []
 --- !u!136 &1155668115854012151
 CapsuleCollider:
   m_ObjectHideFlags: 8

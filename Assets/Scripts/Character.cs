@@ -4,7 +4,7 @@ using Photon.Pun;
 public abstract class Character : MonoBehaviourPunCallbacks, IPunObservable
 {
     public string characterName;
-    public float health;
+    // public float health;
     public float speed;
     public Transform characterTransform;
 
@@ -14,7 +14,7 @@ public abstract class Character : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     public abstract void Move(Vector3 direction);
-    public abstract void TakeDamage(float amount);
+    // public abstract void TakeDamage(float amount);
 
     public virtual void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
@@ -22,13 +22,13 @@ public abstract class Character : MonoBehaviourPunCallbacks, IPunObservable
         {
             // Send data to other players
             stream.SendNext(characterName);
-            stream.SendNext(health);
+            // stream.SendNext(health);
         }
         else
         {
             // Receive data from other players
             characterName = (string)stream.ReceiveNext();
-            health = (float)stream.ReceiveNext();
+            // health = (float)stream.ReceiveNext();
         }
     }
 }

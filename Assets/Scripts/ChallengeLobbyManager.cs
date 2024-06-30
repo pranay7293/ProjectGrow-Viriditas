@@ -7,19 +7,17 @@ public class ChallengeLobbyManager : MonoBehaviourPunCallbacks
 {
     public PlayerListManager playerListManager;
     public Button[] hubButtons;
+    private const int MAX_PLAYERS = 5;
 
     private void Start()
     {
-        // Set the initial state of the hub buttons
         SetHubButtonsInteractable(false);
 
-        // Connect to the Photon server
         if (!PhotonNetwork.IsConnected)
         {
             PhotonNetwork.ConnectUsingSettings();
         }
 
-        // Assign click listeners to hub buttons
         for (int i = 0; i < hubButtons.Length; i++)
         {
             int index = i;
@@ -30,8 +28,8 @@ public class ChallengeLobbyManager : MonoBehaviourPunCallbacks
     public override void OnConnectedToMaster()
     {
         Debug.Log("Connected to Photon server.");
-        // Join or create a room after successful connection
-        PhotonNetwork.JoinOrCreateRoom("ChallengeLobby", new RoomOptions(), TypedLobby.Default);
+        RoomOptions roomOptions = new RoomOptions { MaxPlayers = MAX_PLAYERS };
+        PhotonNetwork.JoinOrCreateRoom("ChallengeLobby", roomOptions, TypedLobby.Default);
     }
 
     public override void OnJoinedRoom()
