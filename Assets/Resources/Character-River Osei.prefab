@@ -118,7 +118,6 @@ GameObject:
   - component: {fileID: 2748930741491851383}
   - component: {fileID: 1902153158522620792}
   - component: {fileID: 3269055245251092456}
-  - component: {fileID: 7206970705461205049}
   m_Layer: 18
   m_Name: NameLabel
   m_TagString: Untagged
@@ -165,7 +164,7 @@ MeshRenderer:
   m_RenderingLayerMask: 257
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -4761807488544934485, guid: 6b285cd75b1498e449e9baa651abfc84, type: 2}
+  - {fileID: 116802541643450836, guid: 5e22c67c443164b66bca99c223111133, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -207,10 +206,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: NPC name
+  m_text: River Osei
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 6b285cd75b1498e449e9baa651abfc84, type: 2}
-  m_sharedMaterial: {fileID: -4761807488544934485, guid: 6b285cd75b1498e449e9baa651abfc84, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 5e22c67c443164b66bca99c223111133, type: 2}
+  m_sharedMaterial: {fileID: 116802541643450836, guid: 5e22c67c443164b66bca99c223111133, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -279,21 +278,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 1902153158522620792}
   m_maskType: 0
---- !u!114 &7206970705461205049
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2408202017638849391}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dabda525686f54253bb51679ea0d40fb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  camera_target: {fileID: 0}
-  rotationOffet: 180
-  updateFrequency: 0.5
 --- !u!1 &2816684182421538132
 GameObject:
   m_ObjectHideFlags: 0
@@ -524,7 +508,6 @@ GameObject:
   - component: {fileID: 1032820695905837563}
   - component: {fileID: 2433752955477721864}
   - component: {fileID: 2282519478857681231}
-  - component: {fileID: 531187146660754038}
   m_Layer: 18
   m_Name: Canvas-Dialog
   m_TagString: Untagged
@@ -654,21 +637,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &531187146660754038
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2878620527636093831}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dabda525686f54253bb51679ea0d40fb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  camera_target: {fileID: 0}
-  rotationOffet: 180
-  updateFrequency: 0.5
 --- !u!1 &3378636784329631038
 GameObject:
   m_ObjectHideFlags: 0
@@ -852,7 +820,6 @@ GameObject:
   - component: {fileID: 2480375461004300120}
   - component: {fileID: 1983959509206496235}
   - component: {fileID: 4696873380531214598}
-  - component: {fileID: 593922217705516450}
   m_Layer: 18
   m_Name: SpecialActionLabel
   m_TagString: Untagged
@@ -948,21 +915,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &593922217705516450
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4068961984564777616}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dabda525686f54253bb51679ea0d40fb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  camera_target: {fileID: 0}
-  rotationOffet: 180
-  updateFrequency: 0.5
 --- !u!1 &4827239567669725247
 GameObject:
   m_ObjectHideFlags: 0
@@ -1003,10 +955,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1423302142698512507}
-  - component: {fileID: 602980681184985677}
   - component: {fileID: 3609376687421678756}
-  - component: {fileID: 8601819358753334523}
-  - component: {fileID: 8557344917654247506}
   - component: {fileID: 1155668115854012151}
   - component: {fileID: 1554460725892305595}
   - component: {fileID: -9078543048310780754}
@@ -1041,61 +990,6 @@ Transform:
   - {fileID: 4154106534083880865}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &602980681184985677
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2e23b6f32e4fe4057bbe27e82f0dfaed, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  characterName: 
-  health: 0
-  speed: 0
-  characterTransform: {fileID: 0}
-  name: NPC name
-  color: {r: 1, g: 1, b: 1, a: 0}
-  specificCharacterPrompt_part2: 
-  customActionTextDescription: 
-  playerObjectives: []
-  customActionLocation: {fileID: 0}
-  durationPerformCustomAction: 35
-  openAIModel: 0
-  maxDialogHistoryToUseInPrompts: 3
-  DEBUG_NPCActions: 0
-  DEBUG_AIPrompts: 0
-  DEBUG_overrideRandomOfflineGoal: 0
-  DEBUG_offlineGoal:
-    goalType: 0
-    destination: {fileID: 0}
-    targetCharacter: 
-    playerObjective: {fileID: 0}
-    dialog: 
-  npc_data: {fileID: 0}
-  dialogCanvas: {fileID: 994305681929662498}
-  nameLabel: {fileID: 3269055245251092456}
-  dialogText: {fileID: 3155198147987866233}
-  selectionIndicator: {fileID: 2828534451909830494}
-  specialActionIndicator: {fileID: 4068961984564777616}
-  awaitingInstructionsIndicator: {fileID: 6772943006981187410}
-  standHereToTalkToMe: {fileID: 4154106534083880865}
-  currentGoal:
-    goalType: 0
-    destination: {fileID: 0}
-    targetCharacter: 
-    playerObjective: {fileID: 0}
-    dialog: 
-  currentBehavior:
-    behaviorType: 0
-    destination: 
-    beingSpokenToBy: 
-  currentLocation: 
-  timeBehaviorWillConclude: 0
-  timeDialogUiShouldClose: 0
 --- !u!195 &3609376687421678756
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -1103,7 +997,7 @@ NavMeshAgent:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
+  m_Enabled: 0
   m_AgentTypeID: 0
   m_Radius: 0.6
   m_Speed: 3.5
@@ -1118,57 +1012,6 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &8601819358753334523
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 971bb28439088764292c8eb7b1cba2f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  entityType: 3
-  organismDataSheet: {fileID: 0}
---- !u!114 &8557344917654247506
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8ab8d9d5c49c67e4797ed6e5c16c776a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  characterName: 
-  health: 0
-  speed: 0
-  characterTransform: {fileID: 0}
-  playerName: 
-  lookCamera: {fileID: 0}
-  startPoint: {fileID: 0}
-  walkSpeed: 2.5
-  runSpeed: 5
-  backwardsSpeedModifier: 0.6
-  turnSpeed: 450
-  jumpHeight: 0.75
-  gravityScale: 2.5
-  airAcceleration: 2
-  mantleSurfaceMask:
-    serializedVersion: 2
-    m_Bits: 1
-  mantleScanForward: 1
-  mantleScanHeight: 2.8
-  mantleScanDistance: 1.25
-  mantleRiseSpeed: 2.5
-  mantleSurfaceFlatnessTolerance: 0.6
-  mantlePushForce: 5
-  mantlePushDecay: 100
-  currentLocation: 
 --- !u!136 &1155668115854012151
 CapsuleCollider:
   m_ObjectHideFlags: 8
@@ -1199,7 +1042,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4d1bc5515e3ab954e80599c538834774, type: 3}
   m_Name: 
@@ -1274,6 +1117,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: River Osei
+  moveSpeed: 5
+  rotationSpeed: 120
 --- !u!114 &4096835321216489299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1293,8 +1138,6 @@ MonoBehaviour:
   OwnershipTransfer: 0
   observableSearch: 2
   ObservedComponents:
-  - {fileID: 602980681184985677}
-  - {fileID: 8557344917654247506}
   - {fileID: 5944958737743392496}
   sceneViewId: 0
   InstantiationId: 0
@@ -1587,7 +1430,6 @@ GameObject:
   - component: {fileID: 5094295796891796090}
   - component: {fileID: 7590654660772619591}
   - component: {fileID: 4538248631352823586}
-  - component: {fileID: 3806906360647265066}
   m_Layer: 18
   m_Name: AwaitingInstructionsLabel
   m_TagString: Untagged
@@ -1683,21 +1525,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &3806906360647265066
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6772943006981187410}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dabda525686f54253bb51679ea0d40fb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  camera_target: {fileID: 0}
-  rotationOffet: 180
-  updateFrequency: 0.5
 --- !u!1 &7308006823753351670
 GameObject:
   m_ObjectHideFlags: 0
@@ -1957,7 +1784,6 @@ GameObject:
   - component: {fileID: 9052056283398935098}
   - component: {fileID: 2279346138216673013}
   - component: {fileID: 9214886350074695764}
-  - component: {fileID: 294185247326295581}
   m_Layer: 18
   m_Name: Text
   m_TagString: Untagged
@@ -2118,18 +1944,3 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 2279346138216673013}
   m_maskType: 0
---- !u!114 &294185247326295581
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8973200958618496523}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dabda525686f54253bb51679ea0d40fb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  camera_target: {fileID: 0}
-  rotationOffet: 180
-  updateFrequency: 0.5

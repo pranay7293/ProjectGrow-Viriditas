@@ -1487,6 +1487,7 @@ MonoBehaviour:
   characterButtonsContainer: {fileID: 1189639462}
   selectedColor: {r: 0.050980393, g: 0.5058824, b: 0.34117648, a: 1}
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
+  takenColor: {r: 0.77254903, g: 0, b: 0, a: 1}
   playerListManager: {fileID: 491625491}
 --- !u!4 &1047256411
 Transform:

@@ -281,7 +281,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4232224085093092959}
   - component: {fileID: 7736748142149969192}
-  - component: {fileID: 6808185768543025584}
   m_Layer: 0
   m_Name: CameraRig
   m_TagString: Untagged
@@ -442,23 +441,6 @@ MonoBehaviour:
   EditorCameraStyle: 1
   EditorUseAdventureStyle: 1
   EditorShowEvents: 0
---- !u!114 &6808185768543025584
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6833418751096155316}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 83954554ba8e23b4ba14e750bebc7aa3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cameras:
-  - {fileID: 5775538140584271754}
-  fovLerpSpeed: 10
-  cameraZoomVignetteEffect: {fileID: 4286116551346562992}
-  zoomReticleGroup: {fileID: 2510029198488794174}
 --- !u!1 &6967562538757240704
 GameObject:
   m_ObjectHideFlags: 0
