@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 0}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.37311924, g: 0.38073963, b: 0.3587269, a: 1}
+  m_IndirectSpecularColor: {r: 262.28348, g: 324.9705, b: 430.11627, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -340,10 +340,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5bb1258c2a5e46c4975755ec3710a23, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  challengeCardObjects:
+  allHubs:
+  - {fileID: 11400000, guid: cecf34db63afa452f9b718be585f2592, type: 2}
+  - {fileID: 11400000, guid: 10fffe4af5e4144fbbf1ef425e1a7d8e, type: 2}
+  - {fileID: 11400000, guid: 4b85c6db2563246b3b937e89701ef21c, type: 2}
+  - {fileID: 11400000, guid: e515f6a055afd4999a2ea7913e5dc5d0, type: 2}
+  - {fileID: 11400000, guid: ae7df402d47854b4caaa1af4704e90b0, type: 2}
+  - {fileID: 11400000, guid: e416fefd2ab7149d2a29e6ec66d710cc, type: 2}
+  challengeCardsContainer: {fileID: 245298439}
+  expandedChallengeContainer: {fileID: 96096612}
+  challengeCards:
   - {fileID: 1606727488}
   - {fileID: 1787161276}
   - {fileID: 2053245117}
+  expandedChallenges:
+  - {fileID: 253049027}
+  - {fileID: 520886483}
+  - {fileID: 1244361620}
   playerListManager: {fileID: 516478740}
 --- !u!114 &141691350
 MonoBehaviour:
@@ -363,8 +376,7 @@ MonoBehaviour:
   Synchronization: 3
   OwnershipTransfer: 0
   observableSearch: 2
-  ObservedComponents:
-  - {fileID: 141691349}
+  ObservedComponents: []
   sceneViewId: 1
   InstantiationId: 0
   isRuntimeInstantiated: 0
@@ -738,6 +750,7 @@ GameObject:
   - component: {fileID: 253049030}
   - component: {fileID: 253049029}
   - component: {fileID: 253049031}
+  - component: {fileID: 253049032}
   m_Layer: 5
   m_Name: ExpandedChallenge1
   m_TagString: Untagged
@@ -848,6 +861,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &253049032
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 253049027}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86b31dc06b0f0477bbedc7cfdb707010, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  descriptionText: {fileID: 1505302765}
+  voteButton: {fileID: 1470554787}
 --- !u!1 &278292668
 GameObject:
   m_ObjectHideFlags: 0
@@ -1373,6 +1400,7 @@ GameObject:
   - component: {fileID: 520886486}
   - component: {fileID: 520886485}
   - component: {fileID: 520886487}
+  - component: {fileID: 520886488}
   m_Layer: 5
   m_Name: ExpandedChallenge2
   m_TagString: Untagged
@@ -1483,6 +1511,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &520886488
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 520886483}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86b31dc06b0f0477bbedc7cfdb707010, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  descriptionText: {fileID: 1381730641}
+  voteButton: {fileID: 1193107591}
 --- !u!1 &634719703
 GameObject:
   m_ObjectHideFlags: 0
@@ -2086,6 +2128,7 @@ GameObject:
   - component: {fileID: 1244361623}
   - component: {fileID: 1244361622}
   - component: {fileID: 1244361624}
+  - component: {fileID: 1244361625}
   m_Layer: 5
   m_Name: ExpandedChallenge3
   m_TagString: Untagged
@@ -2196,6 +2239,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1244361625
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1244361620}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86b31dc06b0f0477bbedc7cfdb707010, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  descriptionText: {fileID: 713554573}
+  voteButton: {fileID: 1503193419}
 --- !u!1 &1320917236
 GameObject:
   m_ObjectHideFlags: 0
@@ -3229,10 +3286,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4224c3ddea7af4cc281b8b21b9e67e12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  challengeNameText: {fileID: 2065367551}
-  expandedChallengeObject: {fileID: 253049027}
-  voteButton: {fileID: 1470554787}
-  expandedChallengeButton: {fileID: 253049031}
+  challengeTitleText: {fileID: 2065367551}
 --- !u!1 &1768156675
 GameObject:
   m_ObjectHideFlags: 0
@@ -3501,10 +3555,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4224c3ddea7af4cc281b8b21b9e67e12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  challengeNameText: {fileID: 718346789}
-  expandedChallengeObject: {fileID: 520886483}
-  voteButton: {fileID: 1193107591}
-  expandedChallengeButton: {fileID: 520886487}
+  challengeTitleText: {fileID: 718346789}
 --- !u!1 &1833687575
 GameObject:
   m_ObjectHideFlags: 0
@@ -3852,10 +3903,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4224c3ddea7af4cc281b8b21b9e67e12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  challengeNameText: {fileID: 413932510}
-  expandedChallengeObject: {fileID: 1244361620}
-  voteButton: {fileID: 1503193419}
-  expandedChallengeButton: {fileID: 1244361624}
+  challengeTitleText: {fileID: 413932510}
 --- !u!1 &2065367549
 GameObject:
   m_ObjectHideFlags: 0

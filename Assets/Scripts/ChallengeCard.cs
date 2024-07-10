@@ -1,74 +1,114 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 using TMPro;
 
-public class ChallengeCard : MonoBehaviour, IPointerClickHandler
+public class ChallengeCard : MonoBehaviour
 {
-    public TextMeshProUGUI challengeNameText;
-    public GameObject expandedChallengeObject;
-    public Button voteButton;
-    public Button expandedChallengeButton;
-
+    public TextMeshProUGUI challengeTitleText;
     private ChallengesManager challengesManager;
-    private bool isExpanded = false;
+    private int challengeIndex;
+    private Button cardButton;
 
-    private void Start()
+    private void Awake()
     {
-        challengesManager = FindObjectOfType<ChallengesManager>();
-
-        if (expandedChallengeObject != null)
-        {
-            expandedChallengeObject.SetActive(false);
-        }
-
-        if (voteButton != null)
-        {
-            voteButton.onClick.AddListener(OnVoteButtonClicked);
-        }
-
-        if (expandedChallengeButton != null)
-        {
-            expandedChallengeButton.onClick.AddListener(ToggleExpand);
-        }
+        cardButton = GetComponent<Button>();
     }
 
-    public void SetChallengeDetails(string challengeName)
+    public void SetUp(ChallengeData data, ChallengesManager manager, int index)
     {
-        if (challengeNameText != null)
-        {
-            challengeNameText.text = string.IsNullOrEmpty(challengeName) ? "Challenge" : challengeName;
-        }
+        challengeTitleText.text = FormatTitle(data.title);
+        challengesManager = manager;
+        challengeIndex = index;
+
+        cardButton.onClick.AddListener(ExpandChallenge);
     }
 
-    public void OnPointerClick(PointerEventData eventData)
+    private void ExpandChallenge()
     {
-        ToggleExpand();
+        challengesManager.ExpandChallenge(challengeIndex);
     }
 
-    private void ToggleExpand()
+    private string FormatTitle(string title)
     {
-        isExpanded = !isExpanded;
-
-        if (expandedChallengeObject != null)
-        {
-            expandedChallengeObject.SetActive(isExpanded);
-        }
-
-        if (isExpanded)
-        {
-            challengesManager.OnChallengeExpanded(this);
-        }
-        else
-        {
-            challengesManager.OnChallengeCollapsed();
-        }
-    }
-
-    private void OnVoteButtonClicked()
-    {
-        int challengeIndex = transform.GetSiblingIndex();
-        challengesManager.OnChallengeSelected(challengeIndex);
-        ToggleExpand();
+        // Split the title into words
+        string[] words = title.Split(' ');
+        
+        // Join the words with line breaks
+        return string.Join("\n", words);
     }
 }
+
+// using UnityEngine;
+// using UnityEngine.UI;
+// using UnityEngine.EventSystems;
+// using TMPro;
+
+// public class ChallengeCard : MonoBehaviour, IPointerClickHandler
+// {
+//     public TextMeshProUGUI challengeNameText;
+//     public GameObject expandedChallengeObject;
+//     public Button voteButton;
+//     public Button expandedChallengeButton;
+
+//     private ChallengesManager challengesManager;
+//     private bool isExpanded = false;
+
+//     private void Start()
+//     {
+//         challengesManager = FindObjectOfType<ChallengesManager>();
+
+//         if (expandedChallengeObject != null)
+//         {
+//             expandedChallengeObject.SetActive(false);
+//         }
+
+//         if (voteButton != null)
+//         {
+//             voteButton.onClick.AddListener(OnVoteButtonClicked);
+//         }
+
+//         if (expandedChallengeButton != null)
+//         {
+//             expandedChallengeButton.onClick.AddListener(ToggleExpand);
+//         }
+//     }
+
+//     public void SetChallengeDetails(string challengeName)
+//     {
+//         if (challengeNameText != null)
+//         {
+//             challengeNameText.text = string.IsNullOrEmpty(challengeName) ? "Challenge" : challengeName;
+//         }
+//     }
+
+//     public void OnPointerClick(PointerEventData eventData)
+//     {
+//         ToggleExpand();
+//     }
+
+//     private void ToggleExpand()
+//     {
+//         isExpanded = !isExpanded;
+
+//         if (expandedChallengeObject != null)
+//         {
+//             expandedChallengeObject.SetActive(isExpanded);
+//         }
+
+//         if (isExpanded)
+//         {
+//             challengesManager.OnChallengeExpanded(this);
+//         }
+//         else
+//         {
+//             challengesManager.OnChallengeCollapsed();
+//         }
+//     }
+
+//     private void OnVoteButtonClicked()
+//     {
+//         int challengeIndex = transform.GetSiblingIndex();
+//         challengesManager.OnChallengeSelected(challengeIndex);
+//         ToggleExpand();
+//     }
+// }

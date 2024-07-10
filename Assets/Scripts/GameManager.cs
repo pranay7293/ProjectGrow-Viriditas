@@ -66,7 +66,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
 
         Vector3 spawnPosition = spawnPoint.position;
-        GameObject characterGO = PhotonNetwork.Instantiate("Character", spawnPosition, Quaternion.identity);
+        GameObject characterGO = PhotonNetwork.Instantiate("Character-" + characterName, spawnPosition, Quaternion.identity);
 
         UniversalCharacterController character = characterGO.GetComponent<UniversalCharacterController>();
         if (character != null)

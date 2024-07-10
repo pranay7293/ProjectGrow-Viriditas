@@ -1,5 +1,7 @@
 using UnityEngine;
 using Photon.Pun;
+using Photon.Realtime;
+using ExitGames.Client.Photon;
 
 public class Karyo_GameCore : MonoBehaviourPunCallbacks
 {
@@ -7,6 +9,7 @@ public class Karyo_GameCore : MonoBehaviourPunCallbacks
 
     public UIManager uiManager;
     public GameManager gameManager;
+    public PlayerListManager playerListManager;
 
     private void Awake()
     {
@@ -21,18 +24,50 @@ public class Karyo_GameCore : MonoBehaviourPunCallbacks
         }
     }
 
+    private void Start()
+    {
+        if (PhotonNetwork.IsConnected)
+        {
+            OnConnectedToMaster();
+        }
+        else
+        {
+            PhotonNetwork.ConnectUsingSettings();
+        }
+    }
+
+    public override void OnConnectedToMaster()
+    {
+        if (PhotonNetwork.InRoom)
+        {
+            OnJoinedRoom();
+        }
+        else
+        {
+            PhotonNetwork.JoinRandomRoom();
+        }
+    }
+
+    public override void OnJoinRandomFailed(short returnCode, string message)
+    {
+        PhotonNetwork.CreateRoom(null, new RoomOptions { MaxPlayers = 5 });
+    }
+
     public override void OnJoinedRoom()
     {
+        playerListManager.UpdatePlayerList();
         uiManager.UpdatePlayerCount(PhotonNetwork.CurrentRoom.PlayerCount);
     }
 
     public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
     {
+        playerListManager.UpdatePlayerList();
         uiManager.UpdatePlayerCount(PhotonNetwork.CurrentRoom.PlayerCount);
     }
 
     public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
     {
+        playerListManager.UpdatePlayerList();
         uiManager.UpdatePlayerCount(PhotonNetwork.CurrentRoom.PlayerCount);
     }
 }

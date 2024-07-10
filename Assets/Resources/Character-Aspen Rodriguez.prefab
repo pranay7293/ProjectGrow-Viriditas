@@ -961,6 +961,7 @@ GameObject:
   - component: {fileID: -9078543048310780754}
   - component: {fileID: 5944958737743392496}
   - component: {fileID: 4096835321216489299}
+  - component: {fileID: -4585138870545368079}
   m_Layer: 18
   m_Name: Character-Aspen Rodriguez
   m_TagString: Untagged
@@ -1117,8 +1118,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Aspen Rodriguez
-  moveSpeed: 5
+  walkSpeed: 5
+  runSpeed: 8
   rotationSpeed: 120
+  jumpHeight: 1
+  gravity: -9.81
 --- !u!114 &4096835321216489299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1142,6 +1146,32 @@ MonoBehaviour:
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
+--- !u!143 &-4585138870545368079
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4834720715969533062}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 2
+  m_Radius: 0.5
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!1 &4857880945265616893
 GameObject:
   m_ObjectHideFlags: 0

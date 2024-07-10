@@ -13,9 +13,12 @@ public class UIManager : MonoBehaviour
     }
 
     public void UpdatePlayerCount(int count)
+{
+    if (playerCountText != null)
     {
         playerCountText.text = "Players: " + count + "/5";
     }
+}
 }
 
 

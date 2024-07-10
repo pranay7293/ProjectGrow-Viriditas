@@ -48,16 +48,15 @@ public class ChallengeLobbyManager : MonoBehaviourPunCallbacks
         playerListManager.UpdatePlayerList();
     }
 
-    private void SelectHub(int index)
-    {
-        // Set the selected hub index in the room properties
-        ExitGames.Client.Photon.Hashtable roomProperties = new ExitGames.Client.Photon.Hashtable();
-        roomProperties["SelectedHubIndex"] = index;
-        PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
+   private void SelectHub(int index)
+{
+    // Set the selected hub index in PlayerPrefs
+    PlayerPrefs.SetInt("SelectedHubIndex", index);
+    PlayerPrefs.Save();
 
-        // Load the Challenges scene
-        PhotonNetwork.LoadLevel("Challenges");
-    }
+    // Load the Challenges scene
+    PhotonNetwork.LoadLevel("Challenges");
+}
 
     private void SetHubButtonsInteractable(bool interactable)
     {
