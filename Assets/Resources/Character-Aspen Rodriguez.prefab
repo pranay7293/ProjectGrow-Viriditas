@@ -1118,6 +1118,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Aspen Rodriguez
+  characterColor: {r: 0.3882353, g: 0.3882353, b: 0.3882353, a: 0}
   walkSpeed: 5
   runSpeed: 8
   rotationSpeed: 120

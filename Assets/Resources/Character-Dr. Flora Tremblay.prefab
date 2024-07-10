@@ -1118,6 +1118,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Dr. Flora Tremblay
+  characterColor: {r: 1, g: 0.6666667, b: 0.9607843, a: 0}
   walkSpeed: 5
   runSpeed: 8
   rotationSpeed: 120

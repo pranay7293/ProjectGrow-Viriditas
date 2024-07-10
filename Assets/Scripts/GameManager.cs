@@ -40,7 +40,6 @@ public class GameManager : MonoBehaviourPunCallbacks
             }
         }
 
-        // Spawn remaining characters as NPCs
         foreach (string characterName in CharacterSelectionManager.characterNames)
         {
             if (!spawnedCharacters.ContainsKey(characterName))
@@ -75,7 +74,8 @@ public class GameManager : MonoBehaviourPunCallbacks
             {
                 characterGO.GetComponent<PhotonView>().TransferOwnership(player);
             }
-            character.photonView.RPC("Initialize", RpcTarget.All, characterName, isPlayerControlled);
+            Color characterColor = character.characterColor;
+            character.photonView.RPC("Initialize", RpcTarget.All, characterName, isPlayerControlled, characterColor.r, characterColor.g, characterColor.b);
             spawnedCharacters[characterName] = character;
         }
         else

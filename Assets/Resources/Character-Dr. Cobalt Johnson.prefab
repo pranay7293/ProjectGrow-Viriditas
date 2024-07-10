@@ -1118,6 +1118,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Dr. Cobalt Johnson
+  characterColor: {r: 0.93333334, g: 0.6313726, b: 0.10980392, a: 0}
   walkSpeed: 5
   runSpeed: 8
   rotationSpeed: 120

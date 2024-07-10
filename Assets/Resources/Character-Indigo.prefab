@@ -1118,6 +1118,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Indigo
+  characterColor: {r: 0.43137255, g: 0.07058824, b: 0.69803923, a: 0}
   walkSpeed: 5
   runSpeed: 8
   rotationSpeed: 120

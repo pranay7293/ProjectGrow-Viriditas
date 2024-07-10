@@ -1118,6 +1118,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Dr. Eden Kapoor
+  characterColor: {r: 0.050980393, g: 0.5254902, b: 0.972549, a: 0}
   walkSpeed: 5
   runSpeed: 8
   rotationSpeed: 120

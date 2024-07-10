@@ -1118,6 +1118,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Sierra Nakamura
+  characterColor: {r: 0.6509804, g: 0.15686275, b: 0.0627451, a: 0}
   walkSpeed: 5
   runSpeed: 8
   rotationSpeed: 120

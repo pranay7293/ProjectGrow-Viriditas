@@ -1118,6 +1118,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: River Osei
+  characterColor: {r: 1, g: 0.20392157, b: 0.85490197, a: 0}
   walkSpeed: 5
   runSpeed: 8
   rotationSpeed: 120

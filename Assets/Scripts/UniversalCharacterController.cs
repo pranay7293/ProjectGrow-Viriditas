@@ -5,6 +5,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 {
     [Header("Character Settings")]
     public string characterName;
+    public Color characterColor = Color.white;
     public float walkSpeed = 5f;
     public float runSpeed = 8f;
     public float rotationSpeed = 120f;
@@ -15,6 +16,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     [Header("Component References")]
     private CharacterController characterController;
     private GameObject cameraRigInstance;
+    private Renderer characterRenderer;
 
     [Header("Movement Variables")]
     private Vector3 moveDirection;
@@ -27,13 +29,20 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
+        characterRenderer = GetComponentInChildren<Renderer>();
     }
 
     [PunRPC]
-    public void Initialize(string name, bool isPlayerControlled)
+    public void Initialize(string name, bool isPlayerControlled, float r, float g, float b)
     {
         characterName = name;
         IsPlayerControlled = isPlayerControlled;
+        characterColor = new Color(r, g, b);
+
+        if (characterRenderer != null)
+        {
+            characterRenderer.material.color = characterColor;
+        }
 
         if (photonView.IsMine && isPlayerControlled)
         {
@@ -134,7 +143,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public string[] GetDialogueOptions()
     {
-        // Placeholder dialogue options
         return new string[]
         {
             "Tell me about your work.",

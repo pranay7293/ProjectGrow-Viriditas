@@ -1118,6 +1118,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Lilith Fernandez
+  characterColor: {r: 1, g: 1, b: 1, a: 0}
   walkSpeed: 5
   runSpeed: 8
   rotationSpeed: 120

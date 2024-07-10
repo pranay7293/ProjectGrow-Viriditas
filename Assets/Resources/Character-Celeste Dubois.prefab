@@ -1118,6 +1118,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Celeste Dubois
+  characterColor: {r: 0.06666667, g: 0.6901961, b: 0.12156863, a: 0}
   walkSpeed: 5
   runSpeed: 8
   rotationSpeed: 120
