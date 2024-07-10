@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 6.943452, g: 3.711434, b: 2.3606608, a: 1}
+  m_IndirectSpecularColor: {r: 6.9389486, g: 3.7109857, b: 2.3628886, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1264,7 +1264,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b66cfa53dc5846588c89d0704312c65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  locationColor: {r: 1, g: 1, b: 1, a: 1}
+  locationColor: {r: 1, g: 0.20392157, b: 0.85490197, a: 0}
 --- !u!1 &278149481
 GameObject:
   m_ObjectHideFlags: 0
@@ -2634,7 +2634,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b66cfa53dc5846588c89d0704312c65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  locationColor: {r: 1, g: 1, b: 1, a: 1}
+  locationColor: {r: 0.06666667, g: 0.6901961, b: 0.12156863, a: 0}
 --- !u!1 &394420039
 GameObject:
   m_ObjectHideFlags: 0
@@ -3730,7 +3730,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b66cfa53dc5846588c89d0704312c65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  locationColor: {r: 0, g: 0, b: 0, a: 1}
+  locationColor: {r: 0, g: 0, b: 0, a: 0}
 --- !u!1 &495262396
 GameObject:
   m_ObjectHideFlags: 0
@@ -5003,7 +5003,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b66cfa53dc5846588c89d0704312c65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  locationColor: {r: 1, g: 1, b: 1, a: 1}
+  locationColor: {r: 1, g: 0.6666667, b: 0.9607843, a: 0}
 --- !u!1 &631383862
 GameObject:
   m_ObjectHideFlags: 0
@@ -6569,7 +6569,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b66cfa53dc5846588c89d0704312c65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  locationColor: {r: 1, g: 1, b: 1, a: 1}
+  locationColor: {r: 0.43137255, g: 0.07058824, b: 0.69803923, a: 0}
 --- !u!1 &711471922
 GameObject:
   m_ObjectHideFlags: 0
@@ -12123,15 +12123,15 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: 5e22c67c443164b66bca99c223111133, type: 2}
     - target: {fileID: 6652841948526535206, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_fontColor.b
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6652841948526535206, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_fontColor.g
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6652841948526535206, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_fontColor.r
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6652841948526535206, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_fontSizeBase
@@ -12143,7 +12143,7 @@ PrefabInstance:
       objectReference: {fileID: 116802541643450836, guid: 5e22c67c443164b66bca99c223111133, type: 2}
     - target: {fileID: 6652841948526535206, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_fontColor32.rgba
-      value: 4294967295
+      value: 4278190080
       objectReference: {fileID: 0}
     - target: {fileID: 6652841948526535206, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_VerticalAlignment
@@ -14048,7 +14048,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b66cfa53dc5846588c89d0704312c65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  locationColor: {r: 1, g: 1, b: 1, a: 1}
+  locationColor: {r: 0.93333334, g: 0.6313726, b: 0.10980392, a: 0}
 --- !u!1 &1565222544
 GameObject:
   m_ObjectHideFlags: 0
@@ -15825,7 +15825,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b66cfa53dc5846588c89d0704312c65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  locationColor: {r: 1, g: 1, b: 1, a: 1}
+  locationColor: {r: 0.6509804, g: 0.15686275, b: 0.0627451, a: 0}
 --- !u!1 &1708125022
 GameObject:
   m_ObjectHideFlags: 0
@@ -16239,7 +16239,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b66cfa53dc5846588c89d0704312c65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  locationColor: {r: 1, g: 1, b: 1, a: 1}
+  locationColor: {r: 0.3882353, g: 0.3882353, b: 0.3882353, a: 0}
 --- !u!1 &1741184711
 GameObject:
   m_ObjectHideFlags: 0
@@ -20566,7 +20566,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b66cfa53dc5846588c89d0704312c65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  locationColor: {r: 1, g: 1, b: 1, a: 1}
+  locationColor: {r: 0.050980393, g: 0.5254902, b: 0.972549, a: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
