@@ -1,46 +1,46 @@
-using UnityEngine;
-using Photon.Pun;
-using KinematicCharacterController;
+// using UnityEngine;
+// using Photon.Pun;
+// using KinematicCharacterController;
 
-public class Player : MonoBehaviourPunCallbacks
-{
-    public string playerName;
-    public float moveSpeed = 5f;
-    public float rotationSpeed = 120f;
+// public class Player : MonoBehaviourPunCallbacks
+// {
+//     public string playerName;
+//     public float moveSpeed = 5f;
+//     public float rotationSpeed = 120f;
 
-    private Vector3 moveDirection;
-    private float rotationY;
-    private InputManager inputManager;
-    private KinematicCharacterMotor motor;
+//     private Vector3 moveDirection;
+//     private float rotationY;
+//     private InputManager inputManager;
+//     private KinematicCharacterMotor motor;
 
-    public void Initialize(string name, KinematicCharacterMotor characterMotor)
-    {
-        playerName = name;
-        motor = characterMotor;
-        inputManager = FindObjectOfType<InputManager>();
-        if (inputManager == null)
-            Debug.LogError("InputManager not found in the scene.");
-    }
+//     public void Initialize(string name, KinematicCharacterMotor characterMotor)
+//     {
+//         playerName = name;
+//         motor = characterMotor;
+//         inputManager = FindObjectOfType<InputManager>();
+//         if (inputManager == null)
+//             Debug.LogError("InputManager not found in the scene.");
+//     }
 
-    private void Update()
-    {
-        if (photonView.IsMine && inputManager != null)
-        {
-            moveDirection = inputManager.PlayerRelativeMoveDirection;
-            rotationY += Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
-        }
-    }
+//     private void Update()
+//     {
+//         if (photonView.IsMine && inputManager != null)
+//         {
+//             moveDirection = inputManager.PlayerRelativeMoveDirection;
+//             rotationY += Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
+//         }
+//     }
 
-    public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
-    {
-        currentVelocity = moveDirection * moveSpeed;
-    }
+//     public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
+//     {
+//         currentVelocity = moveDirection * moveSpeed;
+//     }
 
-    public void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
-    {
-        currentRotation = Quaternion.Euler(0, rotationY, 0);
-    }
-}
+//     public void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
+//     {
+//         currentRotation = Quaternion.Euler(0, rotationY, 0);
+//     }
+// }
 
 // using UnityEngine;
 // using KinematicCharacterController;

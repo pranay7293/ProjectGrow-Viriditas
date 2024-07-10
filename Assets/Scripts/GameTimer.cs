@@ -5,7 +5,7 @@ using Photon.Pun;
 public class GameTimer : MonoBehaviourPunCallbacks
 {
     public TextMeshProUGUI timerText;
-    private float gameTime = 1800f; // 30 minutes in seconds
+    private float gameTime = 900f; // 15 minutes in seconds
 
     private void Update()
     {

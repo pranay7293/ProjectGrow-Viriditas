@@ -36,7 +36,7 @@ public class GameManager : MonoBehaviourPunCallbacks
             if (player.CustomProperties.TryGetValue("SelectedCharacter", out object selectedCharacter))
             {
                 string characterName = (string)selectedCharacter;
-                SpawnCharacter(characterName, true);
+                SpawnCharacter(characterName, true, player);
             }
         }
 
@@ -45,12 +45,12 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             if (!spawnedCharacters.ContainsKey(characterName))
             {
-                SpawnCharacter(characterName, false);
+                SpawnCharacter(characterName, false, null);
             }
         }
     }
 
-    private void SpawnCharacter(string characterName, bool isPlayerControlled)
+    private void SpawnCharacter(string characterName, bool isPlayerControlled, Photon.Realtime.Player player = null)
     {
         if (!characterLocations.TryGetValue(characterName, out string locationName))
         {
@@ -71,6 +71,10 @@ public class GameManager : MonoBehaviourPunCallbacks
         UniversalCharacterController character = characterGO.GetComponent<UniversalCharacterController>();
         if (character != null)
         {
+            if (isPlayerControlled && player != null)
+            {
+                characterGO.GetComponent<PhotonView>().TransferOwnership(player);
+            }
             character.photonView.RPC("Initialize", RpcTarget.All, characterName, isPlayerControlled);
             spawnedCharacters[characterName] = character;
         }

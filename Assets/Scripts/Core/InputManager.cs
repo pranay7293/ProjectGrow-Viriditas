@@ -34,17 +34,64 @@ public class InputManager : MonoBehaviour
     public bool PlayerRunModifier => Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
     public bool PlayerJumpActivate => Input.GetKeyDown(KeyCode.Space);
 
-    public void Update()
+    private void Update()
     {
         if (Input.GetKeyDown(KeyCode.R))
         {
-            UniversalCharacterController localPlayer = FindObjectOfType<UniversalCharacterController>();
-            if (localPlayer != null && localPlayer.photonView.IsMine)
+            UniversalCharacterController localPlayer = FindLocalPlayer();
+            if (localPlayer != null)
             {
-                // Implement dialog initiation or other actions here
-                Debug.Log("Dialog initiated");
+                UniversalCharacterController nearestNPC = FindNearestNPC(localPlayer.transform);
+                if (nearestNPC != null)
+                {
+                    Debug.Log($"Initiating dialogue with {nearestNPC.characterName}");
+                    DialogueManager.Instance.InitiateDialogue(nearestNPC);
+                }
+                else
+                {
+                    Debug.Log("No nearby NPC found");
+                }
+            }
+            else
+            {
+                Debug.Log("Local player not found or not owned");
             }
         }
+    }
+
+    private UniversalCharacterController FindLocalPlayer()
+    {
+        UniversalCharacterController[] characters = FindObjectsOfType<UniversalCharacterController>();
+        foreach (UniversalCharacterController character in characters)
+        {
+            if (character.photonView.IsMine && character.IsPlayerControlled)
+            {
+                return character;
+            }
+        }
+        return null;
+    }
+
+    private UniversalCharacterController FindNearestNPC(Transform playerTransform)
+    {
+        UniversalCharacterController[] characters = FindObjectsOfType<UniversalCharacterController>();
+        UniversalCharacterController nearestNPC = null;
+        float nearestDistance = float.MaxValue;
+
+        foreach (UniversalCharacterController character in characters)
+        {
+            if (!character.IsPlayerControlled && character.IsPlayerInRange(playerTransform))
+            {
+                float distance = Vector3.Distance(playerTransform.position, character.transform.position);
+                if (distance < nearestDistance)
+                {
+                    nearestNPC = character;
+                    nearestDistance = distance;
+                }
+            }
+        }
+
+        return nearestNPC;
     }
 }
 
