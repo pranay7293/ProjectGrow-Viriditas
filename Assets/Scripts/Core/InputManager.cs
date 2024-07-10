@@ -36,25 +36,14 @@ public class InputManager : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.R))
+        UniversalCharacterController localPlayer = FindLocalPlayer();
+        if (localPlayer != null)
         {
-            UniversalCharacterController localPlayer = FindLocalPlayer();
-            if (localPlayer != null)
+            UniversalCharacterController nearestNPC = FindNearestNPC(localPlayer.transform);
+
+            if (Input.GetKeyDown(KeyCode.R) && nearestNPC != null)
             {
-                UniversalCharacterController nearestNPC = FindNearestNPC(localPlayer.transform);
-                if (nearestNPC != null)
-                {
-                    Debug.Log($"Initiating dialogue with {nearestNPC.characterName}");
-                    DialogueManager.Instance.InitiateDialogue(nearestNPC);
-                }
-                else
-                {
-                    Debug.Log("No nearby NPC found");
-                }
-            }
-            else
-            {
-                Debug.Log("Local player not found or not owned");
+                DialogueManager.Instance.InitiateDialogue(nearestNPC);
             }
         }
     }

@@ -10,8 +10,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public float runSpeed = 8f;
     public float rotationSpeed = 120f;
     public float jumpHeight = 1f;
-    public float gravity = -9.81f;
+    public float gravity = -20f;
     public float interactionDistance = 3f;
+    public float rotationSmoothTime = 0.1f;
 
     [Header("Component References")]
     private CharacterController characterController;
@@ -28,6 +29,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void Awake()
     {
+        InitializeComponents();
+    }
+
+    private void InitializeComponents()
+    {
         characterController = GetComponent<CharacterController>();
         characterRenderer = GetComponentInChildren<Renderer>();
     }
@@ -35,21 +41,23 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     [PunRPC]
     public void Initialize(string name, bool isPlayerControlled, float r, float g, float b)
     {
+        SetCharacterProperties(name, isPlayerControlled, new Color(r, g, b));
+        if (photonView.IsMine && isPlayerControlled)
+        {
+            SetupCamera();
+        }
+    }
+
+    private void SetCharacterProperties(string name, bool isPlayerControlled, Color color)
+    {
         characterName = name;
         IsPlayerControlled = isPlayerControlled;
-        characterColor = new Color(r, g, b);
+        characterColor = color;
 
         if (characterRenderer != null)
         {
             characterRenderer.material.color = characterColor;
         }
-
-        if (photonView.IsMine && isPlayerControlled)
-        {
-            SetupCamera();
-        }
-
-        Debug.Log($"Initialized character: {characterName}, IsPlayerControlled: {IsPlayerControlled}, IsMine: {photonView.IsMine}");
     }
 
     private void SetupCamera()
@@ -58,34 +66,31 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (cameraRigPrefab != null)
         {
             cameraRigInstance = Instantiate(cameraRigPrefab, Vector3.zero, Quaternion.identity);
-            
-            if (cameraRigInstance != null)
-            {
-                com.ootii.Cameras.CameraController cameraController = cameraRigInstance.GetComponent<com.ootii.Cameras.CameraController>();
-                if (cameraController != null)
-                {
-                    cameraController.Anchor = this.transform;
-                    KaryoUnityInputSource inputSource = cameraRigInstance.GetComponent<KaryoUnityInputSource>();
-                    if (inputSource == null)
-                    {
-                        inputSource = cameraRigInstance.AddComponent<KaryoUnityInputSource>();
-                    }
-                    cameraController.InputSource = inputSource;
-                }
-                else
-                {
-                    Debug.LogError("CameraController component not found on CameraRig prefab.");
-                }
-            }
-            else
-            {
-                Debug.LogError("Failed to instantiate CameraRig prefab.");
-            }
+            ConfigureCameraController();
         }
-        else
+    }
+
+    private void ConfigureCameraController()
+    {
+        if (cameraRigInstance != null)
         {
-            Debug.LogError("CameraRig prefab not found in Resources folder.");
+            com.ootii.Cameras.CameraController cameraController = cameraRigInstance.GetComponent<com.ootii.Cameras.CameraController>();
+            if (cameraController != null)
+            {
+                cameraController.Anchor = this.transform;
+                EnsureInputSource(cameraController);
+            }
         }
+    }
+
+    private void EnsureInputSource(com.ootii.Cameras.CameraController cameraController)
+    {
+        KaryoUnityInputSource inputSource = cameraRigInstance.GetComponent<KaryoUnityInputSource>();
+        if (inputSource == null)
+        {
+            inputSource = cameraRigInstance.AddComponent<KaryoUnityInputSource>();
+        }
+        cameraController.InputSource = inputSource;
     }
 
     private void Update()
@@ -94,7 +99,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         {
             HandleInput();
             Move();
-            Rotate();
+            UpdateCameraRotation();
         }
     }
 
@@ -111,29 +116,53 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void Move()
     {
-        isGrounded = characterController.isGrounded;
+        UpdateGroundedState();
+        ApplyMovement();
+        ApplyGravity();
+        RotateCharacter();
+    }
 
+    private void UpdateGroundedState()
+    {
+        isGrounded = characterController.isGrounded;
         if (isGrounded && verticalVelocity.y < 0)
         {
             verticalVelocity.y = -2f;
         }
+    }
 
+    private void ApplyMovement()
+    {
+        Vector3 movement = transform.right * moveDirection.x + transform.forward * moveDirection.z;
         float currentSpeed = InputManager.Instance.PlayerRunModifier ? runSpeed : walkSpeed;
-        Vector3 move = transform.right * moveDirection.x + transform.forward * moveDirection.z;
-        characterController.Move(move * currentSpeed * Time.deltaTime);
+        characterController.Move(movement * currentSpeed * Time.deltaTime);
+    }
 
+    private void ApplyGravity()
+    {
         verticalVelocity.y += gravity * Time.deltaTime;
         characterController.Move(verticalVelocity * Time.deltaTime);
+    }
+
+    private void RotateCharacter()
+    {
+        Vector3 movement = transform.right * moveDirection.x + transform.forward * moveDirection.z;
+        if (movement.magnitude > 0.1f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(movement);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        }
+    }
+
+    private void UpdateCameraRotation()
+    {
+        Quaternion cameraRotation = Quaternion.Euler(0, rotationY, 0);
+        transform.rotation = cameraRotation;
     }
 
     private void Jump()
     {
         verticalVelocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-    }
-
-    private void Rotate()
-    {
-        transform.rotation = Quaternion.Euler(0, rotationY, 0);
     }
 
     public bool IsPlayerInRange(Transform playerTransform)
