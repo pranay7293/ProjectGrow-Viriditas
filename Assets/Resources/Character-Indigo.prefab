@@ -1125,7 +1125,10 @@ MonoBehaviour:
   jumpHeight: 1
   gravity: -9.81
   interactionDistance: 3
-  selectionIndicatorPrefab: {fileID: 0}
+  rotationSmoothTime: 0.1
+  characterRole: 
+  characterBackground: 
+  characterPersonality: 
 --- !u!114 &4096835321216489299
 MonoBehaviour:
   m_ObjectHideFlags: 0

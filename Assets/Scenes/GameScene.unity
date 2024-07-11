@@ -3392,7 +3392,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6213516426398710351, guid: 0c136c10dc4904e4fa48fba08faa448a, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6780883922464099104, guid: 0c136c10dc4904e4fa48fba08faa448a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -18270,7 +18270,6 @@ MonoBehaviour:
   - {fileID: 339436506}
   - {fileID: 1735538808}
   - {fileID: 492448436}
-  selectionIndicatorPrefab: {fileID: 6685046049609034641, guid: 2a843f84a518c47f29e6aaf0a6d71d7b, type: 3}
 --- !u!4 &2056974758
 Transform:
   m_ObjectHideFlags: 0
