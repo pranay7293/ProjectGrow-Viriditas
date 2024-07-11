@@ -1,45 +1,45 @@
-using UnityEngine;
-using Photon.Pun;
-using KinematicCharacterController;
+// using UnityEngine;
+// using Photon.Pun;
+// using KinematicCharacterController;
 
-public class NPC : MonoBehaviourPunCallbacks
-{
-    public string npcName;
-    public float interactionDistance = 3f;
-    private KinematicCharacterMotor motor;
+// public class NPC : MonoBehaviourPunCallbacks
+// {
+//     public string npcName;
+//     public float interactionDistance = 3f;
+//     private KinematicCharacterMotor motor;
 
-    public string[] dialogueOptions = new string[3] {
-        "Default option 1",
-        "Default option 2",
-        "Default option 3"
-    };
+//     public string[] dialogueOptions = new string[3] {
+//         "Default option 1",
+//         "Default option 2",
+//         "Default option 3"
+//     };
 
-    public void Initialize(string name, KinematicCharacterMotor characterMotor)
-    {
-        npcName = name;
-        motor = characterMotor;
-    }
+//     public void Initialize(string name, KinematicCharacterMotor characterMotor)
+//     {
+//         npcName = name;
+//         motor = characterMotor;
+//     }
 
-    public bool IsPlayerInRange(Transform playerTransform)
-    {
-        return Vector3.Distance(transform.position, playerTransform.position) <= interactionDistance;
-    }
+//     public bool IsPlayerInRange(Transform playerTransform)
+//     {
+//         return Vector3.Distance(transform.position, playerTransform.position) <= interactionDistance;
+//     }
 
-    public string[] GetDialogueOptions()
-    {
-        return dialogueOptions;
-    }
+//     public string[] GetDialogueOptions()
+//     {
+//         return dialogueOptions;
+//     }
 
-    public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
-    {
-        currentVelocity = Vector3.zero;
-    }
+//     public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
+//     {
+//         currentVelocity = Vector3.zero;
+//     }
 
-    public void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
-    {
-        // NPCs don't rotate for now
-    }
-}
+//     public void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
+//     {
+//         // NPCs don't rotate for now
+//     }
+// }
 
 // using System.Collections.Generic;
 // using UnityEngine;
