@@ -1,5 +1,6 @@
 using UnityEngine;
 using Photon.Pun;
+using System.Collections.Generic;
 
 public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObservable
 {
@@ -14,6 +15,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public float interactionDistance = 3f;
     public float rotationSmoothTime = 0.1f;
 
+    [Header("AI Settings")]
+    public string characterRole;
+    public string characterBackground;
+    [TextArea(3, 10)]
+    public string characterPersonality;
+
     [Header("Component References")]
     private CharacterController characterController;
     private GameObject cameraRigInstance;
@@ -26,6 +33,19 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private bool isGrounded;
 
     public bool IsPlayerControlled { get; private set; }
+    
+    private AIController aiController;
+    private List<string> memories = new List<string>();
+
+    public enum CharacterState
+    {
+        Idle,
+        Moving,
+        Interacting,
+        PerformingAction
+    }
+
+    private CharacterState currentState = CharacterState.Idle;
 
     private void Awake()
     {
@@ -36,6 +56,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         characterController = GetComponent<CharacterController>();
         characterRenderer = GetComponentInChildren<Renderer>();
+        aiController = gameObject.AddComponent<AIController>();
     }
 
     [PunRPC]
@@ -45,6 +66,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (photonView.IsMine && isPlayerControlled)
         {
             SetupCamera();
+        }
+        else if (!isPlayerControlled)
+        {
+            aiController.Initialize(this);
         }
     }
 
@@ -95,20 +120,38 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void Update()
     {
-        if (photonView.IsMine && IsPlayerControlled)
+        if (photonView.IsMine)
         {
-            HandleInput();
+            if (IsPlayerControlled)
+            {
+                HandlePlayerInput();
+            }
+            else
+            {
+                HandleAIInput();
+            }
             Move();
             UpdateCameraRotation();
         }
     }
 
-    private void HandleInput()
+    private void HandlePlayerInput()
     {
         moveDirection = InputManager.Instance.PlayerRelativeMoveDirection;
         rotationY += Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
 
         if (InputManager.Instance.PlayerJumpActivate && isGrounded)
+        {
+            Jump();
+        }
+    }
+
+    private void HandleAIInput()
+    {
+        Vector3 targetPosition = aiController.GetTargetPosition();
+        moveDirection = (targetPosition - transform.position).normalized;
+        
+        if (aiController.ShouldJump() && isGrounded)
         {
             Jump();
         }
@@ -134,7 +177,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void ApplyMovement()
     {
         Vector3 movement = transform.right * moveDirection.x + transform.forward * moveDirection.z;
-        float currentSpeed = InputManager.Instance.PlayerRunModifier ? runSpeed : walkSpeed;
+        float currentSpeed = IsPlayerControlled && InputManager.Instance.PlayerRunModifier ? runSpeed : walkSpeed;
         characterController.Move(movement * currentSpeed * Time.deltaTime);
     }
 
@@ -156,8 +199,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void UpdateCameraRotation()
     {
-        Quaternion cameraRotation = Quaternion.Euler(0, rotationY, 0);
-        transform.rotation = cameraRotation;
+        if (IsPlayerControlled)
+        {
+            Quaternion cameraRotation = Quaternion.Euler(0, rotationY, 0);
+            transform.rotation = cameraRotation;
+        }
     }
 
     private void Jump()
@@ -172,12 +218,43 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public string[] GetDialogueOptions()
     {
-        return new string[]
+        if (IsPlayerControlled)
         {
-            "Tell me about your work.",
-            "What's your opinion on the current challenge?",
-            "How can we collaborate?"
-        };
+            return new string[]
+            {
+                "Tell me about your work.",
+                "What's your opinion on the current challenge?",
+                "How can we collaborate?"
+            };
+        }
+        else
+        {
+            return aiController.GetDialogueOptions();
+        }
+    }
+
+    public void AddMemory(string memory)
+    {
+        memories.Add(memory);
+        if (memories.Count > 10) // Limit the number of memories
+        {
+            memories.RemoveAt(0);
+        }
+    }
+
+    public List<string> GetMemories()
+    {
+        return new List<string>(memories);
+    }
+
+    public void SetState(CharacterState newState)
+    {
+        currentState = newState;
+    }
+
+    public CharacterState GetState()
+    {
+        return currentState;
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
@@ -186,11 +263,13 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         {
             stream.SendNext(transform.position);
             stream.SendNext(transform.rotation);
+            stream.SendNext((int)currentState);
         }
         else
         {
             transform.position = (Vector3)stream.ReceiveNext();
             transform.rotation = (Quaternion)stream.ReceiveNext();
+            currentState = (CharacterState)stream.ReceiveNext();
         }
     }
 
