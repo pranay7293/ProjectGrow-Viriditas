@@ -1,6 +1,7 @@
 using UnityEngine;
 using Photon.Pun;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObservable
 {
@@ -21,6 +22,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     [TextArea(3, 10)]
     public string characterPersonality;
 
+    private AIManager aiManager;
+
     [Header("Component References")]
     private CharacterController characterController;
     private GameObject cameraRigInstance;
@@ -33,9 +36,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private bool isGrounded;
 
     public bool IsPlayerControlled { get; private set; }
-    
-    private AIController aiController;
-    private List<string> memories = new List<string>();
 
     public enum CharacterState
     {
@@ -56,7 +56,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         characterController = GetComponent<CharacterController>();
         characterRenderer = GetComponentInChildren<Renderer>();
-        aiController = gameObject.AddComponent<AIController>();
+        aiManager = GetComponent<AIManager>();
     }
 
     [PunRPC]
@@ -69,7 +69,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
         else if (!isPlayerControlled)
         {
-            aiController.Initialize(this);
+            aiManager.Initialize(this);
         }
     }
 
@@ -148,10 +148,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void HandleAIInput()
     {
-        Vector3 targetPosition = aiController.GetTargetPosition();
+        Vector3 targetPosition = aiManager.GetTargetPosition();
         moveDirection = (targetPosition - transform.position).normalized;
         
-        if (aiController.ShouldJump() && isGrounded)
+        if (aiManager.ShouldJump() && isGrounded)
         {
             Jump();
         }
@@ -216,35 +216,15 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return Vector3.Distance(transform.position, playerTransform.position) <= interactionDistance;
     }
 
-    public string[] GetDialogueOptions()
+    public async Task<string[]> GetDialogueOptions()
     {
-        if (IsPlayerControlled)
+        if (photonView.IsMine)
         {
-            return new string[]
-            {
-                "Tell me about your work.",
-                "What's your opinion on the current challenge?",
-                "How can we collaborate?"
-            };
+            string prompt = $"Generate 3 short dialogue options for {characterName}. Each option should be a single sentence. Separate the options with a newline character.";
+            string response = await OpenAIService.Instance.GetChatCompletionAsync(prompt);
+            return response.Split('\n');
         }
-        else
-        {
-            return aiController.GetDialogueOptions();
-        }
-    }
-
-    public void AddMemory(string memory)
-    {
-        memories.Add(memory);
-        if (memories.Count > 10) // Limit the number of memories
-        {
-            memories.RemoveAt(0);
-        }
-    }
-
-    public List<string> GetMemories()
-    {
-        return new List<string>(memories);
+        return new string[0];
     }
 
     public void SetState(CharacterState newState)

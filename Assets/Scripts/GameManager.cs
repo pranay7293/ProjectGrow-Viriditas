@@ -50,39 +50,53 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     private void SpawnCharacter(string characterName, bool isPlayerControlled, Photon.Realtime.Player player = null)
+{
+    if (!characterLocations.TryGetValue(characterName, out string locationName))
     {
-        if (!characterLocations.TryGetValue(characterName, out string locationName))
+        Debug.LogError($"No location found for character: {characterName}");
+        return;
+    }
+
+    Transform spawnPoint = GetSpawnPointByName(locationName);
+    if (spawnPoint == null)
+    {
+        Debug.LogError($"No spawn point found for location: {locationName}");
+        return;
+    }
+
+    Vector3 spawnPosition = spawnPoint.position;
+    GameObject characterGO = PhotonNetwork.Instantiate("Character-" + characterName, spawnPosition, Quaternion.identity);
+
+    UniversalCharacterController character = characterGO.GetComponent<UniversalCharacterController>();
+    if (character != null)
+    {
+        if (isPlayerControlled && player != null)
         {
-            Debug.LogError($"No location found for character: {characterName}");
-            return;
+            characterGO.GetComponent<PhotonView>().TransferOwnership(player);
         }
+        Color characterColor = character.characterColor;
+        character.photonView.RPC("Initialize", RpcTarget.All, characterName, isPlayerControlled, characterColor.r, characterColor.g, characterColor.b);
+        spawnedCharacters[characterName] = character;
 
-        Transform spawnPoint = GetSpawnPointByName(locationName);
-        if (spawnPoint == null)
+        // Initialize AI components if it's an AI-controlled character
+        if (!isPlayerControlled)
         {
-            Debug.LogError($"No spawn point found for location: {locationName}");
-            return;
-        }
-
-        Vector3 spawnPosition = spawnPoint.position;
-        GameObject characterGO = PhotonNetwork.Instantiate("Character-" + characterName, spawnPosition, Quaternion.identity);
-
-        UniversalCharacterController character = characterGO.GetComponent<UniversalCharacterController>();
-        if (character != null)
-        {
-            if (isPlayerControlled && player != null)
+            AIManager aiManager = characterGO.GetComponent<AIManager>();
+            if (aiManager != null)
             {
-                characterGO.GetComponent<PhotonView>().TransferOwnership(player);
+                aiManager.Initialize(character);
             }
-            Color characterColor = character.characterColor;
-            character.photonView.RPC("Initialize", RpcTarget.All, characterName, isPlayerControlled, characterColor.r, characterColor.g, characterColor.b);
-            spawnedCharacters[characterName] = character;
-        }
-        else
-        {
-            Debug.LogError($"UniversalCharacterController component not found on spawned character {characterName}");
+            else
+            {
+                Debug.LogError($"AIManager component not found on spawned character {characterName}");
+            }
         }
     }
+    else
+    {
+        Debug.LogError($"UniversalCharacterController component not found on spawned character {characterName}");
+    }
+}
 
     private Transform GetSpawnPointByName(string locationName)
     {

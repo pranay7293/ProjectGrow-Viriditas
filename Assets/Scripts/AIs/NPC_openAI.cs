@@ -1,3 +1,27 @@
+using UnityEngine;
+using System.Threading.Tasks;
+
+public class NPC_openAI : MonoBehaviour
+{
+    private NPC_Data npcData;
+    private OpenAIService openAIService;
+
+    public void Initialize(NPC_Data data)
+    {
+        npcData = data;
+        openAIService = OpenAIService.Instance;
+    }
+
+    public async Task<string[]> GetDialogueOptions()
+    {
+        string characterContext = $"Character: {npcData.GetCharacterName()}\nRole: {npcData.GetCharacterRole()}\nPersonality: {npcData.GetCharacterPersonality()}";
+        string prompt = $"{characterContext}\n\nGenerate 3 short dialogue options for this character. Each option should be a single sentence. Separate the options with a newline character.";
+        
+        string response = await openAIService.GetChatCompletionAsync(prompt);
+        return response.Split('\n');
+    }
+}
+
 // // TODO: Reimplement OpenAI functionality for advanced NPC behavior in future iterations
 
 // using System.Collections.Generic;

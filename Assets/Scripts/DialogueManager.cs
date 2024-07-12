@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Photon.Pun;
+using System.Threading.Tasks;
 
 public class DialogueManager : MonoBehaviourPunCallbacks
 {
@@ -38,14 +39,14 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     }
 
     [PunRPC]
-    private void RPC_OpenDialogue(int npcViewID)
+    private async void RPC_OpenDialogue(int npcViewID)
     {
         UniversalCharacterController npc = PhotonView.Find(npcViewID).GetComponent<UniversalCharacterController>();
         if (npc != null)
         {
             currentNPC = npc;
             npcNameText.text = npc.characterName;
-            string[] options = npc.GetDialogueOptions();
+            string[] options = await npc.GetDialogueOptions();
 
             for (int i = 0; i < optionButtons.Length; i++)
             {

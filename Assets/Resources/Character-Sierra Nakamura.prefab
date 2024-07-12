@@ -962,6 +962,10 @@ GameObject:
   - component: {fileID: 5944958737743392496}
   - component: {fileID: 4096835321216489299}
   - component: {fileID: 8781363914460733196}
+  - component: {fileID: 5336010624425553291}
+  - component: {fileID: 3141336417960345523}
+  - component: {fileID: -6814745046627821925}
+  - component: {fileID: 1142075385655038890}
   m_Layer: 18
   m_Name: Character-Sierra Nakamura
   m_TagString: Untagged
@@ -1126,6 +1130,9 @@ MonoBehaviour:
   gravity: -9.81
   interactionDistance: 3
   rotationSmoothTime: 0.1
+  characterRole: 
+  characterBackground: 
+  characterPersonality: 
 --- !u!114 &4096835321216489299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1175,6 +1182,54 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &5336010624425553291
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4834720715969533062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ed10f2d34fdf4a568d5d2358cc55553, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &3141336417960345523
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4834720715969533062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e726f43f7e3a49e4928040da9336870, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &-6814745046627821925
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4834720715969533062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9fde1dd9e988e4e23a1efd41dea8f8f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1142075385655038890
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4834720715969533062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96042df38dfde4f44be4685b5229949a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &4857880945265616893
 GameObject:
   m_ObjectHideFlags: 0
