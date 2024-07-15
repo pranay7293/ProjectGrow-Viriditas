@@ -1126,10 +1126,7 @@ MonoBehaviour:
   walkSpeed: 5
   runSpeed: 8
   rotationSpeed: 120
-  jumpHeight: 1
-  gravity: -9.81
   interactionDistance: 3
-  rotationSmoothTime: 0.1
   characterRole: 
   characterBackground: 
   characterPersonality: 

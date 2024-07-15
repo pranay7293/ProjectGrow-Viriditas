@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
+using System.Collections;
+using System.Collections.Generic;
 
 public class NPC_Behavior : MonoBehaviour
 {
@@ -10,6 +12,17 @@ public class NPC_Behavior : MonoBehaviour
     private float decisionCooldown = 10f;
     private float lastDecisionTime;
     private bool isInitialized = false;
+    private float stayDuration = 30f; 
+    private float stayTimer = 0f;
+    private float moveDelay = 0f;
+
+    private List<string> locationNames = new List<string>
+    {
+        "Medical Bay", "Think Tank", "Media Center", "Innovation Hub", "Maker Space",
+        "Research Lab", "Sound Studio", "Gallery", "Biofoundry", "Space Center"
+    };
+
+    private string currentLocation;
 
     public void Initialize(UniversalCharacterController controller, NPC_Data data)
     {
@@ -22,6 +35,7 @@ public class NPC_Behavior : MonoBehaviour
         }
         navMeshAgent.speed = characterController.walkSpeed;
         isInitialized = true;
+        currentLocation = GetClosestLocation(transform.position);
     }
 
     public void UpdateBehavior()
@@ -38,14 +52,62 @@ public class NPC_Behavior : MonoBehaviour
 
     private void MakeDecision()
     {
+        if (stayTimer > 0)
+        {
+            stayTimer -= Time.deltaTime;
+            return;
+        }
+
+        if (moveDelay > 0)
+        {
+            moveDelay -= Time.deltaTime;
+            return;
+        }
+
         lastDecisionTime = Time.time;
-        // TODO: Implement decision-making logic here
-        // You can use npcData and call NPC_openAI methods to generate decisions
+        string randomLocation = GetRandomUnoccupiedLocation();
+        Vector3 destination = LocationManager.GetLocationPosition(randomLocation);
+        
+        if (destination != Vector3.zero)
+        {
+            navMeshAgent.SetDestination(destination);
+            Debug.Log($"{characterController.characterName} is moving to {randomLocation}");
+            currentLocation = randomLocation;
+            stayTimer = stayDuration;
+            moveDelay = Random.Range(1f, 5f); // Random delay before next move
+        }
+    }
+
+    private string GetRandomUnoccupiedLocation()
+    {
+        List<string> availableLocations = new List<string>(locationNames);
+        availableLocations.Remove(currentLocation);
+
+        foreach (var character in GameManager.Instance.GetAllCharacters())
+        {
+            if (character != this.characterController)
+            {
+                NPC_Behavior npcBehavior = character.GetComponent<NPC_Behavior>();
+                if (npcBehavior != null)
+                {
+                    availableLocations.Remove(npcBehavior.currentLocation);
+                }
+            }
+        }
+
+        if (availableLocations.Count > 0)
+        {
+            return availableLocations[Random.Range(0, availableLocations.Count)];
+        }
+        else
+        {
+            return locationNames[Random.Range(0, locationNames.Count)];
+        }
     }
 
     private void UpdateState()
     {
-        if (navMeshAgent.remainingDistance < 0.1f)
+        if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
         {
             characterController.SetState(UniversalCharacterController.CharacterState.Idle);
         }
@@ -62,11 +124,27 @@ public class NPC_Behavior : MonoBehaviour
 
     public bool ShouldJump()
     {
-        // TODO: Implement jump logic if needed
         return false;
     }
 
-    // TODO: Add methods for moving to locations, interacting with characters, etc.
+    private string GetClosestLocation(Vector3 position)
+    {
+        string closest = locationNames[0];
+        float minDistance = float.MaxValue;
+
+        foreach (string location in locationNames)
+        {
+            Vector3 locationPosition = LocationManager.GetLocationPosition(location);
+            float distance = Vector3.Distance(position, locationPosition);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                closest = location;
+            }
+        }
+
+        return closest;
+    }
 }
 
 // // this tracks what the NPC is doing right now

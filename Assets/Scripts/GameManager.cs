@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public class GameManager : MonoBehaviourPunCallbacks
 {
+    public static GameManager Instance { get; private set; }
+
     public Transform[] spawnPoints;
     private Dictionary<string, UniversalCharacterController> spawnedCharacters = new Dictionary<string, UniversalCharacterController>();
 
@@ -20,6 +22,19 @@ public class GameManager : MonoBehaviourPunCallbacks
         {"River Osei", "Sound Studio"},
         {"Sierra Nakamura", "Innovation Hub"}
     };
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
 
     private void Start()
     {
@@ -78,7 +93,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         character.photonView.RPC("Initialize", RpcTarget.All, characterName, isPlayerControlled, characterColor.r, characterColor.g, characterColor.b);
         spawnedCharacters[characterName] = character;
 
-        // Initialize AI components if it's an AI-controlled character
+        // Initialize AIManager for non-player-controlled characters
         if (!isPlayerControlled)
         {
             AIManager aiManager = characterGO.GetComponent<AIManager>();
@@ -109,8 +124,21 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
         return null;
     }
-}
 
+    public UniversalCharacterController GetCharacterByName(string characterName)
+    {
+        if (spawnedCharacters.TryGetValue(characterName, out UniversalCharacterController character))
+        {
+            return character;
+        }
+        return null;
+    }
+
+    public List<UniversalCharacterController> GetAllCharacters()
+    {
+        return new List<UniversalCharacterController>(spawnedCharacters.Values);
+    }
+}
 
 // using UnityEngine;
 // using Photon.Pun;

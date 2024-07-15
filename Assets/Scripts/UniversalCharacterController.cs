@@ -1,6 +1,5 @@
 using UnityEngine;
 using Photon.Pun;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObservable
@@ -11,10 +10,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public float walkSpeed = 5f;
     public float runSpeed = 8f;
     public float rotationSpeed = 120f;
-    public float jumpHeight = 1f;
-    public float gravity = -20f;
     public float interactionDistance = 3f;
-    public float rotationSmoothTime = 0.1f;
 
     [Header("AI Settings")]
     public string characterRole;
@@ -23,17 +19,13 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public string characterPersonality;
 
     private AIManager aiManager;
-
-    [Header("Component References")]
     private CharacterController characterController;
+    private UnityEngine.AI.NavMeshAgent navMeshAgent;
     private GameObject cameraRigInstance;
     private Renderer characterRenderer;
 
-    [Header("Movement Variables")]
     private Vector3 moveDirection;
     private float rotationY;
-    private Vector3 verticalVelocity;
-    private bool isGrounded;
 
     public bool IsPlayerControlled { get; private set; }
 
@@ -55,6 +47,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void InitializeComponents()
     {
         characterController = GetComponent<CharacterController>();
+        navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
         characterRenderer = GetComponentInChildren<Renderer>();
         aiManager = GetComponent<AIManager>();
     }
@@ -63,13 +56,16 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public void Initialize(string name, bool isPlayerControlled, float r, float g, float b)
     {
         SetCharacterProperties(name, isPlayerControlled, new Color(r, g, b));
-        if (photonView.IsMine && isPlayerControlled)
+        if (photonView.IsMine)
         {
-            SetupCamera();
-        }
-        else if (!isPlayerControlled)
-        {
-            aiManager.Initialize(this);
+            if (isPlayerControlled)
+            {
+                SetupPlayerControlled();
+            }
+            else
+            {
+                SetupAIControlled();
+            }
         }
     }
 
@@ -83,6 +79,20 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         {
             characterRenderer.material.color = characterColor;
         }
+    }
+
+    private void SetupPlayerControlled()
+    {
+        SetupCamera();
+        navMeshAgent.enabled = false;
+        characterController.enabled = true;
+    }
+
+    private void SetupAIControlled()
+    {
+        aiManager.Initialize(this);
+        navMeshAgent.enabled = true;
+        characterController.enabled = false;
     }
 
     private void SetupCamera()
@@ -125,13 +135,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             if (IsPlayerControlled)
             {
                 HandlePlayerInput();
+                MovePlayer();
             }
             else
             {
-                HandleAIInput();
+                HandleAIMovement();
             }
-            Move();
-            UpdateCameraRotation();
         }
     }
 
@@ -139,76 +148,57 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         moveDirection = InputManager.Instance.PlayerRelativeMoveDirection;
         rotationY += Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
-
-        if (InputManager.Instance.PlayerJumpActivate && isGrounded)
-        {
-            Jump();
-        }
     }
 
-    private void HandleAIInput()
-    {
-        Vector3 targetPosition = aiManager.GetTargetPosition();
-        moveDirection = (targetPosition - transform.position).normalized;
-        
-        if (aiManager.ShouldJump() && isGrounded)
-        {
-            Jump();
-        }
-    }
-
-    private void Move()
-    {
-        UpdateGroundedState();
-        ApplyMovement();
-        ApplyGravity();
-        RotateCharacter();
-    }
-
-    private void UpdateGroundedState()
-    {
-        isGrounded = characterController.isGrounded;
-        if (isGrounded && verticalVelocity.y < 0)
-        {
-            verticalVelocity.y = -2f;
-        }
-    }
-
-    private void ApplyMovement()
+    private void MovePlayer()
     {
         Vector3 movement = transform.right * moveDirection.x + transform.forward * moveDirection.z;
-        float currentSpeed = IsPlayerControlled && InputManager.Instance.PlayerRunModifier ? runSpeed : walkSpeed;
+        float currentSpeed = InputManager.Instance.PlayerRunModifier ? runSpeed : walkSpeed;
         characterController.Move(movement * currentSpeed * Time.deltaTime);
-    }
 
-    private void ApplyGravity()
-    {
-        verticalVelocity.y += gravity * Time.deltaTime;
-        characterController.Move(verticalVelocity * Time.deltaTime);
-    }
-
-    private void RotateCharacter()
-    {
-        Vector3 movement = transform.right * moveDirection.x + transform.forward * moveDirection.z;
         if (movement.magnitude > 0.1f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(movement);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
+
+        Quaternion cameraRotation = Quaternion.Euler(0, rotationY, 0);
+        transform.rotation = cameraRotation;
     }
 
-    private void UpdateCameraRotation()
+    private void HandleAIMovement()
     {
-        if (IsPlayerControlled)
+        // AI movement is handled by the NavMeshAgent component
+        if (currentState == CharacterState.Moving)
         {
-            Quaternion cameraRotation = Quaternion.Euler(0, rotationY, 0);
-            transform.rotation = cameraRotation;
+            navMeshAgent.isStopped = false;
+        }
+        else
+        {
+            navMeshAgent.isStopped = true;
         }
     }
 
-    private void Jump()
+    private void OnCollisionEnter(Collision collision)
     {
-        verticalVelocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        if (IsPlayerControlled)
+        {
+            // Ignore collisions with NPCs
+            UniversalCharacterController otherCharacter = collision.gameObject.GetComponent<UniversalCharacterController>();
+            if (otherCharacter != null && !otherCharacter.IsPlayerControlled)
+            {
+                Physics.IgnoreCollision(GetComponent<Collider>(), collision.collider);
+            }
+        }
+    }
+
+    public void SetDestination(Vector3 destination)
+    {
+        if (!IsPlayerControlled && navMeshAgent != null)
+        {
+            navMeshAgent.SetDestination(destination);
+            currentState = CharacterState.Moving;
+        }
     }
 
     public bool IsPlayerInRange(Transform playerTransform)
@@ -218,11 +208,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public async Task<string[]> GetDialogueOptions()
     {
-        if (photonView.IsMine)
+        if (!IsPlayerControlled && aiManager != null)
         {
-            string prompt = $"Generate 3 short dialogue options for {characterName}. Each option should be a single sentence. Separate the options with a newline character.";
-            string response = await OpenAIService.Instance.GetChatCompletionAsync(prompt);
-            return response.Split('\n');
+            return await aiManager.GetDialogueOptions();
         }
         return new string[0];
     }
