@@ -1,16 +1,25 @@
 using UnityEngine;
 using Photon.Pun;
 using System.Collections.Generic;
+using TMPro;
 
 public class GameplayManager : MonoBehaviourPunCallbacks
 {
     public static GameplayManager Instance { get; private set; }
 
     [SerializeField] private float challengeDuration = 1800f; // 30 minutes
-    private float remainingTime;
+    [SerializeField] private TextMeshProUGUI timerText;
+    [SerializeField] private TextMeshProUGUI challengeText;
+    [SerializeField] private EmergentScenarioGenerator scenarioGenerator;
+    [SerializeField] private float scenarioGenerationInterval = 300f; // 5 minutes
+    private float lastScenarioTime;
 
+    private List<string> recentPlayerActions = new List<string>();
+
+    private float remainingTime;
     private string currentChallenge;
     private Dictionary<string, int> playerScores = new Dictionary<string, int>();
+    private int collectiveScore = 0;
 
     private void Awake()
     {
@@ -38,6 +47,7 @@ public class GameplayManager : MonoBehaviourPunCallbacks
         if (PhotonNetwork.IsMasterClient)
         {
             UpdateChallengeTime();
+            CheckForNewScenario();
         }
     }
 
@@ -50,7 +60,10 @@ public class GameplayManager : MonoBehaviourPunCallbacks
 
     private string GetSelectedChallenge()
     {
-        // Implement logic to get the selected challenge from previous scenes
+        if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("SelectedChallengeTitle", out object challengeTitle))
+        {
+            return (string)challengeTitle;
+        }
         return "Default Challenge";
     }
 
@@ -61,6 +74,46 @@ public class GameplayManager : MonoBehaviourPunCallbacks
         {
             EndChallenge();
         }
+        else
+        {
+            photonView.RPC("UpdateTimer", RpcTarget.All, remainingTime);
+        }
+    }
+
+     private async void CheckForNewScenario()
+    {
+        if (Time.time - lastScenarioTime >= scenarioGenerationInterval)
+        {
+            lastScenarioTime = Time.time;
+            string newScenario = await scenarioGenerator.GenerateScenario(currentChallenge, recentPlayerActions);
+            scenarioGenerator.ApplyScenario(newScenario);
+            recentPlayerActions.Clear();
+        }
+    }
+
+    public void AddPlayerAction(string action)
+    {
+        recentPlayerActions.Add(action);
+        if (recentPlayerActions.Count > 5) // Keep only the 5 most recent actions
+        {
+            recentPlayerActions.RemoveAt(0);
+        }
+    }
+
+    [PunRPC]
+    private void RPC_NotifyNewScenario(string scenario)
+    {
+        // TODO: Display the new scenario to players
+        Debug.Log($"New scenario: {scenario}");
+    }
+
+    [PunRPC]
+    private void UpdateTimer(float time)
+    {
+        remainingTime = time;
+        int minutes = Mathf.FloorToInt(remainingTime / 60f);
+        int seconds = Mathf.FloorToInt(remainingTime % 60f);
+        timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
 
     private void EndChallenge()
@@ -74,13 +127,16 @@ public class GameplayManager : MonoBehaviourPunCallbacks
     {
         currentChallenge = challenge;
         remainingTime = time;
-        // Update UI or other necessary elements
+        challengeText.text = currentChallenge;
+        UpdateTimer(time);
     }
 
     [PunRPC]
     private void ShowResults()
     {
         // Implement results display logic
+        Debug.Log("Challenge ended. Displaying results...");
+        // TODO: Show a results screen with player scores and collective score
     }
 
     public void UpdatePlayerScore(string playerName, int score)
@@ -96,11 +152,27 @@ public class GameplayManager : MonoBehaviourPunCallbacks
         }
     }
 
+    public void UpdateCollectiveScore(int points)
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            collectiveScore += points;
+            photonView.RPC("SyncCollectiveScore", RpcTarget.All, collectiveScore);
+        }
+    }
+
     [PunRPC]
     private void SyncPlayerScore(string playerName, int score)
     {
         playerScores[playerName] = score;
-        // Update UI or other necessary elements
+        // TODO: Update UI to show player scores
+    }
+
+    [PunRPC]
+    private void SyncCollectiveScore(int score)
+    {
+        collectiveScore = score;
+        // TODO: Update UI to show collective score
     }
 
     public float GetRemainingTime()
@@ -116,5 +188,10 @@ public class GameplayManager : MonoBehaviourPunCallbacks
     public Dictionary<string, int> GetPlayerScores()
     {
         return new Dictionary<string, int>(playerScores);
+    }
+
+    public int GetCollectiveScore()
+    {
+        return collectiveScore;
     }
 }

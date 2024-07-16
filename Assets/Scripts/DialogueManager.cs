@@ -46,7 +46,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         {
             currentNPC = npc;
             npcNameText.text = npc.characterName;
-            string[] options = await npc.GetDialogueOptions();
+            string[] options = await npc.GetGenerativeChoices();
 
             for (int i = 0; i < optionButtons.Length; i++)
             {
@@ -54,6 +54,9 @@ public class DialogueManager : MonoBehaviourPunCallbacks
                 {
                     optionTexts[i].text = options[i];
                     optionButtons[i].gameObject.SetActive(true);
+                    int index = i;
+                    optionButtons[i].onClick.RemoveAllListeners();
+                    optionButtons[i].onClick.AddListener(() => SelectDialogueOption(index));
                 }
                 else
                 {
@@ -67,7 +70,14 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     public void SelectDialogueOption(int optionIndex)
     {
-        Debug.Log($"Selected option {optionIndex + 1} for NPC {currentNPC.characterName}");
+        if (currentNPC != null)
+        {
+            AIManager aiManager = currentNPC.GetComponent<AIManager>();
+            if (aiManager != null)
+            {
+                aiManager.MakeDecision(optionIndex);
+            }
+        }
         CloseDialogue();
     }
 

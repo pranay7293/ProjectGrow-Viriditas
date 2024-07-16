@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.AI;
-using System.Collections;
 using System.Collections.Generic;
 
 public class NPC_Behavior : MonoBehaviour
@@ -11,18 +10,13 @@ public class NPC_Behavior : MonoBehaviour
 
     private float decisionCooldown = 10f;
     private float lastDecisionTime;
-    private bool isInitialized = false;
-    private float stayDuration = 30f; 
-    private float stayTimer = 0f;
-    private float moveDelay = 0f;
+    private string currentLocation;
 
     private List<string> locationNames = new List<string>
     {
         "Medical Bay", "Think Tank", "Media Center", "Innovation Hub", "Maker Space",
         "Research Lab", "Sound Studio", "Gallery", "Biofoundry", "Space Center"
     };
-
-    private string currentLocation;
 
     public void Initialize(UniversalCharacterController controller, NPC_Data data)
     {
@@ -34,14 +28,11 @@ public class NPC_Behavior : MonoBehaviour
             navMeshAgent = gameObject.AddComponent<NavMeshAgent>();
         }
         navMeshAgent.speed = characterController.walkSpeed;
-        isInitialized = true;
         currentLocation = GetClosestLocation(transform.position);
     }
 
     public void UpdateBehavior()
     {
-        if (!isInitialized) return;
-
         if (Time.time - lastDecisionTime > decisionCooldown)
         {
             MakeDecision();
@@ -52,18 +43,6 @@ public class NPC_Behavior : MonoBehaviour
 
     private void MakeDecision()
     {
-        if (stayTimer > 0)
-        {
-            stayTimer -= Time.deltaTime;
-            return;
-        }
-
-        if (moveDelay > 0)
-        {
-            moveDelay -= Time.deltaTime;
-            return;
-        }
-
         lastDecisionTime = Time.time;
         string randomLocation = GetRandomUnoccupiedLocation();
         Vector3 destination = LocationManager.GetLocationPosition(randomLocation);
@@ -73,9 +52,15 @@ public class NPC_Behavior : MonoBehaviour
             navMeshAgent.SetDestination(destination);
             Debug.Log($"{characterController.characterName} is moving to {randomLocation}");
             currentLocation = randomLocation;
-            stayTimer = stayDuration;
-            moveDelay = Random.Range(1f, 5f); // Random delay before next move
         }
+    }
+
+    public void ProcessDecision(int choiceIndex)
+    {
+        // Implement decision processing logic here
+        Debug.Log($"{characterController.characterName} processed decision: {choiceIndex}");
+        // You can add more complex behavior based on the decision
+        // For example, update the NPC's state, trigger an action, etc.
     }
 
     private string GetRandomUnoccupiedLocation()
@@ -120,11 +105,6 @@ public class NPC_Behavior : MonoBehaviour
     public Vector3 GetTargetPosition()
     {
         return navMeshAgent.destination;
-    }
-
-    public bool ShouldJump()
-    {
-        return false;
     }
 
     private string GetClosestLocation(Vector3 position)

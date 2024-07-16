@@ -43,13 +43,13 @@ public class AIManager : MonoBehaviourPunCallbacks
         return npcBehavior.GetTargetPosition();
     }
 
-    public bool ShouldJump()
+    public async Task<string[]> GetGenerativeChoices()
     {
-        return npcBehavior.ShouldJump();
+        return await npcOpenAI.GetGenerativeChoices();
     }
 
-    public async Task<string[]> GetDialogueOptions()
+    public void MakeDecision(int choiceIndex)
     {
-        return await npcOpenAI.GetDialogueOptions();
+        npcBehavior.ProcessDecision(choiceIndex);
     }
 }

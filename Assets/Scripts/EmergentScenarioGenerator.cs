@@ -1,8 +1,9 @@
 using UnityEngine;
-using Photon.Pun;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using Photon.Pun;
 
-public class EmergentScenarioGenerator : MonoBehaviourPunCallbacks
+public class EmergentScenarioGenerator : MonoBehaviour
 {
     private OpenAIService openAIService;
 
@@ -11,13 +12,20 @@ public class EmergentScenarioGenerator : MonoBehaviourPunCallbacks
         openAIService = OpenAIService.Instance;
     }
 
-    public async Task<string> GenerateScenario(string currentChallenge, string[] playerActions)
+    public async Task<string> GenerateScenario(string currentChallenge, List<string> recentPlayerActions)
     {
-        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", playerActions)}, generate a new emergent scenario that adds complexity to the game.";
+        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, generate a new emergent scenario that adds complexity to the game. The scenario should be a single paragraph describing an unexpected event or complication.";
 
         string response = await openAIService.GetChatCompletionAsync(prompt);
         return response;
     }
 
-    // Implement methods to apply the generated scenario to the game state
+    public void ApplyScenario(string scenario)
+    {
+        // TODO: Implement logic to apply the generated scenario to the game state
+        Debug.Log($"New scenario applied: {scenario}");
+        
+        // Notify all players of the new scenario
+        GameplayManager.Instance.photonView.RPC("RPC_NotifyNewScenario", RpcTarget.All, scenario);
+    }
 }

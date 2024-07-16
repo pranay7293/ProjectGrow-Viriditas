@@ -18,6 +18,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     [TextArea(3, 10)]
     public string characterPersonality;
 
+    [Header("Gameplay")]
+    public int personalScore = 0;
+    public string currentObjective;
+
     private AIManager aiManager;
     private CharacterController characterController;
     private UnityEngine.AI.NavMeshAgent navMeshAgent;
@@ -42,6 +46,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void Awake()
     {
         InitializeComponents();
+        aiManager = GetComponent<AIManager>();
     }
 
     private void InitializeComponents()
@@ -206,11 +211,26 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return Vector3.Distance(transform.position, playerTransform.position) <= interactionDistance;
     }
 
-    public async Task<string[]> GetDialogueOptions()
+    [PunRPC]
+    public void SetObjective(string objective)
+    {
+        currentObjective = objective;
+    }
+
+    public void UpdatePersonalScore(int points)
+    {
+        if (photonView.IsMine)
+        {
+            personalScore += points;
+            GameplayManager.Instance.UpdatePlayerScore(photonView.Owner.NickName, personalScore);
+        }
+    }
+
+    public async Task<string[]> GetGenerativeChoices()
     {
         if (!IsPlayerControlled && aiManager != null)
         {
-            return await aiManager.GetDialogueOptions();
+            return await aiManager.GetGenerativeChoices();
         }
         return new string[0];
     }
@@ -232,12 +252,16 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             stream.SendNext(transform.position);
             stream.SendNext(transform.rotation);
             stream.SendNext((int)currentState);
+            stream.SendNext(personalScore);
+            stream.SendNext(currentObjective);
         }
         else
         {
             transform.position = (Vector3)stream.ReceiveNext();
             transform.rotation = (Quaternion)stream.ReceiveNext();
             currentState = (CharacterState)stream.ReceiveNext();
+            personalScore = (int)stream.ReceiveNext();
+            currentObjective = (string)stream.ReceiveNext();
         }
     }
 

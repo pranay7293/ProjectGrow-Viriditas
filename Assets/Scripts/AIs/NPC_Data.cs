@@ -14,6 +14,7 @@ public class NPC_Data : MonoBehaviour
 
     public string GetCharacterName() => characterController.characterName;
     public string GetCharacterRole() => characterController.characterRole;
+    public string GetCharacterBackground() => characterController.characterBackground;
     public string GetCharacterPersonality() => characterController.characterPersonality;
 
     public void AddMemory(string memory)
@@ -30,7 +31,11 @@ public class NPC_Data : MonoBehaviour
         return new List<string>(memories);
     }
 
-    // TODO: Add methods for getting and setting character-specific data
+    public void UpdateKnowledge(string key, string value)
+    {
+        // Implement a method to update the NPC's knowledge about the game world
+        Debug.Log($"{characterController.characterName} learned: {key} - {value}");
+    }
 }
 
 // using System.Collections.Generic;

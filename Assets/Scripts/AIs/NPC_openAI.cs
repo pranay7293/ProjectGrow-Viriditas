@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Threading.Tasks;
+using System.Text;
 
 public class NPC_openAI : MonoBehaviour
 {
@@ -12,13 +13,38 @@ public class NPC_openAI : MonoBehaviour
         openAIService = OpenAIService.Instance;
     }
 
-    public async Task<string[]> GetDialogueOptions()
+    public async Task<string[]> GetGenerativeChoices()
     {
-        string characterContext = $"Character: {npcData.GetCharacterName()}\nRole: {npcData.GetCharacterRole()}\nPersonality: {npcData.GetCharacterPersonality()}";
-        string prompt = $"{characterContext}\n\nGenerate 3 short dialogue options for this character. Each option should be a single sentence. Separate the options with a newline character.";
+        string characterContext = GetCharacterContext();
+        string prompt = $"{characterContext}\n\nGenerate 3 short, distinct action choices for this character based on their personality and the current game situation. Each choice should be a single sentence. Separate the choices with a newline character.";
         
         string response = await openAIService.GetChatCompletionAsync(prompt);
         return response.Split('\n');
+    }
+
+    public async Task<string> GetResponse(string playerInput)
+    {
+        string characterContext = GetCharacterContext();
+        string prompt = $"{characterContext}\n\nPlayer input: {playerInput}\n\nGenerate a response for this character based on their personality and the current game situation. The response should be 1-2 sentences.";
+
+        return await openAIService.GetChatCompletionAsync(prompt);
+    }
+
+    private string GetCharacterContext()
+    {
+        StringBuilder context = new StringBuilder();
+        context.AppendLine($"Character: {npcData.GetCharacterName()}");
+        context.AppendLine($"Role: {npcData.GetCharacterRole()}");
+        context.AppendLine($"Background: {npcData.GetCharacterBackground()}");
+        context.AppendLine($"Personality: {npcData.GetCharacterPersonality()}");
+        context.AppendLine("Recent memories:");
+        foreach (string memory in npcData.GetMemories())
+        {
+            context.AppendLine($"- {memory}");
+        }
+        context.AppendLine($"Current challenge: {GameplayManager.Instance.GetCurrentChallenge()}");
+
+        return context.ToString();
     }
 }
 
