@@ -48,6 +48,20 @@ public class InputManager : MonoBehaviour
         }
     }
 
+    public bool PlayerInteractActivate => Input.GetKeyDown(KeyCode.E);
+
+private void Update()
+{
+    UniversalCharacterController localPlayer = FindLocalPlayer();
+    if (localPlayer != null)
+    {
+        if (PlayerInteractActivate)
+        {
+            localPlayer.Interact();
+        }
+    }
+}
+
     private UniversalCharacterController FindLocalPlayer()
     {
         UniversalCharacterController[] characters = FindObjectsOfType<UniversalCharacterController>();

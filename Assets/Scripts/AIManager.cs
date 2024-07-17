@@ -48,8 +48,21 @@ public class AIManager : MonoBehaviourPunCallbacks
         return await npcOpenAI.GetGenerativeChoices();
     }
 
-    public void MakeDecision(int choiceIndex)
+    public async void MakeDecision(string playerChoice)
     {
-        npcBehavior.ProcessDecision(choiceIndex);
+        string aiResponse = await npcOpenAI.GetResponse(playerChoice);
+        npcData.AddMemory($"Player chose: {playerChoice}. AI responded: {aiResponse}");
+        npcBehavior.ProcessDecision(aiResponse);
+        GameplayManager.Instance.UpdateGameState(characterController.characterName, aiResponse);
+    }
+
+    public void UpdateKnowledge(string key, string value)
+    {
+        npcData.UpdateKnowledge(key, value);
+    }
+
+    public void AddMemory(string memory)
+    {
+        npcData.AddMemory(memory);
     }
 }

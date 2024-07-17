@@ -12,6 +12,8 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     [SerializeField] private TextMeshProUGUI npcNameText;
     [SerializeField] private Button[] optionButtons;
     [SerializeField] private TextMeshProUGUI[] optionTexts;
+    [SerializeField] private TMP_InputField customInputField;
+    [SerializeField] private Button submitCustomInputButton;
 
     private UniversalCharacterController currentNPC;
 
@@ -25,6 +27,11 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         {
             Destroy(gameObject);
         }
+    }
+
+    private void Start()
+    {
+        submitCustomInputButton.onClick.AddListener(SubmitCustomInput);
     }
 
     public void InitiateDialogue(UniversalCharacterController npc)
@@ -53,10 +60,10 @@ public class DialogueManager : MonoBehaviourPunCallbacks
                 if (i < options.Length)
                 {
                     optionTexts[i].text = options[i];
-                    optionButtons[i].gameObject.SetActive(true);
                     int index = i;
                     optionButtons[i].onClick.RemoveAllListeners();
                     optionButtons[i].onClick.AddListener(() => SelectDialogueOption(index));
+                    optionButtons[i].gameObject.SetActive(true);
                 }
                 else
                 {
@@ -65,23 +72,35 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             }
 
             dialoguePanel.SetActive(true);
+            customInputField.text = "";
         }
     }
 
-    public void SelectDialogueOption(int optionIndex)
+    private void SelectDialogueOption(int optionIndex)
     {
         if (currentNPC != null)
         {
-            AIManager aiManager = currentNPC.GetComponent<AIManager>();
-            if (aiManager != null)
-            {
-                aiManager.MakeDecision(optionIndex);
-            }
+            string selectedOption = optionTexts[optionIndex].text;
+            ProcessPlayerChoice(selectedOption);
         }
+    }
+
+    private void SubmitCustomInput()
+    {
+        if (currentNPC != null && !string.IsNullOrEmpty(customInputField.text))
+        {
+            ProcessPlayerChoice(customInputField.text);
+        }
+    }
+
+    private void ProcessPlayerChoice(string playerChoice)
+    {
+        GameplayManager.Instance.AddPlayerAction(playerChoice);
+        currentNPC.GetComponent<AIManager>().MakeDecision(playerChoice);
         CloseDialogue();
     }
 
-    public void CloseDialogue()
+    private void CloseDialogue()
     {
         dialoguePanel.SetActive(false);
         currentNPC = null;

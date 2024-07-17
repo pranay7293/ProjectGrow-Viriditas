@@ -46,7 +46,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void Awake()
     {
         InitializeComponents();
-        aiManager = GetComponent<AIManager>();
     }
 
     private void InitializeComponents()
@@ -173,7 +172,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void HandleAIMovement()
     {
-        // AI movement is handled by the NavMeshAgent component
         if (currentState == CharacterState.Moving)
         {
             navMeshAgent.isStopped = false;
@@ -188,7 +186,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         if (IsPlayerControlled)
         {
-            // Ignore collisions with NPCs
             UniversalCharacterController otherCharacter = collision.gameObject.GetComponent<UniversalCharacterController>();
             if (otherCharacter != null && !otherCharacter.IsPlayerControlled)
             {
@@ -234,6 +231,41 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
         return new string[0];
     }
+
+    public void Interact()
+{
+    if (IsPlayerControlled)
+    {
+        // Find the nearest NPC
+        UniversalCharacterController nearestNPC = FindNearestNPC();
+        if (nearestNPC != null && IsPlayerInRange(nearestNPC.transform))
+        {
+            DialogueManager.Instance.InitiateDialogue(nearestNPC);
+        }
+    }
+}
+
+private UniversalCharacterController FindNearestNPC()
+{
+    UniversalCharacterController[] characters = FindObjectsOfType<UniversalCharacterController>();
+    UniversalCharacterController nearest = null;
+    float minDistance = float.MaxValue;
+
+    foreach (UniversalCharacterController character in characters)
+    {
+        if (!character.IsPlayerControlled)
+        {
+            float distance = Vector3.Distance(transform.position, character.transform.position);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                nearest = character;
+            }
+        }
+    }
+
+    return nearest;
+}
 
     public void SetState(CharacterState newState)
     {

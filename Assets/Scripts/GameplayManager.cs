@@ -12,14 +12,13 @@ public class GameplayManager : MonoBehaviourPunCallbacks
     [SerializeField] private TextMeshProUGUI challengeText;
     [SerializeField] private EmergentScenarioGenerator scenarioGenerator;
     [SerializeField] private float scenarioGenerationInterval = 300f; // 5 minutes
-    private float lastScenarioTime;
-
-    private List<string> recentPlayerActions = new List<string>();
 
     private float remainingTime;
     private string currentChallenge;
     private Dictionary<string, int> playerScores = new Dictionary<string, int>();
     private int collectiveScore = 0;
+    private float lastScenarioTime;
+    private List<string> recentPlayerActions = new List<string>();
 
     private void Awake()
     {
@@ -51,6 +50,25 @@ public class GameplayManager : MonoBehaviourPunCallbacks
         }
     }
 
+    public void UpdateGameState(string characterName, string action)
+{
+    // Process the action and update game state
+    Debug.Log($"{characterName} performed action: {action}");
+    
+    // Update collective score based on the action
+    UpdateCollectiveScore(EvaluateActionImpact(action));
+    
+    // Trigger emergent scenario generation if needed
+    CheckForNewScenario();
+}
+
+private int EvaluateActionImpact(string action)
+{
+    // Implement logic to evaluate the impact of an action on the collective score
+    // For now, we'll use a simple random score
+    return Random.Range(1, 10);
+}
+
     private void InitializeChallenge()
     {
         currentChallenge = GetSelectedChallenge();
@@ -80,7 +98,7 @@ public class GameplayManager : MonoBehaviourPunCallbacks
         }
     }
 
-     private async void CheckForNewScenario()
+    private async void CheckForNewScenario()
     {
         if (Time.time - lastScenarioTime >= scenarioGenerationInterval)
         {
@@ -94,17 +112,10 @@ public class GameplayManager : MonoBehaviourPunCallbacks
     public void AddPlayerAction(string action)
     {
         recentPlayerActions.Add(action);
-        if (recentPlayerActions.Count > 5) // Keep only the 5 most recent actions
+        if (recentPlayerActions.Count > 5)
         {
             recentPlayerActions.RemoveAt(0);
         }
-    }
-
-    [PunRPC]
-    private void RPC_NotifyNewScenario(string scenario)
-    {
-        // TODO: Display the new scenario to players
-        Debug.Log($"New scenario: {scenario}");
     }
 
     [PunRPC]
@@ -118,7 +129,6 @@ public class GameplayManager : MonoBehaviourPunCallbacks
 
     private void EndChallenge()
     {
-        // Implement challenge end logic
         photonView.RPC("ShowResults", RpcTarget.All);
     }
 
@@ -134,9 +144,8 @@ public class GameplayManager : MonoBehaviourPunCallbacks
     [PunRPC]
     private void ShowResults()
     {
-        // Implement results display logic
         Debug.Log("Challenge ended. Displaying results...");
-        // TODO: Show a results screen with player scores and collective score
+        // TODO: Implement results display logic
     }
 
     public void UpdatePlayerScore(string playerName, int score)
