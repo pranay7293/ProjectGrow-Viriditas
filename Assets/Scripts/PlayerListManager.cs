@@ -6,7 +6,8 @@ using Photon.Realtime;
 
 public class PlayerListManager : MonoBehaviourPunCallbacks
 {
-    public Button[] playerPlaceholders;
+    public GameObject[] playerPlaceholders;
+    [SerializeField] private bool isGameScene = false;
 
     private void Awake()
     {
@@ -23,24 +24,24 @@ public class PlayerListManager : MonoBehaviourPunCallbacks
         UpdatePlayerList();
     }
 
-    public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
+    public override void OnPlayerEnteredRoom(Player newPlayer)
     {
         UpdatePlayerList();
     }
 
-    public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
+    public override void OnPlayerLeftRoom(Player otherPlayer)
     {
         UpdatePlayerList();
     }
 
     public void UpdatePlayerList()
     {
-        foreach (Button placeholder in playerPlaceholders)
+        foreach (GameObject placeholder in playerPlaceholders)
         {
-            placeholder.gameObject.SetActive(false);
+            placeholder.SetActive(false);
         }
 
-        Photon.Realtime.Player[] players = PhotonNetwork.PlayerList;
+        Player[] players = PhotonNetwork.PlayerList;
         for (int i = 0; i < players.Length; i++)
         {
             if (i >= playerPlaceholders.Length)
@@ -48,18 +49,49 @@ public class PlayerListManager : MonoBehaviourPunCallbacks
                 break;
             }
 
-            Button placeholder = playerPlaceholders[i];
-            placeholder.gameObject.SetActive(true);
+            GameObject placeholder = playerPlaceholders[i];
+            placeholder.SetActive(true);
 
-            TextMeshProUGUI playerNameText = placeholder.GetComponentInChildren<TextMeshProUGUI>();
-            if (players[i].IsLocal)
+            if (isGameScene)
             {
-                playerNameText.text = "ME";
+                UpdatePlayerProfile(placeholder, players[i]);
             }
             else
             {
-                playerNameText.text = players[i].NickName;
+                UpdatePlayerListItem(placeholder, players[i]);
             }
+        }
+    }
+
+    private void UpdatePlayerListItem(GameObject placeholder, Player player)
+    {
+        TextMeshProUGUI playerNameText = placeholder.GetComponentInChildren<TextMeshProUGUI>();
+        if (playerNameText != null)
+        {
+            playerNameText.text = player.IsLocal ? "ME" : player.NickName;
+        }
+    }
+
+    private void UpdatePlayerProfile(GameObject placeholder, Player player)
+    {
+        TextMeshProUGUI playerNameText = placeholder.GetComponentInChildren<TextMeshProUGUI>();
+        Image avatarImage = placeholder.GetComponentInChildren<Image>();
+        Slider progressBar = placeholder.GetComponentInChildren<Slider>();
+
+        if (playerNameText != null)
+        {
+            playerNameText.text = player.IsLocal ? "ME" : player.NickName;
+        }
+
+        if (avatarImage != null)
+        {
+            // TODO: Set avatar image based on player data
+        }
+
+        if (progressBar != null)
+        {
+            // TODO: Set progress based on player score
+            // progressBar.value = GetPlayerProgress(player);
         }
     }
 
@@ -70,12 +102,26 @@ public class PlayerListManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        Button placeholder = playerPlaceholders[playerActorNumber - 1];
-
+        GameObject placeholder = playerPlaceholders[playerActorNumber - 1];
         Image placeholderImage = placeholder.GetComponent<Image>();
         if (placeholderImage != null)
         {
             placeholderImage.color = hasVoted ? new Color(0x0D / 255f, 0x81 / 255f, 0x57 / 255f) : Color.white;
+        }
+    }
+
+    public void UpdatePlayerProgress(int playerActorNumber, float progress)
+    {
+        if (!isGameScene || playerActorNumber <= 0 || playerActorNumber > playerPlaceholders.Length)
+        {
+            return;
+        }
+
+        GameObject placeholder = playerPlaceholders[playerActorNumber - 1];
+        Slider progressBar = placeholder.GetComponentInChildren<Slider>();
+        if (progressBar != null)
+        {
+            progressBar.value = progress;
         }
     }
 }

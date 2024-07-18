@@ -53,6 +53,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         {
             currentNPC = npc;
             npcNameText.text = npc.characterName;
+            dialoguePanel.SetActive(true);
             string[] options = await npc.GetGenerativeChoices();
 
             for (int i = 0; i < optionButtons.Length; i++)
@@ -95,7 +96,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void ProcessPlayerChoice(string playerChoice)
     {
-        GameplayManager.Instance.AddPlayerAction(playerChoice);
+        GameManager.Instance.AddPlayerAction(playerChoice);
         currentNPC.GetComponent<AIManager>().MakeDecision(playerChoice);
         CloseDialogue();
     }

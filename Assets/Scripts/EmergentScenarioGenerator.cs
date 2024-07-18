@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Photon.Pun;
 
-public class EmergentScenarioGenerator : MonoBehaviour
+public class EmergentScenarioGenerator : MonoBehaviourPunCallbacks
 {
     private OpenAIService openAIService;
 
@@ -22,10 +22,18 @@ public class EmergentScenarioGenerator : MonoBehaviour
 
     public void ApplyScenario(string scenario)
     {
-        // TODO: Implement logic to apply the generated scenario to the game state
-        Debug.Log($"New scenario applied: {scenario}");
-        
         // Notify all players of the new scenario
-        GameplayManager.Instance.photonView.RPC("RPC_NotifyNewScenario", RpcTarget.All, scenario);
+        photonView.RPC("RPC_NotifyNewScenario", RpcTarget.All, scenario);
+    }
+
+    [PunRPC]
+    private void RPC_NotifyNewScenario(string scenario)
+    {
+        Debug.Log($"New scenario: {scenario}");
+        // TODO: Implement logic to apply the scenario to the game state
+        // For example:
+        // - Update UI to show the new scenario
+        // - Modify game parameters based on the scenario
+        // - Trigger specific events or challenges
     }
 }

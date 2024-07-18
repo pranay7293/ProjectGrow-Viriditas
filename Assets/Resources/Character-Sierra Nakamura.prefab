@@ -1130,6 +1130,8 @@ MonoBehaviour:
   characterRole: 
   characterBackground: 
   characterPersonality: 
+  personalScore: 0
+  currentObjective: 
 --- !u!114 &4096835321216489299
 MonoBehaviour:
   m_ObjectHideFlags: 0

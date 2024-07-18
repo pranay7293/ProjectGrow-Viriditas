@@ -42,7 +42,7 @@ public class NPC_openAI : MonoBehaviour
         {
             context.AppendLine($"- {memory}");
         }
-        context.AppendLine($"Current challenge: {GameplayManager.Instance.GetCurrentChallenge()}");
+        context.AppendLine($"Current challenge: {GameManager.Instance.GetCurrentChallenge()}");
 
         return context.ToString();
     }

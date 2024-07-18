@@ -4,6 +4,10 @@ public class InputManager : MonoBehaviour
 {
     public static InputManager Instance { get; private set; }
 
+    public bool PlayerInteractActivate => Input.GetKeyDown(KeyCode.E);
+    public bool PlayerRunModifier => Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+    public bool PlayerJumpActivate => Input.GetKeyDown(KeyCode.Space);
+
     private void Awake()
     {
         if (Instance == null)
@@ -31,14 +35,16 @@ public class InputManager : MonoBehaviour
         }
     }
 
-    public bool PlayerRunModifier => Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-    public bool PlayerJumpActivate => Input.GetKeyDown(KeyCode.Space);
-
     private void Update()
     {
         UniversalCharacterController localPlayer = FindLocalPlayer();
         if (localPlayer != null)
         {
+            if (PlayerInteractActivate)
+            {
+                localPlayer.Interact();
+            }
+
             UniversalCharacterController nearestNPC = FindNearestNPC(localPlayer.transform);
 
             if (Input.GetKeyDown(KeyCode.R) && nearestNPC != null)
@@ -47,20 +53,6 @@ public class InputManager : MonoBehaviour
             }
         }
     }
-
-    public bool PlayerInteractActivate => Input.GetKeyDown(KeyCode.E);
-
-private void Update()
-{
-    UniversalCharacterController localPlayer = FindLocalPlayer();
-    if (localPlayer != null)
-    {
-        if (PlayerInteractActivate)
-        {
-            localPlayer.Interact();
-        }
-    }
-}
 
     private UniversalCharacterController FindLocalPlayer()
     {

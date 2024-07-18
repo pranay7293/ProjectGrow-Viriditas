@@ -53,7 +53,7 @@ public class AIManager : MonoBehaviourPunCallbacks
         string aiResponse = await npcOpenAI.GetResponse(playerChoice);
         npcData.AddMemory($"Player chose: {playerChoice}. AI responded: {aiResponse}");
         npcBehavior.ProcessDecision(aiResponse);
-        GameplayManager.Instance.UpdateGameState(characterController.characterName, aiResponse);
+        GameManager.Instance.UpdateGameState(characterController.characterName, aiResponse);
     }
 
     public void UpdateKnowledge(string key, string value)

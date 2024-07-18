@@ -36,6 +36,11 @@ public class ChallengeCard : MonoBehaviour
         // Join the words with line breaks
         return string.Join("\n", words);
     }
+
+    public string GetChallengeTitle()
+    {
+        return challengeTitleText.text.Replace("\n", " ");
+    }
 }
 
 // using UnityEngine;

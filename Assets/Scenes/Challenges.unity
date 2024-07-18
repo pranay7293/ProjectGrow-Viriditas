@@ -1321,11 +1321,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerPlaceholders:
-  - {fileID: 212238924}
-  - {fileID: 1833687577}
-  - {fileID: 2088598602}
-  - {fileID: 278292670}
-  - {fileID: 1432886373}
+  - {fileID: 212238922}
+  - {fileID: 1833687575}
+  - {fileID: 2088598600}
+  - {fileID: 278292668}
+  - {fileID: 1432886371}
+  isGameScene: 0
 --- !u!114 &516478741
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4328,7 +4329,7 @@ MonoBehaviour:
   m_BlockingObjects: 0
   m_BlockingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 524287
 --- !u!114 &2090872401
 MonoBehaviour:
   m_ObjectHideFlags: 0

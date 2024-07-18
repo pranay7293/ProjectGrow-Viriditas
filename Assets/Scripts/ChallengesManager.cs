@@ -22,7 +22,6 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
             PhotonNetwork.ConnectUsingSettings();
         }
 
-        // Ensure expanded challenges are hidden at start
         expandedChallengeContainer.SetActive(false);
 
         int selectedHubIndex = PlayerPrefs.GetInt("SelectedHubIndex", 0);
@@ -76,24 +75,25 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
         expandedChallengeContainer.SetActive(false);
     }
 
-   public void OnChallengeSelected(int challengeIndex)
-{
-    selectedChallengeIndex = challengeIndex;
-    string selectedChallengeTitle = currentHub.challenges[challengeIndex].title;
-    
-    // Set the selected challenge title as a room property
-    ExitGames.Client.Photon.Hashtable properties = new ExitGames.Client.Photon.Hashtable
+    public void OnChallengeSelected(int challengeIndex)
     {
-        {"SelectedChallengeTitle", selectedChallengeTitle}
-    };
-    PhotonNetwork.CurrentRoom.SetCustomProperties(properties);
+        selectedChallengeIndex = challengeIndex;
+        ChallengeCard selectedCard = challengeCards[challengeIndex].GetComponent<ChallengeCard>();
+        string challengeTitle = selectedCard.GetChallengeTitle();
+        
+        // Update room properties
+        ExitGames.Client.Photon.Hashtable properties = new ExitGames.Client.Photon.Hashtable
+        {
+            { "SelectedChallengeTitle", challengeTitle }
+        };
+        PhotonNetwork.CurrentRoom.SetCustomProperties(properties);
 
-    // Also update PlayerPrefs as a fallback
-    PlayerPrefs.SetString("SelectedChallengeTitle", selectedChallengeTitle);
-    PlayerPrefs.Save();
+        // Update PlayerPrefs as a fallback
+        PlayerPrefs.SetString("SelectedChallengeTitle", challengeTitle);
+        PlayerPrefs.Save();
 
-    photonView.RPC("UpdateVote", RpcTarget.All, PhotonNetwork.LocalPlayer.ActorNumber, selectedChallengeIndex);
-}
+        photonView.RPC("UpdateVote", RpcTarget.All, PhotonNetwork.LocalPlayer.ActorNumber, selectedChallengeIndex);
+    }
 
     [PunRPC]
     private void UpdateVote(int playerActorNumber, int challengeIndex)

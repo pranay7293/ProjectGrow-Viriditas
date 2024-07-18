@@ -45,22 +45,58 @@ public class NPC_Behavior : MonoBehaviour
     {
         lastDecisionTime = Time.time;
         string randomLocation = GetRandomUnoccupiedLocation();
-        Vector3 destination = LocationManager.GetLocationPosition(randomLocation);
+        MoveToLocation(randomLocation);
+    }
+
+    public void ProcessDecision(string decision)
+    {
+        Debug.Log($"{characterController.characterName} processed decision: {decision}");
         
-        if (destination != Vector3.zero)
+        if (decision.Contains("move to"))
         {
-            navMeshAgent.SetDestination(destination);
-            Debug.Log($"{characterController.characterName} is moving to {randomLocation}");
-            currentLocation = randomLocation;
+            string location = decision.Split("move to ")[1];
+            MoveToLocation(location);
+        }
+        else if (decision.Contains("interact with"))
+        {
+            string target = decision.Split("interact with ")[1];
+            InteractWithTarget(target);
+        }
+        else if (decision.Contains("work on"))
+        {
+            string task = decision.Split("work on ")[1];
+            WorkOnTask(task);
+        }
+        else
+        {
+            // Default behavior if the decision doesn't match any specific action
+            MakeDecision();
         }
     }
 
-    public void ProcessDecision(int choiceIndex)
+    private void MoveToLocation(string location)
     {
-        // Implement decision processing logic here
-        Debug.Log($"{characterController.characterName} processed decision: {choiceIndex}");
-        // You can add more complex behavior based on the decision
-        // For example, update the NPC's state, trigger an action, etc.
+        Vector3 destination = LocationManager.GetLocationPosition(location);
+        if (destination != Vector3.zero)
+        {
+            navMeshAgent.SetDestination(destination);
+            Debug.Log($"{characterController.characterName} is moving to {location}");
+            currentLocation = location;
+        }
+    }
+
+    private void InteractWithTarget(string target)
+    {
+        Debug.Log($"{characterController.characterName} is interacting with {target}");
+        // Implement interaction logic here
+        // For example, find the target NPC and trigger a dialogue
+    }
+
+    private void WorkOnTask(string task)
+    {
+        Debug.Log($"{characterController.characterName} is working on {task}");
+        // Implement task-specific behavior here
+        // For example, update the game state or trigger a mini-game
     }
 
     private string GetRandomUnoccupiedLocation()

@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 0}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.37311924, g: 0.38073963, b: 0.3587269, a: 1}
+  m_IndirectSpecularColor: {r: 262.28348, g: 324.9705, b: 430.11627, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -278,7 +278,7 @@ MonoBehaviour:
   m_BlockingObjects: 0
   m_BlockingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 524287
 --- !u!114 &151813978
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -900,7 +900,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: The Final Frontier
+  m_text: Ad Astra
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f7e771ee2cc324d71a4787b67bcdef84, type: 2}
   m_sharedMaterial: {fileID: 8924705209787441560, guid: f7e771ee2cc324d71a4787b67bcdef84, type: 2}
@@ -4024,11 +4024,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerPlaceholders:
-  - {fileID: 965286562}
-  - {fileID: 1006241360}
-  - {fileID: 640213082}
-  - {fileID: 674192874}
-  - {fileID: 591009526}
+  - {fileID: 965286560}
+  - {fileID: 1006241358}
+  - {fileID: 640213080}
+  - {fileID: 674192872}
+  - {fileID: 591009524}
+  isGameScene: 0
 --- !u!114 &1849104296
 MonoBehaviour:
   m_ObjectHideFlags: 0

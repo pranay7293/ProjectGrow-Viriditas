@@ -219,7 +219,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (photonView.IsMine)
         {
             personalScore += points;
-            GameplayManager.Instance.UpdatePlayerScore(photonView.Owner.NickName, personalScore);
+            GameManager.Instance.UpdatePlayerScore(photonView.Owner.NickName, personalScore);
         }
     }
 
@@ -242,6 +242,14 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         {
             DialogueManager.Instance.InitiateDialogue(nearestNPC);
         }
+    }
+}
+
+public void PerformAction(string action)
+{
+    if (photonView.IsMine)
+    {
+        GameManager.Instance.UpdateGameState(characterName, action);
     }
 }
 
