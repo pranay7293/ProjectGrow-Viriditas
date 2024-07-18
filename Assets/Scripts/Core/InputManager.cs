@@ -1,18 +1,19 @@
 using UnityEngine;
+using Photon.Pun;
 
-public class InputManager : MonoBehaviour
+public class InputManager : MonoBehaviourPunCallbacks
 {
     public static InputManager Instance { get; private set; }
 
     public bool PlayerInteractActivate => Input.GetKeyDown(KeyCode.E);
     public bool PlayerRunModifier => Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-    public bool PlayerJumpActivate => Input.GetKeyDown(KeyCode.Space);
 
     private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -38,18 +39,11 @@ public class InputManager : MonoBehaviour
     private void Update()
     {
         UniversalCharacterController localPlayer = FindLocalPlayer();
-        if (localPlayer != null)
+        if (localPlayer != null && localPlayer.photonView.IsMine)
         {
             if (PlayerInteractActivate)
             {
-                localPlayer.Interact();
-            }
-
-            UniversalCharacterController nearestNPC = FindNearestNPC(localPlayer.transform);
-
-            if (Input.GetKeyDown(KeyCode.R) && nearestNPC != null)
-            {
-                DialogueManager.Instance.InitiateDialogue(nearestNPC);
+                localPlayer.TriggerDialogue();
             }
         }
     }
@@ -65,28 +59,6 @@ public class InputManager : MonoBehaviour
             }
         }
         return null;
-    }
-
-    private UniversalCharacterController FindNearestNPC(Transform playerTransform)
-    {
-        UniversalCharacterController[] characters = FindObjectsOfType<UniversalCharacterController>();
-        UniversalCharacterController nearestNPC = null;
-        float nearestDistance = float.MaxValue;
-
-        foreach (UniversalCharacterController character in characters)
-        {
-            if (!character.IsPlayerControlled && character.IsPlayerInRange(playerTransform))
-            {
-                float distance = Vector3.Distance(playerTransform.position, character.transform.position);
-                if (distance < nearestDistance)
-                {
-                    nearestNPC = character;
-                    nearestDistance = distance;
-                }
-            }
-        }
-
-        return nearestNPC;
     }
 }
 

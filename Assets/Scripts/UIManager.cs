@@ -1,25 +1,25 @@
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+// using UnityEngine;
+// using UnityEngine.UI;
+// using TMPro;
 
-public class UIManager : MonoBehaviour
-{
-    public TextMeshProUGUI playerNameText;
-    public TextMeshProUGUI playerCountText;
+// public class UIManager : MonoBehaviour
+// {
+//     public TextMeshProUGUI playerNameText;
+//     public TextMeshProUGUI playerCountText;
 
-    public void UpdatePlayerName(string name)
-    {
-        playerNameText.text = "Player: " + name;
-    }
+//     public void UpdatePlayerName(string name)
+//     {
+//         playerNameText.text = "Player: " + name;
+//     }
 
-    public void UpdatePlayerCount(int count)
-{
-    if (playerCountText != null)
-    {
-        playerCountText.text = "Players: " + count + "/5";
-    }
-}
-}
+//     public void UpdatePlayerCount(int count)
+// {
+//     if (playerCountText != null)
+//     {
+//         playerCountText.text = "Players: " + count + "/5";
+//     }
+// }
+// }
 
 
 // using UnityEngine;

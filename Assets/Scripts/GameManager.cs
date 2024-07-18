@@ -41,7 +41,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         {"Sierra Nakamura", "Innovation Hub"}
     };
 
-    private int challengeGoal = 1000; // Example goal, adjust as needed
+    private int challengeGoal = 1000; // This represents the target collective score to complete the challenge
 
     private void Awake()
     {
@@ -66,11 +66,14 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void Update()
     {
-        UpdateGameTime();
-        CheckForNewScenario();
+        if (PhotonNetwork.IsMasterClient)
+        {
+            UpdateGameTime();
+            CheckForNewScenario();
+        }
     }
 
-    private void InitializeGame()
+    public void InitializeGame()
     {
         SpawnCharacters();
         InitializeChallenge();
@@ -173,23 +176,34 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void UpdateGameTime()
     {
-        if (PhotonNetwork.IsMasterClient)
+        if (!PhotonNetwork.IsMasterClient) return;
+
+        remainingTime -= Time.deltaTime;
+        if (remainingTime <= 0)
         {
-            remainingTime -= Time.deltaTime;
-            if (remainingTime <= 0)
-            {
-                EndChallenge();
-            }
-            else
-            {
-                photonView.RPC("UpdateTimer", RpcTarget.All, remainingTime);
-            }
+            EndChallenge();
+        }
+        else
+        {
+            photonView.RPC("UpdateTimer", RpcTarget.All, remainingTime);
+        }
+    }
+
+    [PunRPC]
+    private void UpdateTimer(float time)
+    {
+        remainingTime = time;
+        if (timerText != null)
+        {
+            int minutes = Mathf.FloorToInt(remainingTime / 60f);
+            int seconds = Mathf.FloorToInt(remainingTime % 60f);
+            timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
         }
     }
 
     private void CheckForNewScenario()
     {
-        if (PhotonNetwork.IsMasterClient && Time.time - lastScenarioTime >= scenarioGenerationInterval)
+        if (Time.time - lastScenarioTime >= scenarioGenerationInterval)
         {
             lastScenarioTime = Time.time;
             GenerateNewScenario();
@@ -212,7 +226,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     private void NotifyNewScenario(string scenario)
     {
         emergentScenarioDisplay.text = scenario;
-        // TODO: Implement logic to fade in/out or animate the scenario display
+        // TODO: Implement logic to apply the scenario effects to the game state
     }
 
     public void AddPlayerAction(string action)
@@ -227,14 +241,28 @@ public class GameManager : MonoBehaviourPunCallbacks
     public void UpdateGameState(string characterName, string action)
     {
         Debug.Log($"{characterName} performed action: {action}");
-        UpdateCollectiveScore(EvaluateActionImpact(action));
+        int scoreIncrease = EvaluateActionImpact(action);
+        UpdateCollectiveScore(scoreIncrease);
         AddPlayerAction(action);
+
+        // Check if the action contributes to the challenge goal
+        if (ActionContributesToChallenge(action))
+        {
+            UpdateCollectiveScore(10); // Additional score for challenge-related actions
+        }
     }
 
     private int EvaluateActionImpact(string action)
     {
         // TODO: Implement more sophisticated action impact evaluation
         return Random.Range(1, 10);
+    }
+
+    private bool ActionContributesToChallenge(string action)
+    {
+        // Implement logic to determine if the action contributes to the current challenge
+        // This could involve keyword matching or more sophisticated NLP techniques
+        return action.ToLower().Contains(currentChallenge.ToLower());
     }
 
     public void UpdatePlayerScore(string playerName, int score)
@@ -265,15 +293,6 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     [PunRPC]
-    private void UpdateTimer(float time)
-    {
-        remainingTime = time;
-        int minutes = Mathf.FloorToInt(remainingTime / 60f);
-        int seconds = Mathf.FloorToInt(remainingTime % 60f);
-        timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
-    }
-
-    [PunRPC]
     private void SyncGameState(string challenge, float time, int collective)
     {
         currentChallenge = challenge;
@@ -300,7 +319,7 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void UpdateScoreDisplay()
     {
-        collectiveScoreDisplay.text = "Collective Score: " + collectiveScore;
+        collectiveScoreDisplay.text = "Community Score: " + collectiveScore;
         challengeProgressBar.value = (float)collectiveScore / challengeGoal;
         
         // Update individual player scores in PlayerListManager

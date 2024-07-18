@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Photon.Pun;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 public class DialogueManager : MonoBehaviourPunCallbacks
@@ -14,8 +15,11 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     [SerializeField] private TextMeshProUGUI[] optionTexts;
     [SerializeField] private TMP_InputField customInputField;
     [SerializeField] private Button submitCustomInputButton;
+    [SerializeField] private TextMeshProUGUI dialogueHistoryText;
+    [SerializeField] private int maxDialogueHistoryEntries = 5;
 
     private UniversalCharacterController currentNPC;
+    private Queue<string> dialogueHistory = new Queue<string>();
 
     private void Awake()
     {
@@ -31,6 +35,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+        dialoguePanel.SetActive(false);
         submitCustomInputButton.onClick.AddListener(SubmitCustomInput);
     }
 
@@ -54,7 +59,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             currentNPC = npc;
             npcNameText.text = npc.characterName;
             dialoguePanel.SetActive(true);
-            string[] options = await npc.GetGenerativeChoices();
+            string[] options = await npc.GetComponent<AIManager>().GetGenerativeChoices();
 
             for (int i = 0; i < optionButtons.Length; i++)
             {
@@ -72,8 +77,8 @@ public class DialogueManager : MonoBehaviourPunCallbacks
                 }
             }
 
-            dialoguePanel.SetActive(true);
             customInputField.text = "";
+            UpdateDialogueHistory($"{npc.characterName} is ready to talk.");
         }
     }
 
@@ -94,10 +99,13 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private void ProcessPlayerChoice(string playerChoice)
+    private async void ProcessPlayerChoice(string playerChoice)
     {
+        UpdateDialogueHistory($"You: {playerChoice}");
         GameManager.Instance.AddPlayerAction(playerChoice);
-        currentNPC.GetComponent<AIManager>().MakeDecision(playerChoice);
+        string aiResponse = await currentNPC.GetComponent<AIManager>().MakeDecision(playerChoice);
+        UpdateDialogueHistory($"{currentNPC.characterName}: {aiResponse}");
+        GameManager.Instance.UpdateGameState(currentNPC.characterName, aiResponse);
         CloseDialogue();
     }
 
@@ -105,5 +113,39 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     {
         dialoguePanel.SetActive(false);
         currentNPC = null;
+    }
+
+    private void UpdateDialogueHistory(string entry)
+    {
+        dialogueHistory.Enqueue(entry);
+        if (dialogueHistory.Count > maxDialogueHistoryEntries)
+        {
+            dialogueHistory.Dequeue();
+        }
+        dialogueHistoryText.text = string.Join("\n", dialogueHistory);
+    }
+
+    public void TriggerNPCDialogue(UniversalCharacterController initiator, UniversalCharacterController target)
+    {
+        photonView.RPC("RPC_TriggerNPCDialogue", RpcTarget.All, initiator.photonView.ViewID, target.photonView.ViewID);
+    }
+
+    [PunRPC]
+    private async void RPC_TriggerNPCDialogue(int initiatorViewID, int targetViewID)
+    {
+        UniversalCharacterController initiator = PhotonView.Find(initiatorViewID).GetComponent<UniversalCharacterController>();
+        UniversalCharacterController target = PhotonView.Find(targetViewID).GetComponent<UniversalCharacterController>();
+
+        if (initiator != null && target != null)
+        {
+            string initiatorDialogue = await initiator.GetComponent<AIManager>().GetNPCDialogue(target.characterName);
+            string targetResponse = await target.GetComponent<AIManager>().GetNPCDialogue(initiator.characterName);
+
+            UpdateDialogueHistory($"{initiator.characterName}: {initiatorDialogue}");
+            UpdateDialogueHistory($"{target.characterName}: {targetResponse}");
+
+            GameManager.Instance.UpdateGameState(initiator.characterName, initiatorDialogue);
+            GameManager.Instance.UpdateGameState(target.characterName, targetResponse);
+        }
     }
 }

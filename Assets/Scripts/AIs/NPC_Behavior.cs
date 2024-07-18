@@ -12,6 +12,9 @@ public class NPC_Behavior : MonoBehaviour
     private float lastDecisionTime;
     private string currentLocation;
 
+    private float dialogueTimer = 0f;
+    private float dialogueInterval = 60f; // Trigger dialogue every 60 seconds
+
     private List<string> locationNames = new List<string>
     {
         "Medical Bay", "Think Tank", "Media Center", "Innovation Hub", "Maker Space",
@@ -36,6 +39,13 @@ public class NPC_Behavior : MonoBehaviour
         if (Time.time - lastDecisionTime > decisionCooldown)
         {
             MakeDecision();
+        }
+
+        dialogueTimer += Time.deltaTime;
+        if (dialogueTimer >= dialogueInterval)
+        {
+            dialogueTimer = 0f;
+            TriggerRandomNPCDialogue();
         }
 
         UpdateState();
@@ -160,6 +170,40 @@ public class NPC_Behavior : MonoBehaviour
         }
 
         return closest;
+    }
+
+    private void TriggerRandomNPCDialogue()
+    {
+        UniversalCharacterController targetNPC = GetRandomNearbyNPC();
+        if (targetNPC != null)
+        {
+            DialogueManager.Instance.TriggerNPCDialogue(characterController, targetNPC);
+        }
+    }
+
+    private UniversalCharacterController GetRandomNearbyNPC()
+    {
+        UniversalCharacterController[] allCharacters = FindObjectsOfType<UniversalCharacterController>();
+        List<UniversalCharacterController> nearbyNPCs = new List<UniversalCharacterController>();
+
+        foreach (UniversalCharacterController character in allCharacters)
+        {
+            if (!character.IsPlayerControlled && character != characterController)
+            {
+                float distance = Vector3.Distance(transform.position, character.transform.position);
+                if (distance <= characterController.interactionDistance)
+                {
+                    nearbyNPCs.Add(character);
+                }
+            }
+        }
+
+        if (nearbyNPCs.Count > 0)
+        {
+            return nearbyNPCs[Random.Range(0, nearbyNPCs.Count)];
+        }
+
+        return null;
     }
 }
 

@@ -1,13 +1,11 @@
 using UnityEngine;
 using Photon.Pun;
 using Photon.Realtime;
-using ExitGames.Client.Photon;
 
 public class Karyo_GameCore : MonoBehaviourPunCallbacks
 {
     public static Karyo_GameCore Instance { get; private set; }
 
-    public UIManager uiManager;
     public GameManager gameManager;
     public PlayerListManager playerListManager;
 
@@ -26,11 +24,7 @@ public class Karyo_GameCore : MonoBehaviourPunCallbacks
 
     private void Start()
     {
-        if (PhotonNetwork.IsConnected)
-        {
-            OnConnectedToMaster();
-        }
-        else
+        if (!PhotonNetwork.IsConnected)
         {
             PhotonNetwork.ConnectUsingSettings();
         }
@@ -38,14 +32,7 @@ public class Karyo_GameCore : MonoBehaviourPunCallbacks
 
     public override void OnConnectedToMaster()
     {
-        if (PhotonNetwork.InRoom)
-        {
-            OnJoinedRoom();
-        }
-        else
-        {
-            PhotonNetwork.JoinRandomRoom();
-        }
+        PhotonNetwork.JoinRandomRoom();
     }
 
     public override void OnJoinRandomFailed(short returnCode, string message)
@@ -56,19 +43,20 @@ public class Karyo_GameCore : MonoBehaviourPunCallbacks
     public override void OnJoinedRoom()
     {
         playerListManager.UpdatePlayerList();
-        uiManager.UpdatePlayerCount(PhotonNetwork.CurrentRoom.PlayerCount);
+        if (PhotonNetwork.IsMasterClient)
+        {
+            gameManager.InitializeGame();
+        }
     }
 
-    public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
+    public override void OnPlayerEnteredRoom(Player newPlayer)
     {
         playerListManager.UpdatePlayerList();
-        uiManager.UpdatePlayerCount(PhotonNetwork.CurrentRoom.PlayerCount);
     }
 
-    public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
+    public override void OnPlayerLeftRoom(Player otherPlayer)
     {
         playerListManager.UpdatePlayerList();
-        uiManager.UpdatePlayerCount(PhotonNetwork.CurrentRoom.PlayerCount);
     }
 }
 

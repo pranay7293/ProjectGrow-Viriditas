@@ -45,15 +45,24 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     public async Task<string[]> GetGenerativeChoices()
     {
-        return await npcOpenAI.GetGenerativeChoices();
+        string prompt = $"Generate 3 dialogue options for {characterController.characterName} related to the current challenge: {GameManager.Instance.GetCurrentChallenge()}";
+        string response = await npcOpenAI.GetResponse(prompt);
+        return response.Split('\n');
     }
 
-    public async void MakeDecision(string playerChoice)
+    public async Task<string> MakeDecision(string playerChoice)
     {
-        string aiResponse = await npcOpenAI.GetResponse(playerChoice);
+        string prompt = $"Generate a response for {characterController.characterName} to the player's choice: '{playerChoice}'. Consider the current challenge: {GameManager.Instance.GetCurrentChallenge()}";
+        string aiResponse = await npcOpenAI.GetResponse(prompt);
         npcData.AddMemory($"Player chose: {playerChoice}. AI responded: {aiResponse}");
         npcBehavior.ProcessDecision(aiResponse);
-        GameManager.Instance.UpdateGameState(characterController.characterName, aiResponse);
+        return aiResponse;
+    }
+
+    public async Task<string> GetNPCDialogue(string targetName)
+    {
+        string prompt = $"Generate a dialogue line for {characterController.characterName} to say to {targetName} about the current challenge: {GameManager.Instance.GetCurrentChallenge()}";
+        return await npcOpenAI.GetResponse(prompt);
     }
 
     public void UpdateKnowledge(string key, string value)

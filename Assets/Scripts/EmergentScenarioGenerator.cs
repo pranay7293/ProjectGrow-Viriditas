@@ -10,6 +10,10 @@ public class EmergentScenarioGenerator : MonoBehaviourPunCallbacks
     private void Start()
     {
         openAIService = OpenAIService.Instance;
+        if (openAIService == null)
+    {
+        Debug.LogError("OpenAIService not found in the scene. Please add it to continue.");
+    }
     }
 
     public async Task<string> GenerateScenario(string currentChallenge, List<string> recentPlayerActions)

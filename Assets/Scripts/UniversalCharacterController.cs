@@ -152,6 +152,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         moveDirection = InputManager.Instance.PlayerRelativeMoveDirection;
         rotationY += Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
+
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            TriggerDialogue();
+        }
     }
 
     private void MovePlayer()
@@ -182,16 +187,35 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
     }
 
-    private void OnCollisionEnter(Collision collision)
+    public void TriggerDialogue()
     {
-        if (IsPlayerControlled)
+        UniversalCharacterController nearestNPC = FindNearestNPC();
+        if (nearestNPC != null && IsPlayerInRange(nearestNPC.transform))
         {
-            UniversalCharacterController otherCharacter = collision.gameObject.GetComponent<UniversalCharacterController>();
-            if (otherCharacter != null && !otherCharacter.IsPlayerControlled)
+            DialogueManager.Instance.InitiateDialogue(nearestNPC);
+        }
+    }
+
+    private UniversalCharacterController FindNearestNPC()
+    {
+        UniversalCharacterController[] characters = FindObjectsOfType<UniversalCharacterController>();
+        UniversalCharacterController nearest = null;
+        float minDistance = float.MaxValue;
+
+        foreach (UniversalCharacterController character in characters)
+        {
+            if (!character.IsPlayerControlled && character != this)
             {
-                Physics.IgnoreCollision(GetComponent<Collider>(), collision.collider);
+                float distance = Vector3.Distance(transform.position, character.transform.position);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    nearest = character;
+                }
             }
         }
+
+        return nearest;
     }
 
     public void SetDestination(Vector3 destination)
@@ -222,58 +246,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             GameManager.Instance.UpdatePlayerScore(photonView.Owner.NickName, personalScore);
         }
     }
-
-    public async Task<string[]> GetGenerativeChoices()
-    {
-        if (!IsPlayerControlled && aiManager != null)
-        {
-            return await aiManager.GetGenerativeChoices();
-        }
-        return new string[0];
-    }
-
-    public void Interact()
-{
-    if (IsPlayerControlled)
-    {
-        // Find the nearest NPC
-        UniversalCharacterController nearestNPC = FindNearestNPC();
-        if (nearestNPC != null && IsPlayerInRange(nearestNPC.transform))
-        {
-            DialogueManager.Instance.InitiateDialogue(nearestNPC);
-        }
-    }
-}
-
-public void PerformAction(string action)
-{
-    if (photonView.IsMine)
-    {
-        GameManager.Instance.UpdateGameState(characterName, action);
-    }
-}
-
-private UniversalCharacterController FindNearestNPC()
-{
-    UniversalCharacterController[] characters = FindObjectsOfType<UniversalCharacterController>();
-    UniversalCharacterController nearest = null;
-    float minDistance = float.MaxValue;
-
-    foreach (UniversalCharacterController character in characters)
-    {
-        if (!character.IsPlayerControlled)
-        {
-            float distance = Vector3.Distance(transform.position, character.transform.position);
-            if (distance < minDistance)
-            {
-                minDistance = distance;
-                nearest = character;
-            }
-        }
-    }
-
-    return nearest;
-}
 
     public void SetState(CharacterState newState)
     {
