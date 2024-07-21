@@ -207,6 +207,8 @@ public class NPC_Behavior : MonoBehaviour
     }
 }
 
+
+
 // // this tracks what the NPC is doing right now
 // [System.Serializable]
 // public class NPC_Behavior

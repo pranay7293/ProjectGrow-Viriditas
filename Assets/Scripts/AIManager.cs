@@ -45,9 +45,15 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     public async Task<string[]> GetGenerativeChoices()
     {
+        if (!PhotonNetwork.IsMasterClient)
+        {
+            // For non-master clients, we should implement a way to sync choices
+            // For now, return default choices
+            return new string[] { "Waiting for choices...", "Waiting for choices...", "Waiting for choices..." };
+        }
+
         string prompt = $"Generate 3 dialogue options for {characterController.characterName} related to the current challenge: {GameManager.Instance.GetCurrentChallenge()}";
-        string response = await npcOpenAI.GetResponse(prompt);
-        return response.Split('\n');
+        return await npcOpenAI.GetGenerativeChoices();
     }
 
     public async Task<string> MakeDecision(string playerChoice)

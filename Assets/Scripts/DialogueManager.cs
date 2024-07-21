@@ -3,23 +3,34 @@ using UnityEngine.UI;
 using TMPro;
 using Photon.Pun;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 public class DialogueManager : MonoBehaviourPunCallbacks
 {
     public static DialogueManager Instance { get; private set; }
 
+    [Header("Dialogue Panel")]
     [SerializeField] private GameObject dialoguePanel;
     [SerializeField] private TextMeshProUGUI npcNameText;
     [SerializeField] private Button[] optionButtons;
     [SerializeField] private TextMeshProUGUI[] optionTexts;
     [SerializeField] private TMP_InputField customInputField;
     [SerializeField] private Button submitCustomInputButton;
-    [SerializeField] private TextMeshProUGUI dialogueHistoryText;
-    [SerializeField] private int maxDialogueHistoryEntries = 5;
+
+    [Header("Chat Log")]
+    [SerializeField] private GameObject chatLogPanel;
+    [SerializeField] private TextMeshProUGUI chatLogText;
+    [SerializeField] private TMP_Dropdown characterFilter;
+    [SerializeField] private int maxChatLogEntries = 100;
+    [SerializeField] private Button toggleChatLogButton;
+    [SerializeField] private ScrollRect chatLogScrollRect;
+    [SerializeField] private CanvasGroup chatLogCanvasGroup;
+    [SerializeField] private float fadeDuration = 0.3f;
 
     private UniversalCharacterController currentNPC;
-    private Queue<string> dialogueHistory = new Queue<string>();
+    private Dictionary<string, List<string>> chatLog = new Dictionary<string, List<string>>();
+    private List<string> characterList = new List<string>();
 
     private void Awake()
     {
@@ -36,7 +47,17 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     private void Start()
     {
         dialoguePanel.SetActive(false);
+        chatLogPanel.SetActive(false);
         submitCustomInputButton.onClick.AddListener(SubmitCustomInput);
+        toggleChatLogButton.onClick.AddListener(ToggleChatLog);
+        characterFilter.onValueChanged.AddListener(FilterChatLog);
+        InitializeCharacterFilter();
+    }
+
+    private void InitializeCharacterFilter()
+    {
+        characterFilter.ClearOptions();
+        characterFilter.AddOptions(new List<string> { "All Characters" });
     }
 
     public void InitiateDialogue(UniversalCharacterController npc)
@@ -47,6 +68,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             return;
         }
         currentNPC = npc;
+        InputManager.Instance.IsInDialogue = true;
         photonView.RPC("RPC_OpenDialogue", RpcTarget.All, npc.photonView.ViewID);
     }
 
@@ -78,7 +100,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             }
 
             customInputField.text = "";
-            UpdateDialogueHistory($"{npc.characterName} is ready to talk.");
+            AddToChatLog(npc.characterName, "is ready to talk.");
         }
     }
 
@@ -101,33 +123,112 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private async void ProcessPlayerChoice(string playerChoice)
     {
-        UpdateDialogueHistory($"You: {playerChoice}");
+        AddToChatLog("Player", playerChoice);
         GameManager.Instance.AddPlayerAction(playerChoice);
         string aiResponse = await currentNPC.GetComponent<AIManager>().MakeDecision(playerChoice);
-        UpdateDialogueHistory($"{currentNPC.characterName}: {aiResponse}");
+        AddToChatLog(currentNPC.characterName, aiResponse);
         GameManager.Instance.UpdateGameState(currentNPC.characterName, aiResponse);
         CloseDialogue();
     }
 
-    private void CloseDialogue()
+    public void CloseDialogue()
     {
         dialoguePanel.SetActive(false);
+        InputManager.Instance.IsInDialogue = false;
         currentNPC = null;
     }
 
-    private void UpdateDialogueHistory(string entry)
+    public void AddToChatLog(string speaker, string message)
     {
-        dialogueHistory.Enqueue(entry);
-        if (dialogueHistory.Count > maxDialogueHistoryEntries)
+        if (!chatLog.ContainsKey(speaker))
         {
-            dialogueHistory.Dequeue();
+            chatLog[speaker] = new List<string>();
+            characterList.Add(speaker);
+            UpdateCharacterFilter();
         }
-        dialogueHistoryText.text = string.Join("\n", dialogueHistory);
+
+        string logEntry = $"[{System.DateTime.Now:HH:mm:ss}] {speaker}: {message}";
+        chatLog[speaker].Add(logEntry);
+
+        if (chatLog[speaker].Count > maxChatLogEntries)
+        {
+            chatLog[speaker].RemoveAt(0);
+        }
+
+        UpdateChatLogDisplay();
+    }
+
+    private void UpdateChatLogDisplay()
+    {
+        string selectedCharacter = characterFilter.options[characterFilter.value].text;
+        List<string> filteredLog;
+
+        if (selectedCharacter == "All Characters")
+        {
+            filteredLog = chatLog.SelectMany(kv => kv.Value).OrderBy(s => s).ToList();
+        }
+        else
+        {
+            filteredLog = chatLog[selectedCharacter];
+        }
+
+        chatLogText.text = string.Join("\n", filteredLog);
+        
+        Canvas.ForceUpdateCanvases();
+        chatLogScrollRect.verticalNormalizedPosition = 0f;
+    }
+
+    private void UpdateCharacterFilter()
+    {
+        characterFilter.ClearOptions();
+        characterFilter.AddOptions(new List<string> { "All Characters" });
+        characterFilter.AddOptions(characterList);
+    }
+
+    private void FilterChatLog(int index)
+    {
+        UpdateChatLogDisplay();
+    }
+
+    private void ToggleChatLog()
+    {
+        if (chatLogPanel.activeSelf)
+        {
+            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 0f, fadeDuration));
+        }
+        else
+        {
+            chatLogPanel.SetActive(true);
+            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 1f, fadeDuration));
+            UpdateChatLogDisplay();
+        }
+    }
+
+    private System.Collections.IEnumerator FadeCanvasGroup(CanvasGroup cg, float start, float end, float duration)
+    {
+        float elapsedTime = 0f;
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.deltaTime;
+            cg.alpha = Mathf.Lerp(start, end, elapsedTime / duration);
+            yield return null;
+        }
+        cg.alpha = end;
+        if (end == 0f)
+        {
+            chatLogPanel.SetActive(false);
+        }
+    }
+
+    public void LogAgentToAgentInteraction(string initiator, string target, string initiatorDialogue, string targetResponse)
+    {
+        AddToChatLog(initiator, initiatorDialogue);
+        AddToChatLog(target, targetResponse);
     }
 
     public void TriggerNPCDialogue(UniversalCharacterController initiator, UniversalCharacterController target)
     {
-        photonView.RPC("RPC_TriggerNPCDialogue", RpcTarget.All, initiator.photonView.ViewID, target.photonView.ViewID);
+    photonView.RPC("RPC_TriggerNPCDialogue", RpcTarget.All, initiator.photonView.ViewID, target.photonView.ViewID);
     }
 
     [PunRPC]
@@ -141,8 +242,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             string initiatorDialogue = await initiator.GetComponent<AIManager>().GetNPCDialogue(target.characterName);
             string targetResponse = await target.GetComponent<AIManager>().GetNPCDialogue(initiator.characterName);
 
-            UpdateDialogueHistory($"{initiator.characterName}: {initiatorDialogue}");
-            UpdateDialogueHistory($"{target.characterName}: {targetResponse}");
+            LogAgentToAgentInteraction(initiator.characterName, target.characterName, initiatorDialogue, targetResponse);
 
             GameManager.Instance.UpdateGameState(initiator.characterName, initiatorDialogue);
             GameManager.Instance.UpdateGameState(target.characterName, targetResponse);

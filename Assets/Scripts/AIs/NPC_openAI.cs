@@ -16,18 +16,24 @@ public class NPC_openAI : MonoBehaviour
     public async Task<string[]> GetGenerativeChoices()
     {
         string characterContext = GetCharacterContext();
-        string prompt = $"{characterContext}\n\nGenerate 3 short, distinct action choices for this character based on their personality and the current game situation. Each choice should be a single sentence. Separate the choices with a newline character.";
+        string prompt = $"{characterContext}\n\nGenerate 3 short, distinct action choices (max 10 words each) for this character based on their personality and the current game situation. Separate the choices with a newline character.";
         
         string response = await openAIService.GetChatCompletionAsync(prompt);
+        if (string.IsNullOrEmpty(response))
+        {
+            Debug.LogWarning("Failed to get response from OpenAI API, using default choices");
+            return new string[] { "Investigate the area", "Talk to a nearby character", "Work on the current objective" };
+        }
         return response.Split('\n');
     }
 
     public async Task<string> GetResponse(string playerInput)
     {
         string characterContext = GetCharacterContext();
-        string prompt = $"{characterContext}\n\nPlayer input: {playerInput}\n\nGenerate a response for this character based on their personality and the current game situation. The response should be 1-2 sentences.";
+        string prompt = $"{characterContext}\n\nPlayer input: {playerInput}\n\nGenerate a short response (max 10 words) for this character based on their personality and the current game situation.";
 
-        return await openAIService.GetChatCompletionAsync(prompt);
+        string response = await openAIService.GetChatCompletionAsync(prompt);
+        return string.IsNullOrEmpty(response) ? "I'm not sure how to respond to that." : response;
     }
 
     private string GetCharacterContext()

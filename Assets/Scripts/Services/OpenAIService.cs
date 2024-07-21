@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Text;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 public class OpenAIService : MonoBehaviour
@@ -10,6 +11,9 @@ public class OpenAIService : MonoBehaviour
 
     [SerializeField]
     private string apiKey;
+
+    [SerializeField]
+    private string model = "gpt-4";
 
     private readonly HttpClient httpClient = new HttpClient();
 
@@ -31,19 +35,34 @@ public class OpenAIService : MonoBehaviour
     {
         var requestBody = new
         {
-            model = "gpt-4",
+            model = model,
             messages = new[]
             {
                 new { role = "user", content = prompt }
-            }
+            },
+            max_tokens = 50 // Limit response to about 10 words
         };
 
-        var content = new StringContent(JsonUtility.ToJson(requestBody), Encoding.UTF8, "application/json");
+        var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
 
-        var response = await httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
-        var responseString = await response.Content.ReadAsStringAsync();
+        try
+        {
+            var response = await httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
+            var responseString = await response.Content.ReadAsStringAsync();
 
-        var responseJson = JObject.Parse(responseString);
-        return responseJson["choices"][0]["message"]["content"].ToString();
+            if (!response.IsSuccessStatusCode)
+            {
+                Debug.LogError($"OpenAI API request failed: {responseString}");
+                return null;
+            }
+
+            var responseJson = JObject.Parse(responseString);
+            return responseJson["choices"][0]["message"]["content"].ToString();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Error in OpenAI API request: {e.Message}");
+            return null;
+        }
     }
 }

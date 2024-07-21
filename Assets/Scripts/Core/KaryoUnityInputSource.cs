@@ -3,14 +3,11 @@ using com.ootii.Input;
 
 public class KaryoUnityInputSource : UnityInputSource
 {
-    public override bool IsViewingActivated => !lockedCamera;
-
-    private bool lockedCamera = false;
+    public override bool IsViewingActivated => !InputManager.Instance.IsInDialogue;
 
     private void Update()
     {
-        // Looking at something specific - lock camera
-        if (lockedCamera)
+        if (InputManager.Instance.IsInDialogue)
         {
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
@@ -20,9 +17,5 @@ public class KaryoUnityInputSource : UnityInputSource
             Cursor.visible = false;
             Cursor.lockState = CursorLockMode.Locked;
         }
-
-        // TODO: Implement logic to determine when the camera should be locked
-        // For example: lockedCamera = InputManager.Instance.IsInMenu;
-        lockedCamera = false;
     }
 }

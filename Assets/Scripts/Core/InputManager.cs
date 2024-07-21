@@ -7,6 +7,7 @@ public class InputManager : MonoBehaviourPunCallbacks
 
     public bool PlayerInteractActivate => Input.GetKeyDown(KeyCode.E);
     public bool PlayerRunModifier => Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+    public bool IsInDialogue { get; set; }
 
     private void Awake()
     {
@@ -25,6 +26,8 @@ public class InputManager : MonoBehaviourPunCallbacks
     {
         get
         {
+            if (IsInDialogue) return Vector3.zero;
+
             var moveVector = Vector3.zero;
 
             if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) moveVector.z += 1;
@@ -43,9 +46,22 @@ public class InputManager : MonoBehaviourPunCallbacks
         {
             if (PlayerInteractActivate)
             {
-                localPlayer.TriggerDialogue();
+                if (IsInDialogue)
+                {
+                    CloseDialogue();
+                }
+                else
+                {
+                    localPlayer.TriggerDialogue();
+                }
             }
         }
+    }
+
+    private void CloseDialogue()
+    {
+        IsInDialogue = false;
+        DialogueManager.Instance.CloseDialogue();
     }
 
     private UniversalCharacterController FindLocalPlayer()
