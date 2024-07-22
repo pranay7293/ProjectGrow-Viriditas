@@ -8,6 +8,9 @@ public class InputManager : MonoBehaviourPunCallbacks
     public bool PlayerInteractActivate => Input.GetKeyDown(KeyCode.E);
     public bool PlayerRunModifier => Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
     public bool IsInDialogue { get; set; }
+    public bool IsChatLogOpen { get; set; }
+
+    [SerializeField] private KeyCode toggleChatLogKey = KeyCode.Tab;
 
     private void Awake()
     {
@@ -55,13 +58,26 @@ public class InputManager : MonoBehaviourPunCallbacks
                     localPlayer.TriggerDialogue();
                 }
             }
+
+            if (Input.GetKeyDown(toggleChatLogKey))
+            {
+                ToggleChatLog();
+            }
         }
+
+        UpdateCursorState();
     }
 
     private void CloseDialogue()
     {
         IsInDialogue = false;
         DialogueManager.Instance.CloseDialogue();
+    }
+
+    public void ToggleChatLog()
+    {
+        IsChatLogOpen = !IsChatLogOpen;
+        DialogueManager.Instance.ToggleChatLog();
     }
 
     private UniversalCharacterController FindLocalPlayer()
@@ -75,6 +91,20 @@ public class InputManager : MonoBehaviourPunCallbacks
             }
         }
         return null;
+    }
+
+    private void UpdateCursorState()
+    {
+        if (IsInDialogue || IsChatLogOpen)
+        {
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+        }
+        else
+        {
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+        }
     }
 }
 

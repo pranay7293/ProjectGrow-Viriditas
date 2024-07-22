@@ -193,7 +193,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (nearestNPC != null && IsPlayerInRange(nearestNPC.transform))
         {
             DialogueManager.Instance.InitiateDialogue(nearestNPC);
-        }
+        } 
     }
 
     private UniversalCharacterController FindNearestNPC()

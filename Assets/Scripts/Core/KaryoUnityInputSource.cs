@@ -7,7 +7,7 @@ public class KaryoUnityInputSource : UnityInputSource
 
     private void Update()
     {
-        if (InputManager.Instance.IsInDialogue)
+        if (InputManager.Instance.IsInDialogue || InputManager.Instance.IsChatLogOpen)
         {
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;

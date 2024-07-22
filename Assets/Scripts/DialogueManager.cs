@@ -106,10 +106,15 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void SelectDialogueOption(int optionIndex)
     {
-        if (currentNPC != null)
+        if (currentNPC != null && optionIndex >= 0 && optionIndex < optionTexts.Length)
         {
             string selectedOption = optionTexts[optionIndex].text;
             ProcessPlayerChoice(selectedOption);
+        }
+        else
+        {
+            Debug.LogError($"SelectDialogueOption: Invalid option index {optionIndex} or currentNPC is null");
+            CloseDialogue();
         }
     }
 
@@ -123,9 +128,25 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private async void ProcessPlayerChoice(string playerChoice)
     {
+        if (currentNPC == null || GameManager.Instance == null)
+        {
+            Debug.LogError("ProcessPlayerChoice: currentNPC or GameManager.Instance is null");
+            CloseDialogue();
+            return;
+        }
+
         AddToChatLog("Player", playerChoice);
         GameManager.Instance.AddPlayerAction(playerChoice);
-        string aiResponse = await currentNPC.GetComponent<AIManager>().MakeDecision(playerChoice);
+        
+        AIManager aiManager = currentNPC.GetComponent<AIManager>();
+        if (aiManager == null)
+        {
+            Debug.LogError("ProcessPlayerChoice: AIManager not found on currentNPC");
+            CloseDialogue();
+            return;
+        }
+
+        string aiResponse = await aiManager.MakeDecision(playerChoice);
         AddToChatLog(currentNPC.characterName, aiResponse);
         GameManager.Instance.UpdateGameState(currentNPC.characterName, aiResponse);
         CloseDialogue();
@@ -190,19 +211,28 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         UpdateChatLogDisplay();
     }
 
-    private void ToggleChatLog()
+    public void ToggleChatLog()
     {
-        if (chatLogPanel.activeSelf)
-        {
-            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 0f, fadeDuration));
-        }
-        else
-        {
-            chatLogPanel.SetActive(true);
-            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 1f, fadeDuration));
-            UpdateChatLogDisplay();
-        }
+    if (chatLogPanel.activeSelf)
+    {
+        StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 0f, fadeDuration));
     }
+    else
+    {
+        chatLogPanel.SetActive(true);
+        StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 1f, fadeDuration));
+        UpdateChatLogDisplay();
+    }
+    InputManager.Instance.IsChatLogOpen = chatLogPanel.activeSelf;
+    UpdateCursorState();
+    }
+
+    private void UpdateCursorState()
+    {
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+    }
+
 
     private System.Collections.IEnumerator FadeCanvasGroup(CanvasGroup cg, float start, float end, float duration)
     {
@@ -228,7 +258,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     public void TriggerNPCDialogue(UniversalCharacterController initiator, UniversalCharacterController target)
     {
-    photonView.RPC("RPC_TriggerNPCDialogue", RpcTarget.All, initiator.photonView.ViewID, target.photonView.ViewID);
+        photonView.RPC("RPC_TriggerNPCDialogue", RpcTarget.All, initiator.photonView.ViewID, target.photonView.ViewID);
     }
 
     [PunRPC]
