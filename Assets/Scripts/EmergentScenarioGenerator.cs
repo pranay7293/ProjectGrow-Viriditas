@@ -18,7 +18,7 @@ public class EmergentScenarioGenerator : MonoBehaviourPunCallbacks
 
     public async Task<string> GenerateScenario(string currentChallenge, List<string> recentPlayerActions)
     {
-        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, generate a new emergent scenario that adds complexity to the game. The scenario should be a single paragraph describing an unexpected event or complication.";
+        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, c The scenario should be a single paragraph describing an unexpected event or complication.";
 
         string response = await openAIService.GetChatCompletionAsync(prompt);
         return response;
