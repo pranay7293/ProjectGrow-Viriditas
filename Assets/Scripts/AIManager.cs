@@ -1,6 +1,7 @@
 using UnityEngine;
 using Photon.Pun;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 public class AIManager : MonoBehaviourPunCallbacks
 {
@@ -20,7 +21,7 @@ public class AIManager : MonoBehaviourPunCallbacks
 
         if (npcBehavior != null && npcData != null && npcOpenAI != null)
         {
-            npcBehavior.Initialize(characterController, npcData);
+            npcBehavior.Initialize(characterController, npcData, this);
             npcData.Initialize(characterController);
             npcOpenAI.Initialize(npcData);
             isInitialized = true;
@@ -38,36 +39,34 @@ public class AIManager : MonoBehaviourPunCallbacks
         npcBehavior.UpdateBehavior();
     }
 
-    public Vector3 GetTargetPosition()
-    {
-        return npcBehavior.GetTargetPosition();
-    }
-
-    public async Task<string[]> GetGenerativeChoices()
+    public async Task<List<string>> GetGenerativeChoices()
     {
         if (!PhotonNetwork.IsMasterClient)
         {
-            // For non-master clients, we should implement a way to sync choices
-            // For now, return default choices
-            return new string[] { "Waiting for choices...", "Waiting for choices...", "Waiting for choices..." };
+            return new List<string> { "Waiting for choices...", "Waiting for choices...", "Waiting for choices..." };
         }
 
-        string prompt = $"Generate 3 dialogue options for {characterController.characterName} related to the current challenge: {GameManager.Instance.GetCurrentChallenge()}";
+        GameState currentState = GameManager.Instance.GetCurrentGameState();
+        string prompt = $"Generate 3 dialogue options for {characterController.characterName} related to the current challenge: {currentState.CurrentChallenge}. Consider their emotional state: {npcData.GetCurrentEmotionalState()}";
         return await npcOpenAI.GetGenerativeChoices();
     }
 
-    public async Task<string> MakeDecision(string playerChoice)
+    public async Task<string> MakeDecision(List<string> options)
     {
-        string prompt = $"Generate a response for {characterController.characterName} to the player's choice: '{playerChoice}'. Consider the current challenge: {GameManager.Instance.GetCurrentChallenge()}";
-        string aiResponse = await npcOpenAI.GetResponse(prompt);
-        npcData.AddMemory($"Player chose: {playerChoice}. AI responded: {aiResponse}");
-        npcBehavior.ProcessDecision(aiResponse);
-        return aiResponse;
+        GameState currentState = GameManager.Instance.GetCurrentGameState();
+        string decision = npcData.MakeDecision(options, currentState);
+        
+        string prompt = $"Generate a response for {characterController.characterName} who has decided to {decision}. Consider their current emotional state: {npcData.GetCurrentEmotionalState()}";
+        return await npcOpenAI.GetResponse(prompt);
     }
 
     public async Task<string> GetNPCDialogue(string targetName)
     {
-        string prompt = $"Generate a dialogue line for {characterController.characterName} to say to {targetName} about the current challenge: {GameManager.Instance.GetCurrentChallenge()}";
+        GameState currentState = GameManager.Instance.GetCurrentGameState();
+        float relationship = npcData.GetRelationship(targetName);
+        string emotionalState = npcData.GetCurrentEmotionalState().ToString();
+
+        string prompt = $"Generate a dialogue line for {characterController.characterName} to say to {targetName} about the current challenge: {currentState.CurrentChallenge}. Their relationship is {relationship} and {characterController.characterName}'s current emotional state is {emotionalState}.";
         return await npcOpenAI.GetResponse(prompt);
     }
 

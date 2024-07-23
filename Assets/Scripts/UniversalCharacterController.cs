@@ -13,10 +13,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public float interactionDistance = 3f;
 
     [Header("AI Settings")]
-    public string characterRole;
-    public string characterBackground;
-    [TextArea(3, 10)]
-    public string characterPersonality;
+    public AISettings aiSettings;
 
     [Header("Gameplay")]
     public int personalScore = 0;
@@ -27,6 +24,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private UnityEngine.AI.NavMeshAgent navMeshAgent;
     private GameObject cameraRigInstance;
     private Renderer characterRenderer;
+    private TextMesh actionIndicator;
 
     private Vector3 moveDirection;
     private float rotationY;
@@ -54,6 +52,14 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
         characterRenderer = GetComponentInChildren<Renderer>();
         aiManager = GetComponent<AIManager>();
+
+        GameObject indicatorObj = new GameObject("ActionIndicator");
+        indicatorObj.transform.SetParent(transform);
+        indicatorObj.transform.localPosition = Vector3.up * 2f;
+        actionIndicator = indicatorObj.AddComponent<TextMesh>();
+        actionIndicator.alignment = TextAlignment.Center;
+        actionIndicator.anchor = TextAnchor.LowerCenter;
+        actionIndicator.fontSize = 14;
     }
 
     [PunRPC]
@@ -257,6 +263,13 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return currentState;
     }
 
+    public void PerformAction(string actionName)
+    {
+        SetState(CharacterState.PerformingAction);
+        actionIndicator.text = actionName;
+        // Implement action-specific logic here
+    }
+
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
@@ -266,6 +279,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             stream.SendNext((int)currentState);
             stream.SendNext(personalScore);
             stream.SendNext(currentObjective);
+            stream.SendNext(actionIndicator.text);
         }
         else
         {
@@ -274,6 +288,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             currentState = (CharacterState)stream.ReceiveNext();
             personalScore = (int)stream.ReceiveNext();
             currentObjective = (string)stream.ReceiveNext();
+            actionIndicator.text = (string)stream.ReceiveNext();
         }
     }
 

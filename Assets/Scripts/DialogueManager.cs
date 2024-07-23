@@ -58,6 +58,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     {
         characterFilter.ClearOptions();
         characterFilter.AddOptions(new List<string> { "All Characters" });
+        characterFilter.AddOptions(CharacterSelectionManager.characterNames.ToList());
     }
 
     public void InitiateDialogue(UniversalCharacterController npc)
@@ -81,11 +82,11 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             currentNPC = npc;
             npcNameText.text = npc.characterName;
             dialoguePanel.SetActive(true);
-            string[] options = await npc.GetComponent<AIManager>().GetGenerativeChoices();
+            List<string> options = await npc.GetComponent<AIManager>().GetGenerativeChoices();
 
             for (int i = 0; i < optionButtons.Length; i++)
             {
-                if (i < options.Length)
+                if (i < options.Count)
                 {
                     optionTexts[i].text = options[i];
                     int index = i;
@@ -146,7 +147,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        string aiResponse = await aiManager.MakeDecision(playerChoice);
+        string aiResponse = await aiManager.MakeDecision(new List<string> { playerChoice });
         AddToChatLog(currentNPC.characterName, aiResponse);
         GameManager.Instance.UpdateGameState(currentNPC.characterName, aiResponse);
         CloseDialogue();
@@ -213,26 +214,25 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     public void ToggleChatLog()
     {
-    if (chatLogPanel.activeSelf)
-    {
-        StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 0f, fadeDuration));
-    }
-    else
-    {
-        chatLogPanel.SetActive(true);
-        StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 1f, fadeDuration));
-        UpdateChatLogDisplay();
-    }
-    InputManager.Instance.IsChatLogOpen = chatLogPanel.activeSelf;
-    UpdateCursorState();
+        if (chatLogPanel.activeSelf)
+        {
+            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 0f, fadeDuration));
+        }
+        else
+        {
+            chatLogPanel.SetActive(true);
+            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 1f, fadeDuration));
+            UpdateChatLogDisplay();
+        }
+        InputManager.Instance.IsChatLogOpen = chatLogPanel.activeSelf;
+        UpdateCursorState();
     }
 
     private void UpdateCursorState()
     {
-        Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = InputManager.Instance.IsInDialogue || InputManager.Instance.IsChatLogOpen;
+        Cursor.lockState = (InputManager.Instance.IsInDialogue || InputManager.Instance.IsChatLogOpen) ? CursorLockMode.None : CursorLockMode.Locked;
     }
-
 
     private System.Collections.IEnumerator FadeCanvasGroup(CanvasGroup cg, float start, float end, float duration)
     {
@@ -248,12 +248,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         {
             chatLogPanel.SetActive(false);
         }
-    }
-
-    public void LogAgentToAgentInteraction(string initiator, string target, string initiatorDialogue, string targetResponse)
-    {
-        AddToChatLog(initiator, initiatorDialogue);
-        AddToChatLog(target, targetResponse);
     }
 
     public void TriggerNPCDialogue(UniversalCharacterController initiator, UniversalCharacterController target)
@@ -272,7 +266,8 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             string initiatorDialogue = await initiator.GetComponent<AIManager>().GetNPCDialogue(target.characterName);
             string targetResponse = await target.GetComponent<AIManager>().GetNPCDialogue(initiator.characterName);
 
-            LogAgentToAgentInteraction(initiator.characterName, target.characterName, initiatorDialogue, targetResponse);
+            AddToChatLog(initiator.characterName, initiatorDialogue);
+            AddToChatLog(target.characterName, targetResponse);
 
             GameManager.Instance.UpdateGameState(initiator.characterName, initiatorDialogue);
             GameManager.Instance.UpdateGameState(target.characterName, targetResponse);

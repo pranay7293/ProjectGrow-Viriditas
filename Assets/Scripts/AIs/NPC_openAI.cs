@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Threading.Tasks;
 using System.Text;
+using System.Collections.Generic;
 
 public class NPC_openAI : MonoBehaviour
 {
@@ -13,7 +14,7 @@ public class NPC_openAI : MonoBehaviour
         openAIService = OpenAIService.Instance;
     }
 
-    public async Task<string[]> GetGenerativeChoices()
+    public async Task<List<string>> GetGenerativeChoices()
     {
         string characterContext = GetCharacterContext();
         string prompt = $"{characterContext}\n\nGenerate 3 short, distinct action choices (max 10 words each) for this character based on their personality and the current game situation. Separate the choices with a newline character.";
@@ -22,9 +23,9 @@ public class NPC_openAI : MonoBehaviour
         if (string.IsNullOrEmpty(response))
         {
             Debug.LogWarning("Failed to get response from OpenAI API, using default choices");
-            return new string[] { "Investigate the area", "Talk to a nearby character", "Work on the current objective" };
+            return new List<string> { "Investigate the area", "Talk to a nearby character", "Work on the current objective" };
         }
-        return response.Split('\n');
+        return new List<string>(response.Split('\n'));
     }
 
     public async Task<string> GetResponse(string playerInput)

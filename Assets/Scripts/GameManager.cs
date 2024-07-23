@@ -9,18 +9,27 @@ public class GameManager : MonoBehaviourPunCallbacks
 {
     public static GameManager Instance { get; private set; }
 
+    [Header("Game Settings")]
     [SerializeField] private float challengeDuration = 1800f; // 30 minutes
+    [SerializeField] private int challengeGoal = 1000;
+    [SerializeField] private float scenarioGenerationInterval = 300f; // 5 minutes
+
+    [Header("UI References")]
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI challengeText;
     [SerializeField] private Slider challengeProgressBar;
     [SerializeField] private TextMeshProUGUI collectiveScoreDisplay;
     [SerializeField] private TextMeshProUGUI emergentScenarioDisplay;
+    [SerializeField] private TextMeshProUGUI subgoalsDisplay;
+
+    [Header("Game Components")]
     [SerializeField] private EmergentScenarioGenerator scenarioGenerator;
-    [SerializeField] private float scenarioGenerationInterval = 300f; // 5 minutes
     [SerializeField] private Transform[] spawnPoints;
 
     private float remainingTime;
     private string currentChallenge;
+    private List<string> currentSubgoals = new List<string>();
+    private Dictionary<string, int> subgoalProgress = new Dictionary<string, int>();
     private Dictionary<string, int> playerScores = new Dictionary<string, int>();
     private int collectiveScore = 0;
     private float lastScenarioTime;
@@ -40,8 +49,6 @@ public class GameManager : MonoBehaviourPunCallbacks
         {"River Osei", "Sound Studio"},
         {"Sierra Nakamura", "Innovation Hub"}
     };
-
-    private int challengeGoal = 1000; // This represents the target collective score to complete the challenge
 
     private void Awake()
     {
@@ -158,6 +165,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         remainingTime = challengeDuration;
         lastScenarioTime = 0f;
         recentPlayerActions.Clear();
+        GenerateSubgoals();
         photonView.RPC("SyncGameState", RpcTarget.All, currentChallenge, remainingTime, collectiveScore);
     }
 
@@ -172,6 +180,41 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             return PlayerPrefs.GetString("SelectedChallengeTitle", "Default Challenge");
         }
+    }
+
+    private void GenerateSubgoals()
+    {
+        currentSubgoals.Clear();
+        subgoalProgress.Clear();
+        // This is a simplified version. In a real implementation, you'd want to generate these based on the current challenge.
+        currentSubgoals.Add("Research the problem");
+        currentSubgoals.Add("Develop a prototype");
+        currentSubgoals.Add("Test the solution");
+        currentSubgoals.Add("Implement the final version");
+
+        foreach (string subgoal in currentSubgoals)
+        {
+            subgoalProgress[subgoal] = 0;
+        }
+
+        photonView.RPC("SyncSubgoals", RpcTarget.All, currentSubgoals.ToArray());
+    }
+
+    [PunRPC]
+    private void SyncSubgoals(string[] subgoals)
+    {
+        currentSubgoals = new List<string>(subgoals);
+        UpdateSubgoalDisplay();
+    }
+
+    private void UpdateSubgoalDisplay()
+    {
+        string subgoalText = "Current Subgoals:\n";
+        foreach (string subgoal in currentSubgoals)
+        {
+            subgoalText += $"- {subgoal} (Progress: {subgoalProgress[subgoal]}/3)\n";
+        }
+        subgoalsDisplay.text = subgoalText;
     }
 
     private void UpdateGameTime()
@@ -245,7 +288,8 @@ public class GameManager : MonoBehaviourPunCallbacks
         UpdateCollectiveScore(scoreIncrease);
         AddPlayerAction(action);
 
-        // Check if the action contributes to the challenge goal
+        UpdateSubgoalProgress(action);
+
         if (ActionContributesToChallenge(action))
         {
             UpdateCollectiveScore(10); // Additional score for challenge-related actions
@@ -254,15 +298,51 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private int EvaluateActionImpact(string action)
     {
-        // TODO: Implement more sophisticated action impact evaluation
+        // This is a simplified version. In a real implementation, you'd want to evaluate the action's impact more thoroughly.
         return Random.Range(1, 10);
     }
 
     private bool ActionContributesToChallenge(string action)
     {
-        // Implement logic to determine if the action contributes to the current challenge
-        // This could involve keyword matching or more sophisticated NLP techniques
+        // This is a simplified version. In a real implementation, you'd want to check if the action contributes to any of the current subgoals.
         return action.ToLower().Contains(currentChallenge.ToLower());
+    }
+
+    private void UpdateSubgoalProgress(string action)
+    {
+        foreach (string subgoal in currentSubgoals)
+        {
+            if (action.ToLower().Contains(subgoal.ToLower()))
+            {
+                subgoalProgress[subgoal]++;
+                if (subgoalProgress[subgoal] >= 3) // Arbitrary threshold for subgoal completion
+                {
+                    CompleteSubgoal(subgoal);
+                }
+                break;
+            }
+        }
+        UpdateSubgoalDisplay();
+    }
+
+    private void CompleteSubgoal(string subgoal)
+    {
+        currentSubgoals.Remove(subgoal);
+        subgoalProgress.Remove(subgoal);
+        UpdateCollectiveScore(50); // Bonus for completing a subgoal
+        photonView.RPC("NotifySubgoalCompletion", RpcTarget.All, subgoal);
+
+        if (currentSubgoals.Count == 0)
+        {
+            GenerateSubgoals(); // Generate new subgoals when all are completed
+        }
+    }
+
+    [PunRPC]
+    private void NotifySubgoalCompletion(string completedSubgoal)
+    {
+        Debug.Log($"Subgoal completed: {completedSubgoal}");
+        UpdateSubgoalDisplay();
     }
 
     public void UpdatePlayerScore(string playerName, int score)
@@ -322,7 +402,6 @@ public class GameManager : MonoBehaviourPunCallbacks
         collectiveScoreDisplay.text = "Community Score: " + collectiveScore;
         challengeProgressBar.value = (float)collectiveScore / challengeGoal;
         
-        // Update individual player scores in PlayerListManager
         PlayerListManager playerListManager = FindObjectOfType<PlayerListManager>();
         if (playerListManager != null)
         {
@@ -345,6 +424,17 @@ public class GameManager : MonoBehaviourPunCallbacks
         // TODO: Implement results display logic
     }
 
+    public GameState GetCurrentGameState()
+    {
+        return new GameState
+        {
+            CurrentChallenge = currentChallenge,
+            CurrentSubgoals = new List<string>(currentSubgoals),
+            CollectiveScore = collectiveScore
+            // Add more relevant game state information as needed
+        };
+    }
+
     public float GetRemainingTime()
     {
         return remainingTime;
@@ -353,6 +443,11 @@ public class GameManager : MonoBehaviourPunCallbacks
     public string GetCurrentChallenge()
     {
         return currentChallenge;
+    }
+
+    public List<string> GetCurrentSubgoals()
+    {
+        return new List<string>(currentSubgoals);
     }
 
     public Dictionary<string, int> GetPlayerScores()
