@@ -14,6 +14,8 @@ public class NPC_Behavior : MonoBehaviour
     private string currentLocation;
     private string currentAction;
     private float actionCooldown = 5f;
+    private float actionDuration = 3f;
+    private float actionStartTime;
 
     public void Initialize(UniversalCharacterController controller, NPC_Data data, AIManager manager)
     {
@@ -36,9 +38,12 @@ public class NPC_Behavior : MonoBehaviour
             MakeDecision();
         }
 
-        if (currentAction != null && Time.time - lastDecisionTime > actionCooldown)
+        if (currentAction != null)
         {
-            CompleteAction();
+            if (Time.time - actionStartTime > actionDuration)
+            {
+                CompleteAction();
+            }
         }
 
         UpdateState();
@@ -53,7 +58,7 @@ public class NPC_Behavior : MonoBehaviour
             string newLocation = GetTargetLocation();
             MoveToLocation(newLocation);
         }
-        else
+        else if (currentAction == null)
         {
             PerformLocationAction();
         }
@@ -99,6 +104,7 @@ public class NPC_Behavior : MonoBehaviour
         {
             currentAction = ChooseBestAction(actions);
             characterController.PerformAction(currentAction);
+            actionStartTime = Time.time;
             Debug.Log($"{characterController.characterName} is {currentAction} at {currentLocation}");
         }
     }

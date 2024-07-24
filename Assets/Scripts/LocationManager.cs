@@ -41,7 +41,6 @@ public class LocationManager : MonoBehaviour
         if (character != null)
         {
             Debug.Log($"{character.characterName} entered {gameObject.name}");
-            TriggerLocationEvent(character);
         }
     }
 
@@ -51,15 +50,6 @@ public class LocationManager : MonoBehaviour
         if (character != null)
         {
             Debug.Log($"{character.characterName} exited {gameObject.name}");
-        }
-    }
-
-    private void TriggerLocationEvent(UniversalCharacterController character)
-    {
-        if (locationActions.TryGetValue(gameObject.name, out List<string> actions))
-        {
-            string randomAction = actions[Random.Range(0, actions.Count)];
-            character.PerformAction(randomAction);
         }
     }
 

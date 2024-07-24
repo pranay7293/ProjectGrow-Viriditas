@@ -60,6 +60,13 @@ public class AIManager : MonoBehaviourPunCallbacks
         return await npcOpenAI.GetResponse(prompt);
     }
 
+    public async Task<string> ProcessCustomInput(string customInput)
+    {
+        GameState currentState = GameManager.Instance.GetCurrentGameState();
+        string prompt = $"Generate a response for {characterController.characterName} to the player's custom input: '{customInput}'. Consider the current challenge: {currentState.CurrentChallenge} and their emotional state: {npcData.GetCurrentEmotionalState()}";
+        return await npcOpenAI.GetResponse(prompt);
+    }
+
     public async Task<string> GetNPCDialogue(string targetName)
     {
         GameState currentState = GameManager.Instance.GetCurrentGameState();

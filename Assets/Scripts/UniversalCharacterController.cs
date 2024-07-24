@@ -1,6 +1,8 @@
 using UnityEngine;
 using Photon.Pun;
+using System.Collections;
 using System.Threading.Tasks;
+using TMPro;
 
 public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObservable
 {
@@ -24,7 +26,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private UnityEngine.AI.NavMeshAgent navMeshAgent;
     private GameObject cameraRigInstance;
     private Renderer characterRenderer;
-    private TextMesh actionIndicator;
+    private TextMeshPro actionIndicator;
 
     private Vector3 moveDirection;
     private float rotationY;
@@ -48,18 +50,21 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void InitializeComponents()
     {
-        characterController = GetComponent<CharacterController>();
-        navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-        characterRenderer = GetComponentInChildren<Renderer>();
-        aiManager = GetComponent<AIManager>();
+    characterController = GetComponent<CharacterController>();
+    navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+    characterRenderer = GetComponentInChildren<Renderer>();
+    aiManager = GetComponent<AIManager>();
 
-        GameObject indicatorObj = new GameObject("ActionIndicator");
-        indicatorObj.transform.SetParent(transform);
-        indicatorObj.transform.localPosition = Vector3.up * 2f;
-        actionIndicator = indicatorObj.AddComponent<TextMesh>();
-        actionIndicator.alignment = TextAlignment.Center;
-        actionIndicator.anchor = TextAnchor.LowerCenter;
-        actionIndicator.fontSize = 14;
+    actionIndicator = GetComponentInChildren<TextMeshPro>();
+    if (actionIndicator == null)
+    {
+        Debug.LogError("ActionIndicator TextMeshPro component not found on character prefab.");
+    }
+    else
+    {
+        actionIndicator.text = "";
+        actionIndicator.gameObject.SetActive(false);
+    }
     }
 
     [PunRPC]
@@ -266,8 +271,31 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public void PerformAction(string actionName)
     {
         SetState(CharacterState.PerformingAction);
-        actionIndicator.text = actionName;
+        if (actionIndicator != null)
+        {
+            actionIndicator.text = actionName + "...";
+            actionIndicator.gameObject.SetActive(true);
+            StartCoroutine(FadeOutActionIndicator());
+        }
         // Implement action-specific logic here
+    }
+
+    private IEnumerator FadeOutActionIndicator()
+    {
+        yield return new WaitForSeconds(3f); // Display for 3 seconds
+        float duration = 1f;
+        float elapsedTime = 0f;
+        Color startColor = actionIndicator.color;
+        Color endColor = new Color(startColor.r, startColor.g, startColor.b, 0f);
+
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.deltaTime;
+            actionIndicator.color = Color.Lerp(startColor, endColor, elapsedTime / duration);
+            yield return null;
+        }
+        actionIndicator.text = "";
+        actionIndicator.gameObject.SetActive(false);
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)

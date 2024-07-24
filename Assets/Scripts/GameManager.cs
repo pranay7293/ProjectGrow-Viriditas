@@ -10,17 +10,18 @@ public class GameManager : MonoBehaviourPunCallbacks
     public static GameManager Instance { get; private set; }
 
     [Header("Game Settings")]
-    [SerializeField] private float challengeDuration = 1800f; // 30 minutes
+    [SerializeField] private float challengeDuration = 1800f;
     [SerializeField] private int challengeGoal = 1000;
-    [SerializeField] private float scenarioGenerationInterval = 300f; // 5 minutes
+    [SerializeField] private float scenarioGenerationInterval = 300f;
 
     [Header("UI References")]
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI challengeText;
     [SerializeField] private Slider challengeProgressBar;
-    [SerializeField] private TextMeshProUGUI collectiveScoreDisplay;
     [SerializeField] private TextMeshProUGUI emergentScenarioDisplay;
-    [SerializeField] private TextMeshProUGUI subgoalsDisplay;
+    [SerializeField] private TextMeshProUGUI subgoalsText;
+    [SerializeField] private GameObject subgoalsPanel;
+    [SerializeField] private Button toggleSubgoalsButton;
 
     [Header("Game Components")]
     [SerializeField] private EmergentScenarioGenerator scenarioGenerator;
@@ -69,6 +70,8 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             InitializeGame();
         }
+        subgoalsPanel.SetActive(false);
+        toggleSubgoalsButton.onClick.AddListener(ToggleSubgoalsPanel);
     }
 
     private void Update()
@@ -186,7 +189,6 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         currentSubgoals.Clear();
         subgoalProgress.Clear();
-        // This is a simplified version. In a real implementation, you'd want to generate these based on the current challenge.
         currentSubgoals.Add("Research the problem");
         currentSubgoals.Add("Develop a prototype");
         currentSubgoals.Add("Test the solution");
@@ -204,17 +206,31 @@ public class GameManager : MonoBehaviourPunCallbacks
     private void SyncSubgoals(string[] subgoals)
     {
         currentSubgoals = new List<string>(subgoals);
-        UpdateSubgoalDisplay();
+        if (subgoalsPanel.activeSelf)
+        {
+            UpdateSubgoalDisplay();
+        }
+    }
+
+    private void ToggleSubgoalsPanel()
+    {
+        subgoalsPanel.SetActive(!subgoalsPanel.activeSelf);
+        if (subgoalsPanel.activeSelf)
+        {
+            UpdateSubgoalDisplay();
+        }
     }
 
     private void UpdateSubgoalDisplay()
     {
+        if (!subgoalsPanel.activeSelf) return;
+
         string subgoalText = "Current Subgoals:\n";
         foreach (string subgoal in currentSubgoals)
         {
             subgoalText += $"- {subgoal} (Progress: {subgoalProgress[subgoal]}/3)\n";
         }
-        subgoalsDisplay.text = subgoalText;
+        subgoalsText.text = subgoalText;
     }
 
     private void UpdateGameTime()
@@ -269,7 +285,6 @@ public class GameManager : MonoBehaviourPunCallbacks
     private void NotifyNewScenario(string scenario)
     {
         emergentScenarioDisplay.text = scenario;
-        // TODO: Implement logic to apply the scenario effects to the game state
     }
 
     public void AddPlayerAction(string action)
@@ -292,19 +307,17 @@ public class GameManager : MonoBehaviourPunCallbacks
 
         if (ActionContributesToChallenge(action))
         {
-            UpdateCollectiveScore(10); // Additional score for challenge-related actions
+            UpdateCollectiveScore(10);
         }
     }
 
     private int EvaluateActionImpact(string action)
     {
-        // This is a simplified version. In a real implementation, you'd want to evaluate the action's impact more thoroughly.
         return Random.Range(1, 10);
     }
 
     private bool ActionContributesToChallenge(string action)
     {
-        // This is a simplified version. In a real implementation, you'd want to check if the action contributes to any of the current subgoals.
         return action.ToLower().Contains(currentChallenge.ToLower());
     }
 
@@ -315,7 +328,7 @@ public class GameManager : MonoBehaviourPunCallbacks
             if (action.ToLower().Contains(subgoal.ToLower()))
             {
                 subgoalProgress[subgoal]++;
-                if (subgoalProgress[subgoal] >= 3) // Arbitrary threshold for subgoal completion
+                if (subgoalProgress[subgoal] >= 3)
                 {
                     CompleteSubgoal(subgoal);
                 }
@@ -329,12 +342,17 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         currentSubgoals.Remove(subgoal);
         subgoalProgress.Remove(subgoal);
-        UpdateCollectiveScore(50); // Bonus for completing a subgoal
+        UpdateCollectiveScore(50);
         photonView.RPC("NotifySubgoalCompletion", RpcTarget.All, subgoal);
 
         if (currentSubgoals.Count == 0)
         {
-            GenerateSubgoals(); // Generate new subgoals when all are completed
+            GenerateSubgoals();
+        }
+
+        if (subgoalsPanel.activeSelf)
+        {
+            UpdateSubgoalDisplay();
         }
     }
 
@@ -399,8 +417,8 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void UpdateScoreDisplay()
     {
-        collectiveScoreDisplay.text = "Community Score: " + collectiveScore;
-        challengeProgressBar.value = (float)collectiveScore / challengeGoal;
+        float progress = (float)collectiveScore / challengeGoal;
+        challengeProgressBar.value = progress;
         
         PlayerListManager playerListManager = FindObjectOfType<PlayerListManager>();
         if (playerListManager != null)
@@ -410,8 +428,8 @@ public class GameManager : MonoBehaviourPunCallbacks
                 Photon.Realtime.Player player = PhotonNetwork.PlayerList.FirstOrDefault(p => p.NickName == kvp.Key);
                 if (player != null)
                 {
-                    float progress = (float)kvp.Value / challengeGoal;
-                    playerListManager.UpdatePlayerProgress(player.ActorNumber, progress);
+                    float playerProgress = (float)kvp.Value / challengeGoal;
+                    playerListManager.UpdatePlayerProgress(player.ActorNumber, playerProgress);
                 }
             }
         }
@@ -421,7 +439,6 @@ public class GameManager : MonoBehaviourPunCallbacks
     private void ShowResults()
     {
         Debug.Log("Challenge ended. Displaying results...");
-        // TODO: Implement results display logic
     }
 
     public GameState GetCurrentGameState()
@@ -431,7 +448,6 @@ public class GameManager : MonoBehaviourPunCallbacks
             CurrentChallenge = currentChallenge,
             CurrentSubgoals = new List<string>(currentSubgoals),
             CollectiveScore = collectiveScore
-            // Add more relevant game state information as needed
         };
     }
 

@@ -82,26 +82,31 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             currentNPC = npc;
             npcNameText.text = npc.characterName;
             dialoguePanel.SetActive(true);
-            List<string> options = await npc.GetComponent<AIManager>().GetGenerativeChoices();
-
-            for (int i = 0; i < optionButtons.Length; i++)
-            {
-                if (i < options.Count)
-                {
-                    optionTexts[i].text = options[i];
-                    int index = i;
-                    optionButtons[i].onClick.RemoveAllListeners();
-                    optionButtons[i].onClick.AddListener(() => SelectDialogueOption(index));
-                    optionButtons[i].gameObject.SetActive(true);
-                }
-                else
-                {
-                    optionButtons[i].gameObject.SetActive(false);
-                }
-            }
-
             customInputField.text = "";
+            
+            List<string> options = await npc.GetComponent<AIManager>().GetGenerativeChoices();
+            UpdateDialogueOptions(options);
+
             AddToChatLog(npc.characterName, "is ready to talk.");
+        }
+    }
+
+    private void UpdateDialogueOptions(List<string> options)
+    {
+        for (int i = 0; i < optionButtons.Length; i++)
+        {
+            if (i < options.Count)
+            {
+                optionTexts[i].text = options[i];
+                int index = i;
+                optionButtons[i].onClick.RemoveAllListeners();
+                optionButtons[i].onClick.AddListener(() => SelectDialogueOption(index));
+                optionButtons[i].gameObject.SetActive(true);
+            }
+            else
+            {
+                optionButtons[i].gameObject.SetActive(false);
+            }
         }
     }
 
@@ -123,7 +128,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     {
         if (currentNPC != null && !string.IsNullOrEmpty(customInputField.text))
         {
-            ProcessPlayerChoice(customInputField.text);
+            ProcessCustomInput(customInputField.text);
         }
     }
 
@@ -153,11 +158,38 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         CloseDialogue();
     }
 
+    private async void ProcessCustomInput(string customInput)
+    {
+        if (currentNPC == null || GameManager.Instance == null)
+        {
+            Debug.LogError("ProcessCustomInput: currentNPC or GameManager.Instance is null");
+            CloseDialogue();
+            return;
+        }
+
+        AddToChatLog("Player", customInput);
+        GameManager.Instance.AddPlayerAction(customInput);
+        
+        AIManager aiManager = currentNPC.GetComponent<AIManager>();
+        if (aiManager == null)
+        {
+            Debug.LogError("ProcessCustomInput: AIManager not found on currentNPC");
+            CloseDialogue();
+            return;
+        }
+
+        string aiResponse = await aiManager.ProcessCustomInput(customInput);
+        AddToChatLog(currentNPC.characterName, aiResponse);
+        GameManager.Instance.UpdateGameState(currentNPC.characterName, aiResponse);
+        CloseDialogue();
+    }
+
     public void CloseDialogue()
     {
         dialoguePanel.SetActive(false);
         InputManager.Instance.IsInDialogue = false;
         currentNPC = null;
+        customInputField.text = "";
     }
 
     public void AddToChatLog(string speaker, string message)
