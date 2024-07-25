@@ -13,10 +13,13 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     [Header("Dialogue Panel")]
     [SerializeField] private GameObject dialoguePanel;
     [SerializeField] private TextMeshProUGUI npcNameText;
+    [SerializeField] private TextMeshProUGUI npcResponseText;
     [SerializeField] private Button[] optionButtons;
     [SerializeField] private TextMeshProUGUI[] optionTexts;
     [SerializeField] private TMP_InputField customInputField;
     [SerializeField] private Button submitCustomInputButton;
+    [SerializeField] private Button endConversationButton;
+    [SerializeField] private GameObject loadingIndicator;
 
     [Header("Chat Log")]
     [SerializeField] private GameObject chatLogPanel;
@@ -31,12 +34,16 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     private UniversalCharacterController currentNPC;
     private Dictionary<string, List<string>> chatLog = new Dictionary<string, List<string>>();
     private List<string> characterList = new List<string>();
+    private List<string> currentOptions = new List<string>();
+    private bool isWaitingForPlayerInput = false;
+    private bool isProcessingInput = false;
 
     private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -46,11 +53,19 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+        InitializeUI();
+    }
+
+    private void InitializeUI()
+    {
         dialoguePanel.SetActive(false);
         chatLogPanel.SetActive(false);
+        loadingIndicator.SetActive(false);
         submitCustomInputButton.onClick.AddListener(SubmitCustomInput);
         toggleChatLogButton.onClick.AddListener(ToggleChatLog);
+        endConversationButton.onClick.AddListener(EndConversation);
         characterFilter.onValueChanged.AddListener(FilterChatLog);
+        customInputField.onValueChanged.AddListener(OnCustomInputValueChanged);
         InitializeCharacterFilter();
     }
 
@@ -61,7 +76,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         characterFilter.AddOptions(CharacterSelectionManager.characterNames.ToList());
     }
 
-    public void InitiateDialogue(UniversalCharacterController npc)
+    public async void InitiateDialogue(UniversalCharacterController npc)
     {
         if (npc == null)
         {
@@ -69,26 +84,28 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             return;
         }
         currentNPC = npc;
+        currentNPC.SetState(UniversalCharacterController.CharacterState.Interacting);
         InputManager.Instance.IsInDialogue = true;
-        photonView.RPC("RPC_OpenDialogue", RpcTarget.All, npc.photonView.ViewID);
+        
+        npcNameText.text = npc.characterName;
+        npcResponseText.text = $"Hello, I'm {npc.characterName}. How can I help you?";
+        dialoguePanel.SetActive(true);
+        customInputField.text = "";
+        
+        AddToChatLog(npc.characterName, npcResponseText.text);
+
+        await GenerateAndDisplayChoices();
+        isWaitingForPlayerInput = true;
     }
 
-    [PunRPC]
-    private async void RPC_OpenDialogue(int npcViewID)
+    private async Task GenerateAndDisplayChoices()
     {
-        UniversalCharacterController npc = PhotonView.Find(npcViewID).GetComponent<UniversalCharacterController>();
-        if (npc != null)
-        {
-            currentNPC = npc;
-            npcNameText.text = npc.characterName;
-            dialoguePanel.SetActive(true);
-            customInputField.text = "";
-            
-            List<string> options = await npc.GetComponent<AIManager>().GetGenerativeChoices();
-            UpdateDialogueOptions(options);
-
-            AddToChatLog(npc.characterName, "is ready to talk.");
-        }
+        isWaitingForPlayerInput = false;
+        ShowLoadingIndicator(true);
+        currentOptions = await OpenAIService.Instance.GetGenerativeChoices(currentNPC.characterName, GetCurrentContext());
+        UpdateDialogueOptions(currentOptions);
+        ShowLoadingIndicator(false);
+        isWaitingForPlayerInput = true;
     }
 
     private void UpdateDialogueOptions(List<string> options)
@@ -112,24 +129,33 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void SelectDialogueOption(int optionIndex)
     {
-        if (currentNPC != null && optionIndex >= 0 && optionIndex < optionTexts.Length)
+        if (!isWaitingForPlayerInput || isProcessingInput) return;
+
+        if (currentNPC != null && optionIndex >= 0 && optionIndex < currentOptions.Count)
         {
-            string selectedOption = optionTexts[optionIndex].text;
+            string selectedOption = currentOptions[optionIndex];
             ProcessPlayerChoice(selectedOption);
         }
         else
         {
             Debug.LogError($"SelectDialogueOption: Invalid option index {optionIndex} or currentNPC is null");
-            CloseDialogue();
+            EndConversation();
         }
     }
 
-    private void SubmitCustomInput()
+    public void SubmitCustomInput()
     {
+        if (!isWaitingForPlayerInput || isProcessingInput) return;
+
         if (currentNPC != null && !string.IsNullOrEmpty(customInputField.text))
         {
-            ProcessCustomInput(customInputField.text);
+            ProcessPlayerChoice(customInputField.text);
         }
+    }
+
+    private void OnCustomInputValueChanged(string newValue)
+    {
+        submitCustomInputButton.interactable = !string.IsNullOrEmpty(newValue);
     }
 
     private async void ProcessPlayerChoice(string playerChoice)
@@ -137,59 +163,45 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         if (currentNPC == null || GameManager.Instance == null)
         {
             Debug.LogError("ProcessPlayerChoice: currentNPC or GameManager.Instance is null");
-            CloseDialogue();
+            EndConversation();
             return;
         }
+
+        isWaitingForPlayerInput = false;
+        isProcessingInput = true;
+        ShowLoadingIndicator(true);
 
         AddToChatLog("Player", playerChoice);
         GameManager.Instance.AddPlayerAction(playerChoice);
         
-        AIManager aiManager = currentNPC.GetComponent<AIManager>();
-        if (aiManager == null)
-        {
-            Debug.LogError("ProcessPlayerChoice: AIManager not found on currentNPC");
-            CloseDialogue();
-            return;
-        }
-
-        string aiResponse = await aiManager.MakeDecision(new List<string> { playerChoice });
+        string aiResponse = await OpenAIService.Instance.GetResponse(GetResponsePrompt(playerChoice));
+        npcResponseText.text = aiResponse;
         AddToChatLog(currentNPC.characterName, aiResponse);
         GameManager.Instance.UpdateGameState(currentNPC.characterName, aiResponse);
-        CloseDialogue();
+
+        customInputField.text = ""; // Clear the input field after processing
+        await GenerateAndDisplayChoices();
+        isProcessingInput = false;
     }
 
-    private async void ProcessCustomInput(string customInput)
+    public void EndConversation()
     {
-        if (currentNPC == null || GameManager.Instance == null)
+        if (currentNPC != null)
         {
-            Debug.LogError("ProcessCustomInput: currentNPC or GameManager.Instance is null");
-            CloseDialogue();
-            return;
+            currentNPC.SetState(UniversalCharacterController.CharacterState.Idle);
         }
-
-        AddToChatLog("Player", customInput);
-        GameManager.Instance.AddPlayerAction(customInput);
-        
-        AIManager aiManager = currentNPC.GetComponent<AIManager>();
-        if (aiManager == null)
-        {
-            Debug.LogError("ProcessCustomInput: AIManager not found on currentNPC");
-            CloseDialogue();
-            return;
-        }
-
-        string aiResponse = await aiManager.ProcessCustomInput(customInput);
-        AddToChatLog(currentNPC.characterName, aiResponse);
-        GameManager.Instance.UpdateGameState(currentNPC.characterName, aiResponse);
-        CloseDialogue();
-    }
-
-    public void CloseDialogue()
-    {
         dialoguePanel.SetActive(false);
         InputManager.Instance.IsInDialogue = false;
         currentNPC = null;
         customInputField.text = "";
+        isWaitingForPlayerInput = false;
+        isProcessingInput = false;
+        ShowLoadingIndicator(false);
+    }
+
+    private void ShowLoadingIndicator(bool show)
+    {
+        loadingIndicator.SetActive(show);
     }
 
     public void AddToChatLog(string speaker, string message)
@@ -282,6 +294,17 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         }
     }
 
+    private string GetCurrentContext()
+    {
+        GameState currentState = GameManager.Instance.GetCurrentGameState();
+        return $"Current challenge: {currentState.CurrentChallenge}. Subgoals: {string.Join(", ", currentState.CurrentSubgoals)}. Collective score: {currentState.CollectiveScore}";
+    }
+
+    private string GetResponsePrompt(string playerInput)
+    {
+        return $"Generate a response for {currentNPC.characterName} to the player's input: '{playerInput}'. Consider the current context: {GetCurrentContext()}";
+    }
+
     public void TriggerNPCDialogue(UniversalCharacterController initiator, UniversalCharacterController target)
     {
         photonView.RPC("RPC_TriggerNPCDialogue", RpcTarget.All, initiator.photonView.ViewID, target.photonView.ViewID);
@@ -295,8 +318,8 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         if (initiator != null && target != null)
         {
-            string initiatorDialogue = await initiator.GetComponent<AIManager>().GetNPCDialogue(target.characterName);
-            string targetResponse = await target.GetComponent<AIManager>().GetNPCDialogue(initiator.characterName);
+            string initiatorDialogue = await OpenAIService.Instance.GetResponse(GetNPCDialoguePrompt(initiator, target));
+            string targetResponse = await OpenAIService.Instance.GetResponse(GetNPCDialoguePrompt(target, initiator));
 
             AddToChatLog(initiator.characterName, initiatorDialogue);
             AddToChatLog(target.characterName, targetResponse);
@@ -304,5 +327,10 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             GameManager.Instance.UpdateGameState(initiator.characterName, initiatorDialogue);
             GameManager.Instance.UpdateGameState(target.characterName, targetResponse);
         }
+    }
+
+    private string GetNPCDialoguePrompt(UniversalCharacterController speaker, UniversalCharacterController listener)
+    {
+        return $"Generate a dialogue line for {speaker.characterName} to say to {listener.characterName} about the current context: {GetCurrentContext()}";
     }
 }

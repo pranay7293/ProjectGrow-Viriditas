@@ -71,7 +71,7 @@ public class InputManager : MonoBehaviourPunCallbacks
     private void CloseDialogue()
     {
         IsInDialogue = false;
-        DialogueManager.Instance.CloseDialogue();
+        DialogueManager.Instance.EndConversation();
     }
 
     public void ToggleChatLog()

@@ -1136,7 +1136,6 @@ GameObject:
   - component: {fileID: -2094082790623892299}
   - component: {fileID: 1795015467367706738}
   - component: {fileID: -8041666378317006769}
-  - component: {fileID: -254261451926671289}
   m_Layer: 18
   m_Name: Character-Indigo
   m_TagString: Untagged
@@ -1385,18 +1384,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9fde1dd9e988e4e23a1efd41dea8f8f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &-254261451926671289
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 96042df38dfde4f44be4685b5229949a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &4857880945265616893

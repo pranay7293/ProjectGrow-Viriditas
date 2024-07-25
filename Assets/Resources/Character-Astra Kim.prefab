@@ -965,7 +965,6 @@ GameObject:
   - component: {fileID: 6515919653603863043}
   - component: {fileID: 6820290615558800649}
   - component: {fileID: -7113880019698680582}
-  - component: {fileID: -5553035339733177883}
   m_Layer: 18
   m_Name: Character-Astra Kim
   m_TagString: Untagged
@@ -1214,18 +1213,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9fde1dd9e988e4e23a1efd41dea8f8f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &-5553035339733177883
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 96042df38dfde4f44be4685b5229949a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &4857880945265616893

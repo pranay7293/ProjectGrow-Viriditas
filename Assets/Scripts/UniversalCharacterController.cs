@@ -1,7 +1,6 @@
 using UnityEngine;
 using Photon.Pun;
 using System.Collections;
-using System.Threading.Tasks;
 using TMPro;
 
 public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObservable
@@ -50,21 +49,21 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void InitializeComponents()
     {
-    characterController = GetComponent<CharacterController>();
-    navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-    characterRenderer = GetComponentInChildren<Renderer>();
-    aiManager = GetComponent<AIManager>();
+        characterController = GetComponent<CharacterController>();
+        navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        characterRenderer = GetComponentInChildren<Renderer>();
+        aiManager = GetComponent<AIManager>();
 
-    actionIndicator = GetComponentInChildren<TextMeshPro>();
-    if (actionIndicator == null)
-    {
-        Debug.LogError("ActionIndicator TextMeshPro component not found on character prefab.");
-    }
-    else
-    {
-        actionIndicator.text = "";
-        actionIndicator.gameObject.SetActive(false);
-    }
+        actionIndicator = GetComponentInChildren<TextMeshPro>();
+        if (actionIndicator == null)
+        {
+            Debug.LogError("ActionIndicator TextMeshPro component not found on character prefab.");
+        }
+        else
+        {
+            actionIndicator.text = "";
+            actionIndicator.gameObject.SetActive(false);
+        }
     }
 
     [PunRPC]
@@ -152,7 +151,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 HandlePlayerInput();
                 MovePlayer();
             }
-            else
+            else if (currentState != CharacterState.Interacting)
             {
                 HandleAIMovement();
             }
@@ -234,7 +233,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (!IsPlayerControlled && navMeshAgent != null)
         {
             navMeshAgent.SetDestination(destination);
-            currentState = CharacterState.Moving;
+            SetState(CharacterState.Moving);
         }
     }
 
