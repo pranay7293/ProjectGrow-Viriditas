@@ -35,8 +35,18 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     private Dictionary<string, List<string>> chatLog = new Dictionary<string, List<string>>();
     private List<string> characterList = new List<string>();
     private List<string> currentOptions = new List<string>();
-    private bool isWaitingForPlayerInput = false;
     private bool isProcessingInput = false;
+    private bool isGeneratingChoices = false;
+
+    private enum DialogueState
+    {
+        Idle,
+        WaitingForPlayerInput,
+        ProcessingPlayerInput,
+        GeneratingResponse
+    }
+
+    private DialogueState currentState = DialogueState.Idle;
 
     private void Awake()
     {
@@ -65,8 +75,14 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         toggleChatLogButton.onClick.AddListener(ToggleChatLog);
         endConversationButton.onClick.AddListener(EndConversation);
         characterFilter.onValueChanged.AddListener(FilterChatLog);
-        customInputField.onValueChanged.AddListener(OnCustomInputValueChanged);
+        
+        customInputField.onValueChanged.RemoveAllListeners();
+        customInputField.onEndEdit.RemoveAllListeners();
+        customInputField.onEndEdit.AddListener(OnCustomInputEndEdit);
+        
         InitializeCharacterFilter();
+        
+        Debug.Log("DialogueManager: UI Initialized");
     }
 
     private void InitializeCharacterFilter()
@@ -78,14 +94,17 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     public async void InitiateDialogue(UniversalCharacterController npc)
     {
-        if (npc == null)
+        Debug.Log($"DialogueManager: Attempting to initiate dialogue with {npc?.characterName}. Current state: {currentState}");
+        
+        if (npc == null || currentState != DialogueState.Idle)
         {
-            Debug.LogError("Attempted to initiate dialogue with null NPC");
+            Debug.LogWarning("Cannot initiate dialogue. NPC is null or dialogue is already in progress.");
             return;
         }
+
         currentNPC = npc;
         currentNPC.SetState(UniversalCharacterController.CharacterState.Interacting);
-        InputManager.Instance.IsInDialogue = true;
+        InputManager.Instance.StartDialogue();
         
         npcNameText.text = npc.characterName;
         npcResponseText.text = $"Hello, I'm {npc.characterName}. How can I help you?";
@@ -94,22 +113,34 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         
         AddToChatLog(npc.characterName, npcResponseText.text);
 
+        SetDialogueState(DialogueState.GeneratingResponse);
         await GenerateAndDisplayChoices();
-        isWaitingForPlayerInput = true;
+        SetDialogueState(DialogueState.WaitingForPlayerInput);
     }
 
     private async Task GenerateAndDisplayChoices()
     {
-        isWaitingForPlayerInput = false;
+        if (isGeneratingChoices)
+        {
+            Debug.Log("DialogueManager: Already generating choices, skipping.");
+            return;
+        }
+
+        Debug.Log("DialogueManager: Starting to generate choices");
+        isGeneratingChoices = true;
         ShowLoadingIndicator(true);
+
         currentOptions = await OpenAIService.Instance.GetGenerativeChoices(currentNPC.characterName, GetCurrentContext());
         UpdateDialogueOptions(currentOptions);
+
         ShowLoadingIndicator(false);
-        isWaitingForPlayerInput = true;
+        isGeneratingChoices = false;
+        Debug.Log("DialogueManager: Finished generating choices");
     }
 
     private void UpdateDialogueOptions(List<string> options)
     {
+        Debug.Log($"DialogueManager: Updating dialogue options. Count: {options.Count}");
         for (int i = 0; i < optionButtons.Length; i++)
         {
             if (i < options.Count)
@@ -129,7 +160,9 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void SelectDialogueOption(int optionIndex)
     {
-        if (!isWaitingForPlayerInput || isProcessingInput) return;
+        if (currentState != DialogueState.WaitingForPlayerInput) return;
+
+        Debug.Log($"DialogueManager: Option {optionIndex} selected");
 
         if (currentNPC != null && optionIndex >= 0 && optionIndex < currentOptions.Count)
         {
@@ -145,7 +178,9 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     public void SubmitCustomInput()
     {
-        if (!isWaitingForPlayerInput || isProcessingInput) return;
+        if (currentState != DialogueState.WaitingForPlayerInput) return;
+
+        Debug.Log("DialogueManager: Custom input submitted");
 
         if (currentNPC != null && !string.IsNullOrEmpty(customInputField.text))
         {
@@ -153,21 +188,23 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private void OnCustomInputValueChanged(string newValue)
+    public void OnCustomInputEndEdit(string newValue)
     {
+        Debug.Log($"DialogueManager: Custom input end edit: {newValue}");
         submitCustomInputButton.interactable = !string.IsNullOrEmpty(newValue);
     }
 
     private async void ProcessPlayerChoice(string playerChoice)
     {
-        if (currentNPC == null || GameManager.Instance == null)
+        if (currentState != DialogueState.WaitingForPlayerInput || isProcessingInput)
         {
-            Debug.LogError("ProcessPlayerChoice: currentNPC or GameManager.Instance is null");
-            EndConversation();
+            Debug.Log($"DialogueManager: Skipping processing. Current state: {currentState}, isProcessingInput: {isProcessingInput}");
             return;
         }
 
-        isWaitingForPlayerInput = false;
+        Debug.Log($"DialogueManager: Processing player choice: {playerChoice}");
+
+        SetDialogueState(DialogueState.ProcessingPlayerInput);
         isProcessingInput = true;
         ShowLoadingIndicator(true);
 
@@ -179,29 +216,40 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         AddToChatLog(currentNPC.characterName, aiResponse);
         GameManager.Instance.UpdateGameState(currentNPC.characterName, aiResponse);
 
-        customInputField.text = ""; // Clear the input field after processing
+        customInputField.text = "";
+
+        Debug.Log("DialogueManager: Finished processing player choice, generating new choices");
+        SetDialogueState(DialogueState.GeneratingResponse);
         await GenerateAndDisplayChoices();
+
+        SetDialogueState(DialogueState.WaitingForPlayerInput);
         isProcessingInput = false;
+        ShowLoadingIndicator(false);
+        Debug.Log("DialogueManager: Player choice fully processed");
     }
 
     public void EndConversation()
     {
+        Debug.Log("DialogueManager: Ending conversation. Setting state to Idle.");
+
         if (currentNPC != null)
         {
             currentNPC.SetState(UniversalCharacterController.CharacterState.Idle);
         }
         dialoguePanel.SetActive(false);
-        InputManager.Instance.IsInDialogue = false;
         currentNPC = null;
         customInputField.text = "";
-        isWaitingForPlayerInput = false;
+        SetDialogueState(DialogueState.Idle);
         isProcessingInput = false;
+        isGeneratingChoices = false;
         ShowLoadingIndicator(false);
+        InputManager.Instance.EndDialogue();
     }
 
     private void ShowLoadingIndicator(bool show)
     {
         loadingIndicator.SetActive(show);
+        Debug.Log($"DialogueManager: Loading indicator {(show ? "shown" : "hidden")}");
     }
 
     public void AddToChatLog(string speaker, string message)
@@ -268,14 +316,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 1f, fadeDuration));
             UpdateChatLogDisplay();
         }
-        InputManager.Instance.IsChatLogOpen = chatLogPanel.activeSelf;
-        UpdateCursorState();
-    }
-
-    private void UpdateCursorState()
-    {
-        Cursor.visible = InputManager.Instance.IsInDialogue || InputManager.Instance.IsChatLogOpen;
-        Cursor.lockState = (InputManager.Instance.IsInDialogue || InputManager.Instance.IsChatLogOpen) ? CursorLockMode.None : CursorLockMode.Locked;
     }
 
     private System.Collections.IEnumerator FadeCanvasGroup(CanvasGroup cg, float start, float end, float duration)
@@ -332,5 +372,11 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     private string GetNPCDialoguePrompt(UniversalCharacterController speaker, UniversalCharacterController listener)
     {
         return $"Generate a dialogue line for {speaker.characterName} to say to {listener.characterName} about the current context: {GetCurrentContext()}";
+    }
+
+    private void SetDialogueState(DialogueState newState)
+    {
+        Debug.Log($"DialogueManager: Changing state from {currentState} to {newState}");
+        currentState = newState;
     }
 }

@@ -7,10 +7,13 @@ public class InputManager : MonoBehaviourPunCallbacks
 
     public bool PlayerInteractActivate => Input.GetKeyDown(KeyCode.E);
     public bool PlayerRunModifier => Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-    public bool IsInDialogue { get; set; }
-    public bool IsChatLogOpen { get; set; }
+    public bool IsInDialogue { get; private set; }
+    public bool IsChatLogOpen { get; private set; }
 
     [SerializeField] private KeyCode toggleChatLogKey = KeyCode.Tab;
+    [SerializeField] private KeyCode endDialogueKey = KeyCode.Escape;
+
+    private UniversalCharacterController localPlayer;
 
     private void Awake()
     {
@@ -44,19 +47,21 @@ public class InputManager : MonoBehaviourPunCallbacks
 
     private void Update()
     {
-        UniversalCharacterController localPlayer = FindLocalPlayer();
+        if (localPlayer == null)
+        {
+            localPlayer = FindLocalPlayer();
+        }
+
         if (localPlayer != null && localPlayer.photonView.IsMine)
         {
-            if (PlayerInteractActivate)
+            if (PlayerInteractActivate && !IsInDialogue)
             {
-                if (IsInDialogue)
-                {
-                    CloseDialogue();
-                }
-                else
-                {
-                    localPlayer.TriggerDialogue();
-                }
+                localPlayer.TriggerDialogue();
+            }
+
+            if (Input.GetKeyDown(endDialogueKey) && IsInDialogue)
+            {
+                EndDialogue();
             }
 
             if (Input.GetKeyDown(toggleChatLogKey))
@@ -68,16 +73,24 @@ public class InputManager : MonoBehaviourPunCallbacks
         UpdateCursorState();
     }
 
-    private void CloseDialogue()
+    public void StartDialogue()
+    {
+        IsInDialogue = true;
+        UpdateCursorState();
+    }
+
+    public void EndDialogue()
     {
         IsInDialogue = false;
         DialogueManager.Instance.EndConversation();
+        UpdateCursorState();
     }
 
     public void ToggleChatLog()
     {
         IsChatLogOpen = !IsChatLogOpen;
         DialogueManager.Instance.ToggleChatLog();
+        UpdateCursorState();
     }
 
     private UniversalCharacterController FindLocalPlayer()
@@ -95,15 +108,7 @@ public class InputManager : MonoBehaviourPunCallbacks
 
     private void UpdateCursorState()
     {
-        if (IsInDialogue || IsChatLogOpen)
-        {
-            Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.None;
-        }
-        else
-        {
-            Cursor.visible = false;
-            Cursor.lockState = CursorLockMode.Locked;
-        }
+        Cursor.visible = IsInDialogue || IsChatLogOpen;
+        Cursor.lockState = (IsInDialogue || IsChatLogOpen) ? CursorLockMode.None : CursorLockMode.Locked;
     }
 }

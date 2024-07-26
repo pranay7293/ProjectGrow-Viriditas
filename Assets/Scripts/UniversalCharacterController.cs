@@ -32,6 +32,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public bool IsPlayerControlled { get; private set; }
 
+    private float lastDialogueAttemptTime = 0f;
+    private const float DialogueCooldown = 0.5f;
+
     public enum CharacterState
     {
         Idle,
@@ -199,6 +202,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void TriggerDialogue()
     {
+        if (!photonView.IsMine) return;
+        if (Time.time - lastDialogueAttemptTime < DialogueCooldown) return;
+
+        lastDialogueAttemptTime = Time.time;
         UniversalCharacterController nearestNPC = FindNearestNPC();
         if (nearestNPC != null && IsPlayerInRange(nearestNPC.transform))
         {
