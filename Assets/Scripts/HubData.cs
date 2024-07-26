@@ -7,4 +7,5 @@ public class HubData : ScriptableObject
     public string hubName;
     public string description;
     public List<ChallengeData> challenges;
+    public Color hubColor;
 }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using Photon.Pun;
 using Photon.Realtime;
+using UnityEngine.UI;
 
 public class ChallengesManager : MonoBehaviourPunCallbacks
 {
@@ -10,6 +11,9 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
     public GameObject[] challengeCards;
     public GameObject[] expandedChallenges;
     public PlayerListManager playerListManager;
+
+    [Range(0f, 1f)]
+    public float middleCardDarkenAmount = 0.1f;
 
     private HubData currentHub;
     private int selectedChallengeIndex = -1;
@@ -45,10 +49,18 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
             {
                 challengeCards[i].SetActive(true);
                 ChallengeCard card = challengeCards[i].GetComponent<ChallengeCard>();
-                card.SetUp(currentHub.challenges[i], this, i);
+                Color cardColor = currentHub.hubColor;
+                
+                // Darken the middle card
+                if (i == 1)
+                {
+                    cardColor = DarkenColor(cardColor, middleCardDarkenAmount);
+                }
+                
+                card.SetUp(currentHub.challenges[i], this, i, cardColor);
 
                 ExpandedChallengeCard expandedCard = expandedChallenges[i].GetComponent<ExpandedChallengeCard>();
-                expandedCard.SetUp(currentHub.challenges[i], this, i);
+                expandedCard.SetUp(currentHub.challenges[i], this, i, cardColor);
             }
             else
             {
@@ -56,6 +68,16 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
                 expandedChallenges[i].SetActive(false);
             }
         }
+    }
+
+    private Color DarkenColor(Color color, float amount)
+    {
+        return new Color(
+            Mathf.Clamp01(color.r - amount),
+            Mathf.Clamp01(color.g - amount),
+            Mathf.Clamp01(color.b - amount),
+            color.a
+        );
     }
 
     public void ExpandChallenge(int index)
@@ -81,14 +103,12 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
         ChallengeCard selectedCard = challengeCards[challengeIndex].GetComponent<ChallengeCard>();
         string challengeTitle = selectedCard.GetChallengeTitle();
         
-        // Update room properties
         ExitGames.Client.Photon.Hashtable properties = new ExitGames.Client.Photon.Hashtable
         {
             { "SelectedChallengeTitle", challengeTitle }
         };
         PhotonNetwork.CurrentRoom.SetCustomProperties(properties);
 
-        // Update PlayerPrefs as a fallback
         PlayerPrefs.SetString("SelectedChallengeTitle", challengeTitle);
         PlayerPrefs.Save();
 
@@ -103,7 +123,6 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
 
         if (votedPlayersCount == PhotonNetwork.CurrentRoom.PlayerCount)
         {
-            // All players have voted, proceed to the CharacterSelection scene
             PhotonNetwork.LoadLevel("CharacterSelection");
         }
     }
