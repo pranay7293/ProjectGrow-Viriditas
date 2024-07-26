@@ -17,10 +17,16 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
     private Button[] characterButtons;
     private Dictionary<int, bool> playerReadyStatus = new Dictionary<int, bool>();
 
-    public static readonly string[] characterNames = new string[]
+    public static readonly string[] characterFullNames = new string[]
     {
-        "Dr. Flora Tremblay", "Sierra Nakamura", "Dr. Eden Kapoor", "Indigo", "Dr. Cobalt Johnson",
-        "Aspen Rodriguez", "River Osei", "Celeste Dubois", "Astra Kim", "Lilith Fernandez"
+        "Indigo", "Astra Kim", "Dr. Cobalt Johnson", "Aspen Rodriguez", "Dr. Eden Kapoor",
+        "Celeste Dubois", "Sierra Nakamura", "Lilith Fernandez", "River Osei", "Dr. Flora Tremblay"
+    };
+
+    private static readonly string[] characterShortNames = new string[]
+    {
+        "INDIGO", "ASTRA", "DR. COBALT", "ASPEN", "DR. EDEN",
+        "CELESTE", "SIERRA", "LILITH", "RIVER", "DR. FLORA"
     };
 
     private void Start()
@@ -30,7 +36,7 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
         for (int i = 0; i < characterButtons.Length; i++)
         {
             int index = i;
-            characterButtons[i].GetComponentInChildren<TextMeshProUGUI>().text = characterNames[i];
+            characterButtons[i].GetComponentInChildren<TextMeshProUGUI>().text = characterShortNames[i];
             characterButtons[i].onClick.AddListener(() => SelectCharacter(index));
         }
 
@@ -46,15 +52,15 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
     {
         if (PhotonNetwork.LocalPlayer.CustomProperties.TryGetValue("SelectedCharacter", out object currentSelection))
         {
-            if ((string)currentSelection == characterNames[index])
+            if ((string)currentSelection == characterFullNames[index])
             {
                 DeselectCharacter();
                 return;
             }
         }
 
-        string characterName = characterNames[index];
-        Hashtable props = new Hashtable {{"SelectedCharacter", characterName}};
+        string characterFullName = characterFullNames[index];
+        Hashtable props = new Hashtable {{"SelectedCharacter", characterFullName}};
         PhotonNetwork.LocalPlayer.SetCustomProperties(props);
 
         UpdateCharacterButtonStates();
@@ -79,7 +85,7 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
             {
                 if (player.CustomProperties.TryGetValue("SelectedCharacter", out object selectedCharacter))
                 {
-                    if ((string)selectedCharacter == characterNames[i])
+                    if ((string)selectedCharacter == characterFullNames[i])
                     {
                         isTaken = true;
                         isSelectedByLocalPlayer = player.IsLocal;
@@ -139,5 +145,11 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
         playerReadyStatus.Remove(otherPlayer.ActorNumber);
         playerListManager.UpdatePlayerList();
         UpdateCharacterButtonStates();
+    }
+
+    public static string GetShortName(string fullName)
+    {
+        int index = System.Array.IndexOf(characterFullNames, fullName);
+        return index != -1 ? characterShortNames[index] : fullName;
     }
 }

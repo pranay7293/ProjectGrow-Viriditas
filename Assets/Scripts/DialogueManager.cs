@@ -89,7 +89,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     {
         characterFilter.ClearOptions();
         characterFilter.AddOptions(new List<string> { "All Characters" });
-        characterFilter.AddOptions(CharacterSelectionManager.characterNames.ToList());
+        characterFilter.AddOptions(CharacterSelectionManager.characterFullNames.ToList());
     }
 
     public async void InitiateDialogue(UniversalCharacterController npc)

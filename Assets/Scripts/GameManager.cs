@@ -100,7 +100,7 @@ public class GameManager : MonoBehaviourPunCallbacks
             }
         }
 
-        foreach (string characterName in CharacterSelectionManager.characterNames)
+        foreach (string characterName in CharacterSelectionManager.characterFullNames)
         {
             if (!spawnedCharacters.ContainsKey(characterName))
             {
