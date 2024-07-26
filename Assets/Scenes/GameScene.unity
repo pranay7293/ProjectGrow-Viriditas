@@ -1828,6 +1828,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9633a37676b40475db728c772acc6ae0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  scenarioGeneratorSettings: {fileID: 11400000, guid: 7dcccf923b0804beba67d3f48f4d13f9, type: 2}
 --- !u!114 &234838484
 MonoBehaviour:
   m_ObjectHideFlags: 0

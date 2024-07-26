@@ -13,7 +13,7 @@ public class OpenAIService : MonoBehaviour
 
     [SerializeField] private string apiKey;
     [SerializeField] private string model = "gpt-4";
-    [SerializeField] private float apiCallCooldown = 1f; // Cooldown in seconds
+    [SerializeField] private float apiCallCooldown = 1f;
 
     private readonly HttpClient httpClient = new HttpClient();
     private float lastApiCallTime;
@@ -32,14 +32,14 @@ public class OpenAIService : MonoBehaviour
         }
     }
 
-    public async Task<List<string>> GetGenerativeChoices(string characterName, string context)
+    public async Task<List<string>> GetGenerativeChoices(string characterName, string context, AISettings aiSettings)
     {
         if (Time.time - lastApiCallTime < apiCallCooldown)
         {
             await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
         }
 
-        string prompt = $"Generate 3 short, distinct action choices (max 10 words each) for {characterName} based on this context: {context}";
+        string prompt = $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\nBased on this context: {context}\n\nGenerate 3 short, distinct action choices (max 8 words each) that {characterName} might consider:";
         string response = await GetChatCompletionAsync(prompt);
 
         if (string.IsNullOrEmpty(response))
@@ -50,17 +50,18 @@ public class OpenAIService : MonoBehaviour
         List<string> choices = new List<string>(response.Split('\n'));
         lastApiCallTime = Time.time;
 
-        return choices;
+        return choices.ConvertAll(choice => choice.TrimStart('1', '2', '3', '.', ' '));
     }
 
-    public async Task<string> GetResponse(string prompt)
+    public async Task<string> GetResponse(string prompt, AISettings aiSettings)
     {
         if (Time.time - lastApiCallTime < apiCallCooldown)
         {
             await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
         }
 
-        string response = await GetChatCompletionAsync(prompt);
+        string fullPrompt = $"You are a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n{prompt}\n\nRespond in character, keeping your response concise (max 50 words) and natural:";
+        string response = await GetChatCompletionAsync(fullPrompt);
         lastApiCallTime = Time.time;
 
         return string.IsNullOrEmpty(response) ? "I'm not sure how to respond to that." : response;
@@ -75,7 +76,7 @@ public class OpenAIService : MonoBehaviour
             {
                 new { role = "user", content = prompt }
             },
-            max_tokens = 100
+            max_tokens = 150
         };
 
         var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");

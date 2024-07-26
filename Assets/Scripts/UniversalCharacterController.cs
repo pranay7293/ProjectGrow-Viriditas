@@ -25,6 +25,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private UnityEngine.AI.NavMeshAgent navMeshAgent;
     private GameObject cameraRigInstance;
     private Renderer characterRenderer;
+    private Material characterMaterial;
     private TextMeshPro actionIndicator;
 
     private Vector3 moveDirection;
@@ -55,6 +56,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         characterController = GetComponent<CharacterController>();
         navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
         characterRenderer = GetComponentInChildren<Renderer>();
+        if (characterRenderer != null)
+        {
+            characterMaterial = new Material(characterRenderer.material);
+            characterRenderer.material = characterMaterial;
+        }
         aiManager = GetComponent<AIManager>();
 
         actionIndicator = GetComponentInChildren<TextMeshPro>();
@@ -92,9 +98,13 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         IsPlayerControlled = isPlayerControlled;
         characterColor = color;
 
-        if (characterRenderer != null)
+        if (characterMaterial != null)
         {
-            characterRenderer.material.color = characterColor;
+            characterMaterial.color = characterColor;
+        }
+        else
+        {
+            Debug.LogError($"Character material not found for {characterName}");
         }
     }
 
@@ -283,12 +293,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             actionIndicator.gameObject.SetActive(true);
             StartCoroutine(FadeOutActionIndicator());
         }
-        // Implement action-specific logic here
     }
 
     private IEnumerator FadeOutActionIndicator()
     {
-        yield return new WaitForSeconds(3f); // Display for 3 seconds
+        yield return new WaitForSeconds(3f);
         float duration = 1f;
         float elapsedTime = 0f;
         Color startColor = actionIndicator.color;
@@ -314,6 +323,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             stream.SendNext(personalScore);
             stream.SendNext(currentObjective);
             stream.SendNext(actionIndicator.text);
+            stream.SendNext(characterColor);
         }
         else
         {
@@ -323,6 +333,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             personalScore = (int)stream.ReceiveNext();
             currentObjective = (string)stream.ReceiveNext();
             actionIndicator.text = (string)stream.ReceiveNext();
+            Color receivedColor = (Color)stream.ReceiveNext();
+            if (characterMaterial != null && receivedColor != characterColor)
+            {
+                characterColor = receivedColor;
+                characterMaterial.color = characterColor;
+            }
         }
     }
 
