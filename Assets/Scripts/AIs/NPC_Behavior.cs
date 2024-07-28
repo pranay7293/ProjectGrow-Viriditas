@@ -17,6 +17,9 @@ public class NPC_Behavior : MonoBehaviour
     private float actionDuration = 3f;
     private float actionStartTime;
 
+    private float interactionCooldown = 30f;
+    private float lastInteractionTime;
+
     public void Initialize(UniversalCharacterController controller, NPC_Data data, AIManager manager)
     {
         characterController = controller;
@@ -28,7 +31,9 @@ public class NPC_Behavior : MonoBehaviour
             navMeshAgent = gameObject.AddComponent<NavMeshAgent>();
         }
         navMeshAgent.speed = characterController.walkSpeed;
-        currentLocation = GetClosestLocation(transform.position);
+        currentLocation = LocationManagerMaster.Instance.GetClosestLocation(transform.position);
+        lastDecisionTime = Time.time;
+        lastInteractionTime = Time.time;
     }
 
     public void UpdateBehavior()
@@ -47,47 +52,53 @@ public class NPC_Behavior : MonoBehaviour
         }
 
         UpdateState();
+        
+        if (Time.time - lastInteractionTime > interactionCooldown)
+        {
+            AttemptNPCInteraction();
+        }
     }
 
     private void MakeDecision()
     {
         lastDecisionTime = Time.time;
         
-        if (ShouldMoveToNewLocation())
+        List<string> options = new List<string>
         {
-            string newLocation = GetTargetLocation();
-            MoveToLocation(newLocation);
-        }
-        else if (currentAction == null)
+            "Move to new location",
+            "Perform location action",
+            "Interact with NPC",
+            "Work on current challenge"
+        };
+
+        string decision = aiManager.MakeDecision(options, GameManager.Instance.GetCurrentGameState());
+
+        switch (decision)
         {
-            PerformLocationAction();
+            case "Move to new location":
+                MoveToNewLocation();
+                break;
+            case "Perform location action":
+                PerformLocationAction();
+                break;
+            case "Interact with NPC":
+                AttemptNPCInteraction();
+                break;
+            case "Work on current challenge":
+                WorkOnChallenge();
+                break;
         }
     }
 
-    private bool ShouldMoveToNewLocation()
+    private void MoveToNewLocation()
     {
-        return Random.value < 0.3f; // 30% chance to move to a new location
-    }
-
-    private string GetTargetLocation()
-    {
-        List<string> subgoals = GameManager.Instance.GetCurrentSubgoals();
-
-        foreach (string location in LocationManager.GetAllLocations())
-        {
-            List<string> locationActions = LocationManager.GetLocationActions(location);
-            if (locationActions.Any(action => subgoals.Any(subgoal => action.ToLower().Contains(subgoal.ToLower()))))
-            {
-                return location;
-            }
-        }
-
-        return GetRandomUnoccupiedLocation();
+        string newLocation = LocationManagerMaster.Instance.GetTargetLocation(GameManager.Instance.GetCurrentSubgoals());
+        MoveToLocation(newLocation);
     }
 
     private void MoveToLocation(string location)
     {
-        Vector3 destination = LocationManager.GetLocationPosition(location);
+        Vector3 destination = LocationManagerMaster.Instance.GetLocationPosition(location);
         if (destination != Vector3.zero)
         {
             navMeshAgent.SetDestination(destination);
@@ -99,13 +110,16 @@ public class NPC_Behavior : MonoBehaviour
 
     private void PerformLocationAction()
     {
-        List<string> actions = LocationManager.GetLocationActions(currentLocation);
+        List<string> actions = LocationManagerMaster.Instance.GetLocationActions(currentLocation);
         if (actions.Count > 0)
         {
             currentAction = ChooseBestAction(actions);
             characterController.PerformAction(currentAction);
             actionStartTime = Time.time;
             Debug.Log($"{characterController.characterName} is {currentAction} at {currentLocation}");
+
+            string detailedAction = GenerateDetailedAction(currentAction);
+            DialogueManager.Instance.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {detailedAction} at {currentLocation}");
         }
     }
 
@@ -122,6 +136,68 @@ public class NPC_Behavior : MonoBehaviour
         return actions[Random.Range(0, actions.Count)];
     }
 
+    private string GenerateDetailedAction(string baseAction)
+    {
+        string role = characterController.aiSettings.characterRole;
+        string personality = characterController.aiSettings.characterPersonality;
+
+        Dictionary<string, string> detailedActions = new Dictionary<string, string>
+        {
+            {"Researching", $"conducting advanced {role.ToLower()} research"},
+            {"Experimenting", $"running complex {role.ToLower()} experiments"},
+            {"Analyzing", $"performing in-depth {role.ToLower()} analysis"},
+            {"Collaborating", $"engaging in {personality.ToLower()} collaboration with colleagues"},
+            {"Innovating", $"developing cutting-edge {role.ToLower()} innovations"}
+        };
+
+        if (detailedActions.TryGetValue(baseAction, out string detailedAction))
+        {
+            return detailedAction;
+        }
+
+        return $"working on {baseAction.ToLower()} tasks";
+    }
+
+    private void AttemptNPCInteraction()
+    {
+        List<UniversalCharacterController> nearbyNPCs = GetNearbyNPCs();
+        if (nearbyNPCs.Count > 0)
+        {
+            UniversalCharacterController target = ChooseInteractionTarget(nearbyNPCs);
+            InitiateNPCInteraction(target);
+        }
+    }
+
+    private List<UniversalCharacterController> GetNearbyNPCs()
+    {
+        return GameManager.Instance.GetAllCharacters()
+            .Where(npc => npc != characterController && 
+                   Vector3.Distance(transform.position, npc.transform.position) <= characterController.interactionDistance)
+            .ToList();
+    }
+
+    private UniversalCharacterController ChooseInteractionTarget(List<UniversalCharacterController> nearbyNPCs)
+    {
+        return nearbyNPCs.OrderBy(npc => npcData.GetRelationship(npc.characterName)).First();
+    }
+
+    private void InitiateNPCInteraction(UniversalCharacterController target)
+    {
+        lastInteractionTime = Time.time;
+        DialogueManager.Instance.TriggerNPCDialogue(characterController, target);
+    }
+
+    private void WorkOnChallenge()
+    {
+        string currentChallenge = GameManager.Instance.GetCurrentChallenge();
+        characterController.PerformAction($"Working on {currentChallenge}");
+        actionStartTime = Time.time;
+        Debug.Log($"{characterController.characterName} is working on {currentChallenge}");
+
+        string detailedAction = $"focusing intensely on solving {currentChallenge}";
+        DialogueManager.Instance.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {detailedAction}");
+    }
+
     private void CompleteAction()
     {
         if (currentAction != null)
@@ -132,110 +208,11 @@ public class NPC_Behavior : MonoBehaviour
         }
     }
 
-    private string GetRandomUnoccupiedLocation()
-    {
-        List<string> availableLocations = new List<string>(LocationManager.GetAllLocations());
-        availableLocations.Remove(currentLocation);
-
-        foreach (var character in GameManager.Instance.GetAllCharacters())
-        {
-            if (character != this.characterController)
-            {
-                NPC_Behavior npcBehavior = character.GetComponent<NPC_Behavior>();
-                if (npcBehavior != null)
-                {
-                    availableLocations.Remove(npcBehavior.currentLocation);
-                }
-            }
-        }
-
-        if (availableLocations.Count > 0)
-        {
-            return availableLocations[Random.Range(0, availableLocations.Count)];
-        }
-        else
-        {
-            return LocationManager.GetAllLocations()[Random.Range(0, LocationManager.GetAllLocations().Count)];
-        }
-    }
-
     private void UpdateState()
     {
         if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
         {
             characterController.SetState(UniversalCharacterController.CharacterState.Idle);
-        }
-    }
-
-    private string GetClosestLocation(Vector3 position)
-    {
-        string closest = LocationManager.GetAllLocations()[0];
-        float minDistance = float.MaxValue;
-
-        foreach (string location in LocationManager.GetAllLocations())
-        {
-            Vector3 locationPosition = LocationManager.GetLocationPosition(location);
-            float distance = Vector3.Distance(position, locationPosition);
-            if (distance < minDistance)
-            {
-                minDistance = distance;
-                closest = location;
-            }
-        }
-
-        return closest;
-    }
-
-    public void ProcessDecision(string decision)
-    {
-        if (decision.Contains("move to"))
-        {
-            string location = decision.Split("move to ")[1];
-            MoveToLocation(location);
-        }
-        else if (decision.Contains("interact with"))
-        {
-            string target = decision.Split("interact with ")[1];
-            InteractWithTarget(target);
-        }
-        else
-        {
-            PerformLocationAction();
-        }
-
-        UpdateEmotionalState(decision);
-    }
-
-    private void UpdateEmotionalState(string decision)
-    {
-        if (decision.Contains("collaborate") || decision.Contains("help"))
-        {
-            npcData.UpdateEmotionalState(EmotionalState.Happy);
-        }
-        else if (decision.Contains("compete") || decision.Contains("challenge"))
-        {
-            npcData.UpdateEmotionalState(EmotionalState.Confident);
-        }
-        else if (decision.Contains("research") || decision.Contains("study"))
-        {
-            npcData.UpdateEmotionalState(EmotionalState.Neutral);
-        }
-    }
-
-    private void InteractWithTarget(string targetName)
-    {
-        UniversalCharacterController target = GameManager.Instance.GetCharacterByName(targetName);
-        if (target != null)
-        {
-            float relationshipValue = npcData.GetRelationship(targetName);
-            string interactionType = relationshipValue > 0.5f ? "collaborate with" :
-                                     relationshipValue < -0.5f ? "debate with" : "discuss with";
-            
-            Debug.Log($"{characterController.characterName} decides to {interactionType} {targetName}");
-            DialogueManager.Instance.TriggerNPCDialogue(characterController, target);
-
-            float relationshipChange = Random.Range(-0.1f, 0.1f);
-            npcData.UpdateRelationship(targetName, relationshipChange);
         }
     }
 }

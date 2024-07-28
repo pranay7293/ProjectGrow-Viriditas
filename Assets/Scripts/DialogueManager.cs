@@ -16,6 +16,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     [SerializeField] private TextMeshProUGUI npcResponseText;
     [SerializeField] private Button[] optionButtons;
     [SerializeField] private TextMeshProUGUI[] optionTexts;
+    [SerializeField] private TextMeshProUGUI[] optionCategories;
     [SerializeField] private TMP_InputField customInputField;
     [SerializeField] private Button submitCustomInputButton;
     [SerializeField] private Button endConversationButton;
@@ -34,7 +35,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     private UniversalCharacterController currentNPC;
     private Dictionary<string, List<string>> chatLog = new Dictionary<string, List<string>>();
     private List<string> characterList = new List<string>();
-    private List<string> currentOptions = new List<string>();
+    private List<DialogueOption> currentOptions = new List<DialogueOption>();
     private bool isProcessingInput = false;
     private bool isGeneratingChoices = false;
 
@@ -130,13 +131,14 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         isGeneratingChoices = false;
     }
 
-    private void UpdateDialogueOptions(List<string> options)
+    private void UpdateDialogueOptions(List<DialogueOption> options)
     {
         for (int i = 0; i < optionButtons.Length; i++)
         {
             if (i < options.Count)
             {
-                optionTexts[i].text = options[i];
+                optionTexts[i].text = options[i].Text;
+                optionCategories[i].text = options[i].Category.ToString();
                 int index = i;
                 optionButtons[i].onClick.RemoveAllListeners();
                 optionButtons[i].onClick.AddListener(() => SelectDialogueOption(index));
@@ -155,7 +157,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         if (currentNPC != null && optionIndex >= 0 && optionIndex < currentOptions.Count)
         {
-            string selectedOption = currentOptions[optionIndex];
+            string selectedOption = currentOptions[optionIndex].Text;
             ProcessPlayerChoice(selectedOption);
         }
         else
@@ -343,16 +345,77 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
             GameManager.Instance.UpdateGameState(initiator.characterName, initiatorDialogue);
             GameManager.Instance.UpdateGameState(target.characterName, targetResponse);
+
+            // Update relationships based on the interaction
+            UpdateRelationshipAfterInteraction(initiator, target, initiatorDialogue, targetResponse);
         }
     }
 
     private string GetNPCDialoguePrompt(UniversalCharacterController speaker, UniversalCharacterController listener)
     {
-        return $"You are speaking to {listener.characterName}. Initiate a brief conversation related to the current context: {GetCurrentContext()}";
+        return $"You are {speaker.characterName} speaking to {listener.characterName}. Initiate a brief conversation related to the current context: {GetCurrentContext()}";
+    }
+
+    private void UpdateRelationshipAfterInteraction(UniversalCharacterController initiator, UniversalCharacterController target, string initiatorDialogue, string targetResponse)
+    {
+    float relationshipChange = CalculateRelationshipChange(initiatorDialogue, targetResponse);
+
+    AIManager initiatorAI = initiator.GetComponent<AIManager>();
+    AIManager targetAI = target.GetComponent<AIManager>();
+
+    if (initiatorAI != null && targetAI != null)
+    {
+        initiatorAI.UpdateRelationship(target.characterName, relationshipChange);
+        targetAI.UpdateRelationship(initiator.characterName, relationshipChange);
+    }
+    }
+
+    private float CalculateRelationshipChange(string dialogue1, string dialogue2)
+    {
+        // This is a simple implementation. You might want to use sentiment analysis or more sophisticated methods.
+        float change = 0f;
+
+        string combinedDialogue = dialogue1.ToLower() + " " + dialogue2.ToLower();
+
+        if (combinedDialogue.Contains("agree") || combinedDialogue.Contains("support") || combinedDialogue.Contains("like"))
+        {
+            change += 0.1f;
+        }
+
+        if (combinedDialogue.Contains("disagree") || combinedDialogue.Contains("oppose") || combinedDialogue.Contains("dislike"))
+        {
+            change -= 0.1f;
+        }
+
+        // Limit the change to a small range
+        return Mathf.Clamp(change, -0.2f, 0.2f);
     }
 
     private void SetDialogueState(DialogueState newState)
     {
         currentState = newState;
     }
+}
+
+public class DialogueOption
+{
+    public string Text { get; set; }
+    public DialogueCategory Category { get; set; }
+
+    public DialogueOption(string text, DialogueCategory category)
+    {
+        Text = text;
+        Category = category;
+    }
+}
+
+public enum DialogueCategory
+{
+    Ethical,
+    Strategic,
+    Emotional,
+    Practical,
+    Creative,
+    Diplomatic,
+    RiskTaking
 }

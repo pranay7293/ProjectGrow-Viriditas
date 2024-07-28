@@ -9,8 +9,10 @@ public class CharacterMentalModel
     public List<string> Memories { get; private set; } = new List<string>();
     public EmotionalState CurrentEmotionalState { get; private set; }
     public Dictionary<string, float> GoalImportance { get; private set; } = new Dictionary<string, float>();
+    public Dictionary<string, Opinion> Opinions { get; private set; } = new Dictionary<string, Opinion>();
 
     private const int MaxMemories = 20;
+    private const float OpinionUpdateRate = 0.1f;
 
     public CharacterMentalModel(string characterName, string role, string personality)
     {
@@ -21,20 +23,18 @@ public class CharacterMentalModel
 
     private void InitializeBeliefs(string role, string personality)
     {
-        // Initialize beliefs based on role and personality
-        // This is a simplified example, you'd want to expand this based on your game's needs
         BeliefStrengths["Science is important"] = role == "Scientist" ? 0.9f : 0.5f;
         BeliefStrengths["Creativity is crucial"] = personality.Contains("creative") ? 0.8f : 0.4f;
-        // Add more beliefs as needed
+        BeliefStrengths["Ethics in biotech"] = role == "Bioethicist" ? 0.9f : 0.6f;
+        BeliefStrengths["Commercial viability"] = role == "Entrepreneur" ? 0.8f : 0.5f;
     }
 
     private void InitializeGoals(string role)
     {
-        // Initialize goals based on role
-        // Again, this is a simplified example
         GoalImportance["Advance scientific knowledge"] = role == "Scientist" ? 0.9f : 0.3f;
         GoalImportance["Create innovative solutions"] = role == "Engineer" ? 0.8f : 0.4f;
-        // Add more goals as needed
+        GoalImportance["Ensure ethical practices"] = role == "Bioethicist" ? 0.9f : 0.5f;
+        GoalImportance["Commercialize breakthroughs"] = role == "Entrepreneur" ? 0.8f : 0.3f;
     }
 
     public void UpdateRelationship(string character, float change)
@@ -74,6 +74,15 @@ public class CharacterMentalModel
         GoalImportance[goal] = Mathf.Clamp(importance, 0f, 1f);
     }
 
+    public void UpdateOpinion(string subject, float sentiment, float confidence)
+    {
+        if (!Opinions.ContainsKey(subject))
+        {
+            Opinions[subject] = new Opinion();
+        }
+        Opinions[subject].UpdateOpinion(sentiment, confidence, OpinionUpdateRate);
+    }
+
     public string MakeDecision(List<string> options, GameState currentState)
     {
         Dictionary<string, float> scores = new Dictionary<string, float>();
@@ -81,29 +90,9 @@ public class CharacterMentalModel
         foreach (var option in options)
         {
             float score = EvaluateOption(option, currentState);
-            
-            // Implement confirmation bias
-            if (BeliefStrengths.TryGetValue(option, out float beliefStrength))
-            {
-                score *= (1 + beliefStrength);
-            }
-            
-            // Implement availability heuristic
-            if (Memories.Any(m => m.Contains(option)))
-            {
-                score *= 1.2f;
-            }
-            
-            // Implement overconfidence effect
-            if (CurrentEmotionalState == EmotionalState.Confident)
-            {
-                score *= 1.5f;
-            }
-
             scores[option] = score;
         }
         
-        // Return the highest scoring option
         return scores.OrderByDescending(kvp => kvp.Value).First().Key;
     }
 
@@ -111,7 +100,6 @@ public class CharacterMentalModel
     {
         float score = 0f;
 
-        // Evaluate based on current goals
         foreach (var goal in GoalImportance)
         {
             if (option.ToLower().Contains(goal.Key.ToLower()))
@@ -120,19 +108,44 @@ public class CharacterMentalModel
             }
         }
 
-        // Evaluate based on relationships
         if (option.Contains("collaborate") && Relationships.Any(r => r.Value > 0.5f))
         {
             score += 0.5f;
         }
 
-        // Evaluate based on current game state
         if (currentState.CurrentChallenge.ToLower().Contains(option.ToLower()))
         {
             score += 0.5f;
         }
 
+        if (BeliefStrengths.TryGetValue(option, out float beliefStrength))
+        {
+            score *= (1 + beliefStrength);
+        }
+
+        if (Memories.Any(m => m.Contains(option)))
+        {
+            score *= 1.2f;
+        }
+
+        if (CurrentEmotionalState == EmotionalState.Confident)
+        {
+            score *= 1.5f;
+        }
+
         return score;
+    }
+}
+
+public class Opinion
+{
+    public float Sentiment { get; private set; } = 0f;
+    public float Confidence { get; private set; } = 0f;
+
+    public void UpdateOpinion(float newSentiment, float newConfidence, float updateRate)
+    {
+        Sentiment = Mathf.Lerp(Sentiment, newSentiment, updateRate);
+        Confidence = Mathf.Lerp(Confidence, newConfidence, updateRate);
     }
 }
 
@@ -152,5 +165,4 @@ public struct GameState
     public string CurrentChallenge;
     public List<string> CurrentSubgoals;
     public int CollectiveScore;
-    // Add more relevant game state information as needed
 }

@@ -1,6 +1,5 @@
 using UnityEngine;
 using Photon.Pun;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 
 public class AIManager : MonoBehaviourPunCallbacks
@@ -19,8 +18,8 @@ public class AIManager : MonoBehaviourPunCallbacks
 
         if (npcBehavior != null && npcData != null)
         {
-            npcBehavior.Initialize(characterController, npcData, this);
             npcData.Initialize(characterController);
+            npcBehavior.Initialize(characterController, npcData, this);
             isInitialized = true;
         }
         else
@@ -47,5 +46,20 @@ public class AIManager : MonoBehaviourPunCallbacks
     public void AddMemory(string memory)
     {
         npcData.AddMemory(memory);
+    }
+
+    public void UpdateRelationship(string characterName, float change)
+    {
+        npcData.UpdateRelationship(characterName, change);
+    }
+
+    public string MakeDecision(List<string> options, GameState currentState)
+    {
+        return npcData.MakeDecision(options, currentState);
+    }
+
+    public void UpdateEmotionalState(EmotionalState newState)
+    {
+        npcData.UpdateEmotionalState(newState);
     }
 }
