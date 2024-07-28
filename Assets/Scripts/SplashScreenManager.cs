@@ -17,7 +17,7 @@ public class SplashScreenManager : MonoBehaviour
         if (canProceed && Input.anyKeyDown)
         {
             // Load the challenge lobby scene
-            SceneManager.LoadScene("ChallengeLobby");
+            SceneManager.LoadScene("IntroNarrative");
         }
     }
 
