@@ -12,6 +12,7 @@ public class InputManager : MonoBehaviourPunCallbacks
 
     [SerializeField] private KeyCode toggleChatLogKey = KeyCode.Tab;
     [SerializeField] private KeyCode endDialogueKey = KeyCode.Escape;
+    [SerializeField] private KeyCode toggleCustomInputKey = KeyCode.X;
 
     private UniversalCharacterController localPlayer;
 
@@ -67,6 +68,26 @@ public class InputManager : MonoBehaviourPunCallbacks
             if (Input.GetKeyDown(toggleChatLogKey))
             {
                 ToggleChatLog();
+            }
+
+            if (IsInDialogue)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
+                {
+                    DialogueManager.Instance.SelectDialogueOption(0);
+                }
+                else if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
+                {
+                    DialogueManager.Instance.SelectDialogueOption(1);
+                }
+                else if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
+                {
+                    DialogueManager.Instance.SelectDialogueOption(2);
+                }
+                else if (Input.GetKeyDown(toggleCustomInputKey))
+                {
+                    DialogueManager.Instance.ToggleCustomInput();
+                }
             }
         }
 

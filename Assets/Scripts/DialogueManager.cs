@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Photon.Pun;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,10 +17,11 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     [SerializeField] private TextMeshProUGUI npcResponseText;
     [SerializeField] private Button[] optionButtons;
     [SerializeField] private TextMeshProUGUI[] optionTexts;
-    [SerializeField] private TextMeshProUGUI[] optionCategories;
+    [SerializeField] private GameObject dialogInputWindow;
     [SerializeField] private TMP_InputField customInputField;
     [SerializeField] private Button submitCustomInputButton;
     [SerializeField] private Button endConversationButton;
+    [SerializeField] private Button openCustomInputButton;
     [SerializeField] private GameObject loadingIndicator;
 
     [Header("Chat Log")]
@@ -38,6 +40,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     private List<DialogueOption> currentOptions = new List<DialogueOption>();
     private bool isProcessingInput = false;
     private bool isGeneratingChoices = false;
+    private bool isCustomInputActive = false;
 
     private enum DialogueState
     {
@@ -75,10 +78,10 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         submitCustomInputButton.onClick.AddListener(SubmitCustomInput);
         toggleChatLogButton.onClick.AddListener(ToggleChatLog);
         endConversationButton.onClick.AddListener(EndConversation);
+        openCustomInputButton.onClick.AddListener(ToggleCustomInput);
         characterFilter.onValueChanged.AddListener(FilterChatLog);
         
-        customInputField.onValueChanged.RemoveAllListeners();
-        customInputField.onEndEdit.RemoveAllListeners();
+        customInputField.onValueChanged.AddListener(OnCustomInputValueChanged);
         customInputField.onEndEdit.AddListener(OnCustomInputEndEdit);
         
         InitializeCharacterFilter();
@@ -106,6 +109,8 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         npcResponseText.text = $"Hello, I'm {npc.characterName}. How can I help you?";
         dialoguePanel.SetActive(true);
         customInputField.text = "";
+
+        SetCustomInputActive(false);
         
         AddToChatLog(npc.characterName, npcResponseText.text);
 
@@ -133,25 +138,28 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void UpdateDialogueOptions(List<DialogueOption> options)
     {
+        int optionsCount = Mathf.Max(options.Count, 3);
         for (int i = 0; i < optionButtons.Length; i++)
         {
-            if (i < options.Count)
+            if (i < optionsCount && optionButtons[i] != null)
             {
-                optionTexts[i].text = options[i].Text;
-                optionCategories[i].text = options[i].Category.ToString();
+                string categoryText = i < options.Count ? options[i].Category.ToString().ToUpper() : "DEFAULT";
+                string optionText = i < options.Count ? options[i].Text : $"Default option {i + 1}";
+                
+                optionTexts[i].text = $"<color=#FFD700>[{categoryText}]</color> {optionText}";
                 int index = i;
                 optionButtons[i].onClick.RemoveAllListeners();
                 optionButtons[i].onClick.AddListener(() => SelectDialogueOption(index));
                 optionButtons[i].gameObject.SetActive(true);
             }
-            else
+            else if (optionButtons[i] != null)
             {
                 optionButtons[i].gameObject.SetActive(false);
             }
         }
     }
 
-    private void SelectDialogueOption(int optionIndex)
+    public void SelectDialogueOption(int optionIndex)
     {
         if (currentState != DialogueState.WaitingForPlayerInput) return;
 
@@ -166,6 +174,23 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         }
     }
 
+    public void ToggleCustomInput()
+    {
+        SetCustomInputActive(!isCustomInputActive);
+    }
+
+    private void SetCustomInputActive(bool active)
+    {
+        isCustomInputActive = active;
+        dialogInputWindow.SetActive(active);
+        openCustomInputButton.gameObject.SetActive(!active);
+
+        if (active)
+        {
+            customInputField.ActivateInputField();
+        }
+    }
+
     public void SubmitCustomInput()
     {
         if (currentState != DialogueState.WaitingForPlayerInput) return;
@@ -173,12 +198,21 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         if (currentNPC != null && !string.IsNullOrEmpty(customInputField.text))
         {
             ProcessPlayerChoice(customInputField.text);
+            SetCustomInputActive(false);
         }
     }
 
-    public void OnCustomInputEndEdit(string newValue)
+    private void OnCustomInputValueChanged(string newValue)
     {
         submitCustomInputButton.interactable = !string.IsNullOrEmpty(newValue);
+    }
+
+    private void OnCustomInputEndEdit(string newValue)
+    {
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+        {
+            SubmitCustomInput();
+        }
     }
 
     private async void ProcessPlayerChoice(string playerChoice)
@@ -217,6 +251,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             currentNPC.SetState(UniversalCharacterController.CharacterState.Idle);
         }
         dialoguePanel.SetActive(false);
+        SetCustomInputActive(false);
         currentNPC = null;
         customInputField.text = "";
         SetDialogueState(DialogueState.Idle);
@@ -253,6 +288,11 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void UpdateChatLogDisplay()
     {
+        if (chatLogScrollRect == null || !chatLogPanel.activeSelf)
+        {
+            return;
+        }
+
         string selectedCharacter = characterFilter.options[characterFilter.value].text;
         List<string> filteredLog;
 
@@ -285,19 +325,19 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     public void ToggleChatLog()
     {
+        chatLogPanel.SetActive(!chatLogPanel.activeSelf);
         if (chatLogPanel.activeSelf)
         {
-            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 0f, fadeDuration));
+            UpdateChatLogDisplay();
+            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 1f, fadeDuration));
         }
         else
         {
-            chatLogPanel.SetActive(true);
-            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 1f, fadeDuration));
-            UpdateChatLogDisplay();
+            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 0f, fadeDuration));
         }
     }
 
-    private System.Collections.IEnumerator FadeCanvasGroup(CanvasGroup cg, float start, float end, float duration)
+    private IEnumerator FadeCanvasGroup(CanvasGroup cg, float start, float end, float duration)
     {
         float elapsedTime = 0f;
         while (elapsedTime < duration)
@@ -307,10 +347,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             yield return null;
         }
         cg.alpha = end;
-        if (end == 0f)
-        {
-            chatLogPanel.SetActive(false);
-        }
     }
 
     private string GetCurrentContext()
@@ -346,7 +382,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             GameManager.Instance.UpdateGameState(initiator.characterName, initiatorDialogue);
             GameManager.Instance.UpdateGameState(target.characterName, targetResponse);
 
-            // Update relationships based on the interaction
             UpdateRelationshipAfterInteraction(initiator, target, initiatorDialogue, targetResponse);
         }
     }
@@ -358,23 +393,21 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void UpdateRelationshipAfterInteraction(UniversalCharacterController initiator, UniversalCharacterController target, string initiatorDialogue, string targetResponse)
     {
-    float relationshipChange = CalculateRelationshipChange(initiatorDialogue, targetResponse);
+        float relationshipChange = CalculateRelationshipChange(initiatorDialogue, targetResponse);
 
-    AIManager initiatorAI = initiator.GetComponent<AIManager>();
-    AIManager targetAI = target.GetComponent<AIManager>();
+        AIManager initiatorAI = initiator.GetComponent<AIManager>();
+        AIManager targetAI = target.GetComponent<AIManager>();
 
-    if (initiatorAI != null && targetAI != null)
-    {
-        initiatorAI.UpdateRelationship(target.characterName, relationshipChange);
-        targetAI.UpdateRelationship(initiator.characterName, relationshipChange);
-    }
+        if (initiatorAI != null && targetAI != null)
+        {
+            initiatorAI.UpdateRelationship(target.characterName, relationshipChange);
+            targetAI.UpdateRelationship(initiator.characterName, relationshipChange);
+        }
     }
 
     private float CalculateRelationshipChange(string dialogue1, string dialogue2)
     {
-        // This is a simple implementation. You might want to use sentiment analysis or more sophisticated methods.
         float change = 0f;
-
         string combinedDialogue = dialogue1.ToLower() + " " + dialogue2.ToLower();
 
         if (combinedDialogue.Contains("agree") || combinedDialogue.Contains("support") || combinedDialogue.Contains("like"))
@@ -387,7 +420,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             change -= 0.1f;
         }
 
-        // Limit the change to a small range
         return Mathf.Clamp(change, -0.2f, 0.2f);
     }
 
