@@ -15,11 +15,16 @@ public class IntroNarrativeManager : MonoBehaviour
     private string[] narrativeTexts = new string[]
     {
         "Welcome to <color=#0D86F8>PROJECT GROW</color>.",
-        "Secret playground for the world's brightest minds.",
+        "A secret playground for the world's brightest minds.",
         "10 geniuses. 1 epic mission. <color=#0D86F8>1 LEGEND</color>.",
         "SOLVE HUMANITY'S GREATEST CHALLENGES",
         "Select your hub to begin."
     };
+
+    //Welcome to PROJECT GROW
+    //A secret collective of the world's brightest minds, brought together to solve humanity's greatest challenges.
+    //10 geniuses. 1 epic mission. <color=#0D86F8>1 LEGEND</color>.
+    //Select your hub to begin.
 
     private int currentLine = 0;
     private Coroutine typingCoroutine;

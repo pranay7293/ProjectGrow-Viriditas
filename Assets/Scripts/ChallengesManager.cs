@@ -1,7 +1,9 @@
 using UnityEngine;
-using Photon.Pun;
-using Photon.Realtime;
 using UnityEngine.UI;
+using Photon.Pun;
+using System.Collections.Generic;
+using TMPro;
+using System.Linq;
 
 public class ChallengesManager : MonoBehaviourPunCallbacks
 {
@@ -11,6 +13,7 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
     public GameObject[] challengeCards;
     public GameObject[] expandedChallenges;
     public PlayerListManager playerListManager;
+    public TextMeshProUGUI mainTitleText;
 
     [Range(0f, 1f)]
     public float middleCardDarkenAmount = 0.1f;
@@ -51,7 +54,6 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
                 ChallengeCard card = challengeCards[i].GetComponent<ChallengeCard>();
                 Color cardColor = currentHub.hubColor;
                 
-                // Darken the middle card
                 if (i == 1)
                 {
                     cardColor = DarkenColor(cardColor, middleCardDarkenAmount);
@@ -89,12 +91,15 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
         {
             expandedChallenges[i].SetActive(i == index);
         }
+
+        mainTitleText.gameObject.SetActive(false);
     }
 
     public void CollapseChallenge()
     {
         challengeCardsContainer.SetActive(true);
         expandedChallengeContainer.SetActive(false);
+        mainTitleText.gameObject.SetActive(true);
     }
 
     public void OnChallengeSelected(int challengeIndex)
