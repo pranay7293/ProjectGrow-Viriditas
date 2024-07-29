@@ -7,57 +7,47 @@ using UnityEngine.UI;
 public class IntroNarrativeManager : MonoBehaviour
 {
     public TextMeshProUGUI[] narrativeLines;
-    public float typingSpeed = 0.05f;
-    public float pauseBetweenLines = 1f;
     public float fadeInDuration = 0.5f;
+    public float lineDuration = 1.5f;
+    public float delayBetweenLines = 0.3f;
+    public float delayBeforeNextScene = 1.5f;
     public Button skipButton;
 
     private string[] narrativeTexts = new string[]
     {
-        "Welcome to <color=#0D86F8>PROJECT GROW</color>.",
-        "A secret playground for the world's brightest minds.",
+        "Welcome to <color=#0D86F8>PROJECT GROW</color>",
+        "A secret collective of the world's brightest minds,\nbrought together to solve humanity's greatest challenges.",
         "10 geniuses. 1 epic mission. <color=#0D86F8>1 LEGEND</color>.",
-        "SOLVE HUMANITY'S GREATEST CHALLENGES",
         "Select your hub to begin."
     };
-
-    //Welcome to PROJECT GROW
-    //A secret collective of the world's brightest minds, brought together to solve humanity's greatest challenges.
-    //10 geniuses. 1 epic mission. <color=#0D86F8>1 LEGEND</color>.
-    //Select your hub to begin.
-
-    private int currentLine = 0;
-    private Coroutine typingCoroutine;
 
     void Start()
     {
         for (int i = 0; i < narrativeLines.Length; i++)
         {
             narrativeLines[i].color = new Color(1, 1, 1, 0);
+            narrativeLines[i].text = narrativeTexts[i];
         }
         skipButton.onClick.AddListener(SkipIntro);
-        StartCoroutine(TypeNarrative());
+        StartCoroutine(PlayIntro());
     }
 
-    IEnumerator TypeNarrative()
+    IEnumerator PlayIntro()
     {
-        while (currentLine < narrativeTexts.Length)
+        for (int i = 0; i < narrativeLines.Length; i++)
         {
-            if (currentLine == 2) // The "10 geniuses. 1 epic mission. 1 LEGEND." line
+            if (i == 2) // The "10 geniuses. 1 epic mission. 1 LEGEND." line
             {
-                yield return StartCoroutine(DramaticReveal());
+                yield return StartCoroutine(DramaticReveal(i));
             }
             else
             {
-                yield return StartCoroutine(FadeInLine(currentLine));
-                typingCoroutine = StartCoroutine(TypeLine(narrativeTexts[currentLine], narrativeLines[currentLine]));
-                yield return typingCoroutine;
+                yield return StartCoroutine(FadeInLine(i));
             }
-            yield return new WaitForSeconds(pauseBetweenLines);
-            currentLine++;
+            yield return new WaitForSeconds(delayBetweenLines);
         }
-        yield return new WaitForSeconds(1f);
-        SceneManager.LoadScene("ChallengeLobby");
+        yield return new WaitForSeconds(delayBeforeNextScene);
+        StartCoroutine(FadeOutAndLoadNextScene());
     }
 
     IEnumerator FadeInLine(int lineIndex)
@@ -71,38 +61,35 @@ public class IntroNarrativeManager : MonoBehaviour
             lineText.color = new Color(1, 1, 1, alpha);
             yield return null;
         }
+        yield return new WaitForSeconds(lineDuration);
     }
 
-    IEnumerator TypeLine(string line, TextMeshProUGUI textComponent)
+    IEnumerator DramaticReveal(int lineIndex)
     {
-        textComponent.text = "";
-        bool insideColorTag = false;
-
-        foreach (char c in line)
+        string[] dramaticTexts = { "10 geniuses.", "1 epic mission.", "<color=#0D86F8>1 LEGEND</color>" };
+        TextMeshProUGUI lineText = narrativeLines[lineIndex];
+        
+        for (int i = 0; i < dramaticTexts.Length; i++)
         {
-            if (c == '<')
-                insideColorTag = true;
-            else if (c == '>')
-                insideColorTag = false;
-
-            textComponent.text += c;
-            if (!insideColorTag)
+            lineText.text = dramaticTexts[i];
+            yield return StartCoroutine(FadeInLine(lineIndex));
+            
+            if (i < dramaticTexts.Length - 1) // Don't fade out the last part
             {
-                yield return new WaitForSeconds(typingSpeed);
+                yield return StartCoroutine(FadeOutLine(lineText));
             }
         }
     }
 
-    IEnumerator DramaticReveal()
+    IEnumerator FadeOutLine(TextMeshProUGUI lineText)
     {
-        string[] dramaticTexts = { "10 geniuses.", "1 epic mission.", "<color=#0D86F8>1 LEGEND</color>." };
-        TextMeshProUGUI lineText = narrativeLines[2];
-        lineText.color = Color.white;
-
-        foreach (string text in dramaticTexts)
+        float elapsedTime = 0;
+        while (elapsedTime < fadeInDuration / 2)
         {
-            yield return StartCoroutine(TypeLine(text, lineText));
-            yield return new WaitForSeconds(0.7f);
+            elapsedTime += Time.deltaTime;
+            float alpha = 1 - Mathf.Clamp01(elapsedTime / (fadeInDuration / 2));
+            lineText.color = new Color(1, 1, 1, alpha);
+            yield return null;
         }
     }
 
@@ -112,14 +99,32 @@ public class IntroNarrativeManager : MonoBehaviour
         for (int i = 0; i < narrativeLines.Length; i++)
         {
             narrativeLines[i].color = Color.white;
-            narrativeLines[i].text = narrativeTexts[i];
+            if (i == 2) // Set the final state for the dramatic reveal line
+            {
+                narrativeLines[i].text = "<color=#0D86F8>1 LEGEND</color>";
+            }
         }
-        StartCoroutine(WaitAndLoadNextScene());
+        StartCoroutine(FadeOutAndLoadNextScene());
     }
 
-    IEnumerator WaitAndLoadNextScene()
+    IEnumerator FadeOutAndLoadNextScene()
     {
-        yield return new WaitForSeconds(0.5f);
+        yield return StartCoroutine(FadeOutAllLines());
         SceneManager.LoadScene("ChallengeLobby");
+    }
+
+    IEnumerator FadeOutAllLines()
+    {
+        float elapsedTime = 0;
+        while (elapsedTime < fadeInDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float alpha = 1 - Mathf.Clamp01(elapsedTime / fadeInDuration);
+            foreach (TextMeshProUGUI line in narrativeLines)
+            {
+                line.color = new Color(1, 1, 1, alpha);
+            }
+            yield return null;
+        }
     }
 }
