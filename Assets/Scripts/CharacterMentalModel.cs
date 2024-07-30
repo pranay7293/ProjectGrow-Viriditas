@@ -113,7 +113,7 @@ public class CharacterMentalModel
             score += 0.5f;
         }
 
-        if (currentState.CurrentChallenge.ToLower().Contains(option.ToLower()))
+        if (currentState.CurrentChallenge.title.ToLower().Contains(option.ToLower()))
         {
             score += 0.5f;
         }
@@ -158,11 +158,4 @@ public enum EmotionalState
     Excited,
     Anxious,
     Confident
-}
-
-public struct GameState
-{
-    public string CurrentChallenge;
-    public List<string> CurrentSubgoals;
-    public int CollectiveScore;
 }

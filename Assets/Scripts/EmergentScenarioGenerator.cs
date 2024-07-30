@@ -24,7 +24,7 @@ public class EmergentScenarioGenerator : MonoBehaviourPunCallbacks
 
     public async Task<string> GenerateScenario(string currentChallenge, List<string> recentPlayerActions)
     {
-        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, create a brief emergent scenario. The scenario should be a single paragraph describing an unexpected event or complication.";
+        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, create a brief emergent scenario. The scenario should be a single paragraph describing an unexpected event or complication that affects the challenge progress.";
 
         return await openAIService.GetResponse(prompt, scenarioGeneratorSettings);
     }
@@ -37,11 +37,21 @@ public class EmergentScenarioGenerator : MonoBehaviourPunCallbacks
     [PunRPC]
     private void RPC_NotifyNewScenario(string scenario)
     {
-        Debug.Log($"New scenario: {scenario}");
-        // TODO: Implement logic to apply the scenario to the game state
-        // For example:
-        // - Update UI to show the new scenario
-        // - Modify game parameters based on the scenario
-        // - Trigger specific events or challenges
+    Debug.Log($"New scenario: {scenario}");
+    GameManager.Instance.UpdateEmergentScenario(scenario);
+    }
+
+    public void ResolveScenario(string chosenOption)
+    {
+    int points = EvaluateScenarioOutcome(chosenOption);
+    GameManager.Instance.UpdateCollectiveScore(points);
+    GameManager.Instance.UpdateGameState("System", chosenOption);
+    }
+
+    private int EvaluateScenarioOutcome(string chosenOption)
+    {
+        // Implement more sophisticated logic to determine points based on the chosen option
+        // For now, we'll use a simple random range
+        return Random.Range(50, 151);
     }
 }

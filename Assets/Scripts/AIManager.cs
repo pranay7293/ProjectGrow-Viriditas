@@ -62,4 +62,14 @@ public class AIManager : MonoBehaviourPunCallbacks
     {
         npcData.UpdateEmotionalState(newState);
     }
+
+    public List<string> GetPersonalGoals()
+    {
+        return characterController.GetPersonalGoals();
+    }
+
+    public Dictionary<string, bool> GetPersonalGoalCompletion()
+    {
+        return characterController.GetPersonalGoalCompletion();
+    }
 }

@@ -349,10 +349,16 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         cg.alpha = end;
     }
 
+    public void GenerateInsightFromDialogue(string player1, string player2)
+    {
+        GameManager.Instance.GenerateInsight(player1, player2);
+        // Update UI to show insight generation
+    }
+
     private string GetCurrentContext()
     {
         GameState currentState = GameManager.Instance.GetCurrentGameState();
-        return $"Current challenge: {currentState.CurrentChallenge}. Subgoals: {string.Join(", ", currentState.CurrentSubgoals)}";
+        return $"Current challenge: {currentState.CurrentChallenge.title}. Milestones: {string.Join(", ", currentState.CurrentChallenge.milestones)}";
     }
 
     private string GetResponsePrompt(string playerInput)

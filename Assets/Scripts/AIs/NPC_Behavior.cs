@@ -68,10 +68,12 @@ public class NPC_Behavior : MonoBehaviour
             "Move to new location",
             "Perform location action",
             "Interact with NPC",
-            "Work on current challenge"
+            "Work on current challenge",
+            "Pursue personal goal"
         };
 
-        string decision = aiManager.MakeDecision(options, GameManager.Instance.GetCurrentGameState());
+        GameState currentState = GameManager.Instance.GetCurrentGameState();
+        string decision = aiManager.MakeDecision(options, currentState);
 
         switch (decision)
         {
@@ -87,12 +89,15 @@ public class NPC_Behavior : MonoBehaviour
             case "Work on current challenge":
                 WorkOnChallenge();
                 break;
+            case "Pursue personal goal":
+                PursuePersonalGoal();
+                break;
         }
     }
 
     private void MoveToNewLocation()
     {
-        string newLocation = LocationManagerMaster.Instance.GetTargetLocation(GameManager.Instance.GetCurrentSubgoals());
+        string newLocation = LocationManagerMaster.Instance.GetTargetLocation(GameManager.Instance.GetCurrentChallenge().milestones);
         MoveToLocation(newLocation);
     }
 
@@ -125,10 +130,10 @@ public class NPC_Behavior : MonoBehaviour
 
     private string ChooseBestAction(List<string> actions)
     {
-        List<string> subgoals = GameManager.Instance.GetCurrentSubgoals();
+        List<string> milestones = GameManager.Instance.GetCurrentChallenge().milestones;
         foreach (string action in actions)
         {
-            if (subgoals.Any(subgoal => action.ToLower().Contains(subgoal.ToLower())))
+            if (milestones.Any(milestone => action.ToLower().Contains(milestone.ToLower())))
             {
                 return action;
             }
@@ -189,13 +194,34 @@ public class NPC_Behavior : MonoBehaviour
 
     private void WorkOnChallenge()
     {
-        string currentChallenge = GameManager.Instance.GetCurrentChallenge();
+        string currentChallenge = GameManager.Instance.GetCurrentChallenge().title;
         characterController.PerformAction($"Working on {currentChallenge}");
         actionStartTime = Time.time;
         Debug.Log($"{characterController.characterName} is working on {currentChallenge}");
 
         string detailedAction = $"focusing intensely on solving {currentChallenge}";
         DialogueManager.Instance.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {detailedAction}");
+    }
+
+    private void PursuePersonalGoal()
+    {
+        List<string> personalGoals = aiManager.GetPersonalGoals();
+        Dictionary<string, bool> personalGoalCompletion = aiManager.GetPersonalGoalCompletion();
+        
+        string incompleteGoal = personalGoals.FirstOrDefault(goal => !personalGoalCompletion[goal]);
+        
+        if (incompleteGoal != null)
+        {
+            characterController.PerformAction($"Pursuing personal goal: {incompleteGoal}");
+            actionStartTime = Time.time;
+            Debug.Log($"{characterController.characterName} is pursuing personal goal: {incompleteGoal}");
+
+            DialogueManager.Instance.AddToChatLog(characterController.characterName, $"{characterController.characterName} is focusing on their personal goal: {incompleteGoal}");
+        }
+        else
+        {
+            WorkOnChallenge(); // If all personal goals are complete, work on the main challenge
+        }
     }
 
     private void CompleteAction()

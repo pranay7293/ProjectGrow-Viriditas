@@ -2,6 +2,7 @@ using UnityEngine;
 using Photon.Pun;
 using System.Collections;
 using TMPro;
+using System.Collections.Generic;
 
 public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObservable
 {
@@ -19,6 +20,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     [Header("Gameplay")]
     public int personalScore = 0;
     public string currentObjective;
+    private List<string> personalGoals = new List<string>();
+    private Dictionary<string, bool> personalGoalCompletion = new Dictionary<string, bool>();
 
     private AIManager aiManager;
     private CharacterController characterController;
@@ -90,6 +93,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 SetupAIControlled();
             }
         }
+        InitializePersonalGoals();
     }
 
     private void SetCharacterProperties(string name, bool isPlayerControlled, Color color)
@@ -293,6 +297,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             actionIndicator.gameObject.SetActive(true);
             StartCoroutine(FadeOutActionIndicator());
         }
+        CheckPersonalGoalProgress(actionName);
     }
 
     private IEnumerator FadeOutActionIndicator()
@@ -311,6 +316,44 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
         actionIndicator.text = "";
         actionIndicator.gameObject.SetActive(false);
+    }
+
+    private void InitializePersonalGoals()
+    {
+        personalGoals = new List<string>(aiSettings.personalGoals);
+        foreach (string goal in personalGoals)
+        {
+            personalGoalCompletion[goal] = false;
+        }
+    }
+
+    private void CheckPersonalGoalProgress(string action)
+    {
+        foreach (string goal in personalGoals)
+        {
+            if (!personalGoalCompletion[goal] && action.ToLower().Contains(goal.ToLower()))
+            {
+                CompletePersonalGoal(goal);
+                break;
+            }
+        }
+    }
+
+    private void CompletePersonalGoal(string goal)
+    {
+    personalGoalCompletion[goal] = true;
+    UpdatePersonalScore(50);
+    GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goal}");
+    }
+
+    public List<string> GetPersonalGoals()
+    {
+        return new List<string>(personalGoals);
+    }
+
+    public Dictionary<string, bool> GetPersonalGoalCompletion()
+    {
+        return new Dictionary<string, bool>(personalGoalCompletion);
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
