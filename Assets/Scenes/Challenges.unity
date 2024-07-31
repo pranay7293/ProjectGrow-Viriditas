@@ -491,7 +491,7 @@ MonoBehaviour:
   - {fileID: 253049027}
   - {fileID: 520886483}
   - {fileID: 1244361620}
-  playerListManager: {fileID: 516478740}
+  playerProfileManager: {fileID: 516478740}
   mainTitleText: {fileID: 20639877}
   middleCardDarkenAmount: 0.1
 --- !u!114 &141691350
@@ -1457,16 +1457,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 516478738}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0df1bb34f90e044d6ad09dfc538cdbb4, type: 3}
+  m_Script: {fileID: 11500000, guid: f062816053b2b4d1d8ce0911515046dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isGameScene: 0
+  playerProfilePrefab: {fileID: 0}
+  playerListContainer: {fileID: 0}
   playerPlaceholders:
   - {fileID: 212238922}
   - {fileID: 1833687575}
   - {fileID: 2088598600}
   - {fileID: 278292668}
   - {fileID: 1432886371}
-  isGameScene: 0
 --- !u!114 &516478741
 MonoBehaviour:
   m_ObjectHideFlags: 0

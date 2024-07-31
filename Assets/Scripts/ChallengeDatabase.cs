@@ -10,9 +10,11 @@ public static class ChallengeDatabase
     {
         challenges = new Dictionary<string, ChallengeData>();
         ChallengeData[] loadedChallenges = Resources.LoadAll<ChallengeData>("Challenges");
+        Debug.Log($"Loaded {loadedChallenges.Length} challenges");
         foreach (var challenge in loadedChallenges)
         {
             challenges[challenge.title] = challenge;
+            Debug.Log($"Added challenge: {challenge.title}");
         }
     }
 
@@ -24,5 +26,10 @@ public static class ChallengeDatabase
         }
         Debug.LogWarning($"Challenge '{title}' not found.");
         return null;
+    }
+
+    public static string[] GetAllChallengeTitles()
+    {
+        return new List<string>(challenges.Keys).ToArray();
     }
 }

@@ -86,6 +86,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         SpawnCharacters();
         InitializeChallenge();
+        PlayerProfileManager.Instance.UpdatePlayerList(); // Add this line
     }
 
     private void SpawnCharacters()
@@ -175,20 +176,34 @@ public class GameManager : MonoBehaviourPunCallbacks
             milestoneCompletion[milestone] = false;
         }
 
-        photonView.RPC("SyncGameState", RpcTarget.All, JsonUtility.ToJson(currentChallenge), remainingTime, collectiveScore, playerScores);
+        SerializableChallengeData serializableChallenge = new SerializableChallengeData(currentChallenge);
+        string challengeJson = JsonUtility.ToJson(serializableChallenge);
+        photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, collectiveScore, playerScores);
     }
 
     private ChallengeData GetSelectedChallenge()
     {
+        string challengeTitle = "Default Challenge";
         if (PhotonNetwork.CurrentRoom != null && 
-            PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("SelectedChallengeTitle", out object challengeTitle))
+            PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("SelectedChallengeTitle", out object title))
         {
-            return ChallengeDatabase.GetChallenge((string)challengeTitle);
+            challengeTitle = (string)title;
         }
         else
         {
-            return ChallengeDatabase.GetChallenge(PlayerPrefs.GetString("SelectedChallengeTitle", "Default Challenge"));
+            challengeTitle = PlayerPrefs.GetString("SelectedChallengeTitle", "Default Challenge");
         }
+        
+        Debug.Log($"Attempting to get challenge: {challengeTitle}");
+        ChallengeData challenge = ChallengeDatabase.GetChallenge(challengeTitle);
+        
+        if (challenge == null)
+        {
+            Debug.LogError($"Failed to load challenge: {challengeTitle}");
+            // Provide a fallback challenge or handle this case appropriately
+        }
+        
+        return challenge;
     }
 
     private void ToggleMilestonesPanel()
@@ -358,13 +373,13 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     public void UpdateEmergentScenario(string scenario)
     {
-    emergentScenarioDisplay.text = scenario;
-    // Implement any additional logic for handling the new scenario
+        emergentScenarioDisplay.text = scenario;
+        // Implement any additional logic for handling the new scenario
     }
 
     public bool IsMilestoneCompleted(string milestone)
     {
-    return milestoneCompletion.ContainsKey(milestone) && milestoneCompletion[milestone];
+        return milestoneCompletion.ContainsKey(milestone) && milestoneCompletion[milestone];
     }
 
     public void UpdatePlayerScore(string playerName, int score)
@@ -397,7 +412,13 @@ public class GameManager : MonoBehaviourPunCallbacks
     [PunRPC]
     private void SyncGameState(string challengeJson, float time, int collective, Dictionary<string, int> scores)
     {
-        currentChallenge = JsonUtility.FromJson<ChallengeData>(challengeJson);
+        SerializableChallengeData serializableChallenge = JsonUtility.FromJson<SerializableChallengeData>(challengeJson);
+        currentChallenge = ScriptableObject.CreateInstance<ChallengeData>();
+        currentChallenge.title = serializableChallenge.title;
+        currentChallenge.description = serializableChallenge.description;
+        currentChallenge.milestones = serializableChallenge.milestones;
+        currentChallenge.goalScore = serializableChallenge.goalScore;
+
         remainingTime = time;
         collectiveScore = collective;
         playerScores = new Dictionary<string, int>(scores);
@@ -422,23 +443,41 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     private void UpdateScoreDisplay()
+{
+    float progress = (float)collectiveScore / currentChallenge.goalScore;
+    challengeProgressBar.value = progress;
+    
+    PlayerProfileManager playerProfileManager = FindObjectOfType<PlayerProfileManager>();
+    if (playerProfileManager != null)
     {
-        float progress = (float)collectiveScore / currentChallenge.goalScore;
-        challengeProgressBar.value = progress;
-        
-        PlayerListManager playerListManager = FindObjectOfType<PlayerListManager>();
-        if (playerListManager != null)
+        foreach (var kvp in playerScores)
         {
-            foreach (var kvp in playerScores)
-            {
-                Photon.Realtime.Player player = PhotonNetwork.PlayerList.FirstOrDefault(p => p.NickName == kvp.Key);
-                if (player != null)
-                {
-                    float playerProgress = (float)kvp.Value / currentChallenge.goalScore;
-                    playerListManager.UpdatePlayerProgress(player.ActorNumber, playerProgress);
-                }
-            }
+            string characterName = kvp.Key;
+            float playerProgress = (float)kvp.Value / currentChallenge.goalScore;
+            playerProfileManager.UpdatePlayerProgress(characterName, playerProgress, playerProgress);
         }
+    }
+}
+
+    public void UpdatePlayerProgress(UniversalCharacterController character, float overallProgress, float personalProgress)
+    {
+        character.UpdateProgress(overallProgress, personalProgress);
+        PlayerProfileManager.Instance.UpdatePlayerProgress(character.characterName, overallProgress, personalProgress);
+    }
+
+    public void UpdatePlayerInsights(UniversalCharacterController character, int insightCount)
+    {
+        character.UpdateInsights(insightCount);
+        PlayerProfileManager.Instance.UpdatePlayerInsights(character.characterName, insightCount);
+    }
+
+    public int GetPlayerScore(string playerName)
+    {
+        if (playerScores.TryGetValue(playerName, out int score))
+        {
+            return score;
+        }
+        return 0;
     }
 
     [PunRPC]
@@ -490,5 +529,10 @@ public class GameManager : MonoBehaviourPunCallbacks
     public List<UniversalCharacterController> GetAllCharacters()
     {
         return new List<UniversalCharacterController>(spawnedCharacters.Values);
+    }
+
+    public List<string> GetAICharacterNames()
+    {
+        return spawnedCharacters.Where(kvp => !kvp.Value.IsPlayerControlled).Select(kvp => kvp.Key).ToList();
     }
 }

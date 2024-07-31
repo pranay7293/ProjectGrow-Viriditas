@@ -12,7 +12,7 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
     public GameObject expandedChallengeContainer;
     public GameObject[] challengeCards;
     public GameObject[] expandedChallenges;
-    public PlayerListManager playerListManager;
+    public PlayerProfileManager playerProfileManager;
     public TextMeshProUGUI mainTitleText;
 
     [Range(0f, 1f)]
@@ -124,7 +124,7 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
     private void UpdateVote(int playerActorNumber, int challengeIndex)
     {
         votedPlayersCount++;
-        playerListManager.UpdatePlayerVotingStatus(playerActorNumber, true);
+        playerProfileManager.UpdatePlayerVotingStatus(playerActorNumber, true);
 
         if (votedPlayersCount == PhotonNetwork.CurrentRoom.PlayerCount)
         {

@@ -116,16 +116,19 @@ public class OpenAIService : MonoBehaviour
 
     public async Task<string> GetResponse(string prompt, AISettings aiSettings)
     {
-        if (Time.time - lastApiCallTime < apiCallCooldown)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
-        }
+    if (Time.time - lastApiCallTime < apiCallCooldown)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
+    }
 
-        string fullPrompt = $"You are a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n{prompt}\n\nRespond in character, keeping your response concise (max 20 words) and natural:";
-        string response = await GetChatCompletionAsync(fullPrompt);
-        lastApiCallTime = Time.time;
+    string fullPrompt = aiSettings != null
+        ? $"You are a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n{prompt}\n\nRespond in character, keeping your response concise (max 20 words) and natural:"
+        : prompt;
 
-        return string.IsNullOrEmpty(response) ? "Not sure how to respond to that..." : response;
+    string response = await GetChatCompletionAsync(fullPrompt);
+    lastApiCallTime = Time.time;
+
+    return string.IsNullOrEmpty(response) ? "Not sure how to respond to that..." : response;
     }
 
     private async Task<string> GetChatCompletionAsync(string prompt)

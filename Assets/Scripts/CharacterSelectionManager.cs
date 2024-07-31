@@ -12,7 +12,7 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
     public Color selectedColor = Color.green;
     public Color defaultColor = Color.white;
     public Color takenColor = Color.red;
-    public PlayerListManager playerListManager;
+    public PlayerProfileManager playerProfileManager;
 
     private Button[] characterButtons;
     private Dictionary<int, bool> playerReadyStatus = new Dictionary<int, bool>();
@@ -70,7 +70,7 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
     {
         PhotonNetwork.LocalPlayer.CustomProperties.Remove("SelectedCharacter");
         playerReadyStatus[PhotonNetwork.LocalPlayer.ActorNumber] = false;
-        playerListManager.UpdatePlayerVotingStatus(PhotonNetwork.LocalPlayer.ActorNumber, false);
+        playerProfileManager.UpdatePlayerVotingStatus(PhotonNetwork.LocalPlayer.ActorNumber, false);
         UpdateCharacterButtonStates();
     }
 
@@ -130,20 +130,20 @@ public class CharacterSelectionManager : MonoBehaviourPunCallbacks
     public override void OnPlayerPropertiesUpdate(Photon.Realtime.Player targetPlayer, Hashtable changedProps)
     {
         UpdateCharacterButtonStates();
-        playerListManager.UpdatePlayerList();
+        playerProfileManager.UpdatePlayerList();
     }
 
     public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
     {
         playerReadyStatus[newPlayer.ActorNumber] = false;
-        playerListManager.UpdatePlayerList();
+        playerProfileManager.UpdatePlayerList();
         UpdateCharacterButtonStates();
     }
 
     public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
     {
         playerReadyStatus.Remove(otherPlayer.ActorNumber);
-        playerListManager.UpdatePlayerList();
+        playerProfileManager.UpdatePlayerList();
         UpdateCharacterButtonStates();
     }
 

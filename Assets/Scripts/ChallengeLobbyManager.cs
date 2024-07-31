@@ -5,7 +5,7 @@ using Photon.Realtime;
 
 public class ChallengeLobbyManager : MonoBehaviourPunCallbacks
 {
-    public PlayerListManager playerListManager;
+    public PlayerProfileManager playerProfileManager;
     public Button[] hubButtons;
     private const int MAX_PLAYERS = 5;
 
@@ -40,12 +40,12 @@ public class ChallengeLobbyManager : MonoBehaviourPunCallbacks
 
     public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
     {
-        playerListManager.UpdatePlayerList();
+        playerProfileManager.UpdatePlayerList();
     }
 
     public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
     {
-        playerListManager.UpdatePlayerList();
+        playerProfileManager.UpdatePlayerList();
     }
 
    private void SelectHub(int index)

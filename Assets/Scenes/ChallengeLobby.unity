@@ -2427,7 +2427,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 621475b39b2df4f9da9762ce920e271c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerListManager: {fileID: 1849104295}
+  playerProfileManager: {fileID: 1849104295}
   hubButtons:
   - {fileID: 673067496}
   - {fileID: 799518219}
@@ -4020,16 +4020,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 1849104291}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0df1bb34f90e044d6ad09dfc538cdbb4, type: 3}
+  m_Script: {fileID: 11500000, guid: f062816053b2b4d1d8ce0911515046dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isGameScene: 0
+  playerProfilePrefab: {fileID: 0}
+  playerListContainer: {fileID: 0}
   playerPlaceholders:
   - {fileID: 965286560}
   - {fileID: 1006241358}
   - {fileID: 640213080}
   - {fileID: 674192872}
   - {fileID: 591009524}
-  isGameScene: 0
 --- !u!114 &1849104296
 MonoBehaviour:
   m_ObjectHideFlags: 0

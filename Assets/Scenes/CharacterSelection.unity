@@ -792,16 +792,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 491625489}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0df1bb34f90e044d6ad09dfc538cdbb4, type: 3}
+  m_Script: {fileID: 11500000, guid: f062816053b2b4d1d8ce0911515046dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isGameScene: 0
+  playerProfilePrefab: {fileID: 0}
+  playerListContainer: {fileID: 0}
   playerPlaceholders:
   - {fileID: 1706484957}
   - {fileID: 2077287112}
   - {fileID: 2086706462}
   - {fileID: 796824019}
   - {fileID: 466187802}
-  isGameScene: 0
 --- !u!114 &491625492
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1489,7 +1491,7 @@ MonoBehaviour:
   selectedColor: {r: 0.050980393, g: 0.5058824, b: 0.34117648, a: 1}
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   takenColor: {r: 0.77254903, g: 0, b: 0, a: 1}
-  playerListManager: {fileID: 491625491}
+  playerProfileManager: {fileID: 491625491}
 --- !u!4 &1047256411
 Transform:
   m_ObjectHideFlags: 0

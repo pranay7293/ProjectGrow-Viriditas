@@ -39,6 +39,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private float lastDialogueAttemptTime = 0f;
     private const float DialogueCooldown = 0.5f;
 
+    public float OverallProgress { get; private set; }
+    public float PersonalProgress { get; private set; }
+    public int InsightCount { get; private set; }
+
     public enum CharacterState
     {
         Idle,
@@ -341,9 +345,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void CompletePersonalGoal(string goal)
     {
-    personalGoalCompletion[goal] = true;
-    UpdatePersonalScore(50);
-    GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goal}");
+        personalGoalCompletion[goal] = true;
+        UpdatePersonalScore(50);
+        GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goal}");
     }
 
     public List<string> GetPersonalGoals()
@@ -354,6 +358,25 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public Dictionary<string, bool> GetPersonalGoalCompletion()
     {
         return new Dictionary<string, bool>(personalGoalCompletion);
+    }
+
+    public void UpdateProgress(float overall, float personal)
+    {
+        OverallProgress = overall;
+        PersonalProgress = personal;
+        if (photonView.IsMine)
+        {
+            PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, OverallProgress, PersonalProgress);
+        }
+    }
+
+    public void UpdateInsights(int count)
+    {
+        InsightCount = count;
+        if (photonView.IsMine)
+        {
+            PlayerProfileManager.Instance.UpdatePlayerInsights(characterName, InsightCount);
+        }
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
@@ -367,6 +390,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             stream.SendNext(currentObjective);
             stream.SendNext(actionIndicator.text);
             stream.SendNext(characterColor);
+            stream.SendNext(OverallProgress);
+            stream.SendNext(PersonalProgress);
+            stream.SendNext(InsightCount);
         }
         else
         {
@@ -377,6 +403,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             currentObjective = (string)stream.ReceiveNext();
             actionIndicator.text = (string)stream.ReceiveNext();
             Color receivedColor = (Color)stream.ReceiveNext();
+            OverallProgress = (float)stream.ReceiveNext();
+            PersonalProgress = (float)stream.ReceiveNext();
+            InsightCount = (int)stream.ReceiveNext();
             if (characterMaterial != null && receivedColor != characterColor)
             {
                 characterColor = receivedColor;

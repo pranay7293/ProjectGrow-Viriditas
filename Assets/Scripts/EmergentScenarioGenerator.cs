@@ -6,7 +6,6 @@ using Photon.Pun;
 public class EmergentScenarioGenerator : MonoBehaviourPunCallbacks
 {
     private OpenAIService openAIService;
-    [SerializeField] private AISettings scenarioGeneratorSettings;
 
     private void Start()
     {
@@ -15,18 +14,13 @@ public class EmergentScenarioGenerator : MonoBehaviourPunCallbacks
         {
             Debug.LogError("OpenAIService not found in the scene. Please add it to continue.");
         }
-        
-        if (scenarioGeneratorSettings == null)
-        {
-            Debug.LogError("Scenario Generator AI Settings not assigned. Please assign it in the inspector.");
-        }
     }
 
     public async Task<string> GenerateScenario(string currentChallenge, List<string> recentPlayerActions)
     {
         string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, create a brief emergent scenario. The scenario should be a single paragraph describing an unexpected event or complication that affects the challenge progress.";
 
-        return await openAIService.GetResponse(prompt, scenarioGeneratorSettings);
+        return await openAIService.GetResponse(prompt, null);
     }
 
     public void ApplyScenario(string scenario)

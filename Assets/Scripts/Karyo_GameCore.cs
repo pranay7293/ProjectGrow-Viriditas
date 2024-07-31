@@ -7,7 +7,7 @@ public class Karyo_GameCore : MonoBehaviourPunCallbacks
     public static Karyo_GameCore Instance { get; private set; }
 
     public GameManager gameManager;
-    public PlayerListManager playerListManager;
+    public PlayerProfileManager playerProfileManager;
 
     private void Awake()
     {
@@ -42,7 +42,7 @@ public class Karyo_GameCore : MonoBehaviourPunCallbacks
 
     public override void OnJoinedRoom()
     {
-        playerListManager.UpdatePlayerList();
+        playerProfileManager.UpdatePlayerList();
         if (PhotonNetwork.IsMasterClient)
         {
             gameManager.InitializeGame();
@@ -51,12 +51,12 @@ public class Karyo_GameCore : MonoBehaviourPunCallbacks
 
     public override void OnPlayerEnteredRoom(Player newPlayer)
     {
-        playerListManager.UpdatePlayerList();
+        playerProfileManager.UpdatePlayerList();
     }
 
     public override void OnPlayerLeftRoom(Player otherPlayer)
     {
-        playerListManager.UpdatePlayerList();
+        playerProfileManager.UpdatePlayerList();
     }
 }
 
