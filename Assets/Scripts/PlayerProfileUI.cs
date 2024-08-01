@@ -8,56 +8,60 @@ public class PlayerProfileUI : MonoBehaviour
     [SerializeField] private Image avatarSilhouette;
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private Slider overallProgressBar;
-    [SerializeField] private Slider personalProgressBar;
+    [SerializeField] private Slider[] personalProgressBars;
     [SerializeField] private GameObject agentIcon;
     [SerializeField] private GameObject insightIcon;
     [SerializeField] private TextMeshProUGUI insightCountText;
 
-    public string PlayerName { get; private set; }
+    private Color defaultRingColor = Color.white;
+    private Color localPlayerRingColor = Color.yellow;
+    private Color defaultBarColor = new Color(0.5f, 0.5f, 0.5f, 1f); // Grey
 
-    public void SetPlayerInfo(string name, Color color, bool isAI)
+    public void SetPlayerInfo(string name, Color color, bool isAI, bool isLocalPlayer)
     {
-        PlayerName = name;
         nameText.text = name;
-        avatarRing.color = color;
-        avatarSilhouette.color = Color.white; // Keep silhouette white for contrast
+        avatarSilhouette.color = color;
         agentIcon.SetActive(isAI);
         insightIcon.SetActive(!isAI);
+        
+        SetAvatarRingColor(isLocalPlayer);
+        SetProgressBarColors(color);
     }
 
-    public void UpdateProgress(float overallProgress, float personalProgress)
-{
-    if (overallProgressBar != null)
+    private void SetAvatarRingColor(bool isLocalPlayer)
+    {
+        avatarRing.color = isLocalPlayer ? localPlayerRingColor : defaultRingColor;
+    }
+
+    private void SetProgressBarColors(Color fillColor)
+    {
+        SetSliderColors(overallProgressBar, fillColor);
+        foreach (var bar in personalProgressBars)
+        {
+            SetSliderColors(bar, fillColor);
+        }
+    }
+
+    private void SetSliderColors(Slider slider, Color fillColor)
+    {
+        var colors = slider.colors;
+        colors.disabledColor = defaultBarColor;
+        colors.normalColor = fillColor;
+        slider.colors = colors;
+    }
+
+    public void UpdateProgress(float overallProgress, float[] personalProgress)
+    {
         overallProgressBar.value = overallProgress;
-    if (personalProgressBar != null)
-        personalProgressBar.value = personalProgress;
-}
+        for (int i = 0; i < personalProgressBars.Length && i < personalProgress.Length; i++)
+        {
+            personalProgressBars[i].value = personalProgress[i];
+        }
+    }
 
     public void UpdateInsights(int count)
     {
         insightCountText.text = count.ToString();
         insightIcon.SetActive(count > 0);
-    }
-
-    public void SetLocalPlayer(bool isLocal)
-    {
-        // Instead of scaling, consider using a highlight effect or border
-        if (isLocal)
-        {
-            avatarRing.color = Color.yellow; // Example: highlight local player
-        }
-    }
-
-    public void UpdateAvatarSilhouette(Sprite silhouette)
-    {
-        avatarSilhouette.sprite = silhouette;
-    }
-
-    // Optional: Add method to update colors dynamically
-    public void UpdateColors(Color avatarColor, Color overallProgressColor, Color personalProgressColor)
-    {
-        avatarRing.color = avatarColor;
-        overallProgressBar.fillRect.GetComponent<Image>().color = overallProgressColor;
-        personalProgressBar.fillRect.GetComponent<Image>().color = personalProgressColor;
     }
 }

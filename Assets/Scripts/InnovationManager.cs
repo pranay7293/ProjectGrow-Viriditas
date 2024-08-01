@@ -12,9 +12,10 @@ public class InnovationManager : MonoBehaviourPunCallbacks
             GameManager.Instance.UpdatePlayerScore(playerName, 75);
             string completedMilestone = GetRandomIncompleteMilestone();
             if (completedMilestone != null)
-            {
-                GameManager.Instance.CompleteMilestone(completedMilestone);
-            }
+        {
+            int milestoneIndex = GameManager.Instance.GetCurrentChallenge().milestones.IndexOf(completedMilestone);
+            GameManager.Instance.CompleteMilestone(playerName, completedMilestone, milestoneIndex);
+        }
         }
         else
         {

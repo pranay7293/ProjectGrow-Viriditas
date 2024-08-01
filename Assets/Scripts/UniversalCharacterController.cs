@@ -39,8 +39,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private float lastDialogueAttemptTime = 0f;
     private const float DialogueCooldown = 0.5f;
 
-    public float OverallProgress { get; private set; }
-    public float PersonalProgress { get; private set; }
+   public float OverallProgress { get; private set; }
+    public float[] PersonalProgress { get; private set; } = new float[3];
     public int InsightCount { get; private set; }
 
     public enum CharacterState
@@ -360,14 +360,14 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return new Dictionary<string, bool>(personalGoalCompletion);
     }
 
-    public void UpdateProgress(float overall, float personal)
+    public void UpdateProgress(float overallProgress, float[] personalProgress)
     {
-        OverallProgress = overall;
-        PersonalProgress = personal;
-        if (photonView.IsMine)
-        {
-            PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, OverallProgress, PersonalProgress);
-        }
+    OverallProgress = overallProgress;
+    PersonalProgress = personalProgress;
+    if (photonView.IsMine)
+    {
+        PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, OverallProgress, PersonalProgress);
+    }
     }
 
     public void UpdateInsights(int count)
@@ -404,7 +404,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             actionIndicator.text = (string)stream.ReceiveNext();
             Color receivedColor = (Color)stream.ReceiveNext();
             OverallProgress = (float)stream.ReceiveNext();
-            PersonalProgress = (float)stream.ReceiveNext();
+            PersonalProgress = (float[])stream.ReceiveNext();
             InsightCount = (int)stream.ReceiveNext();
             if (characterMaterial != null && receivedColor != characterColor)
             {

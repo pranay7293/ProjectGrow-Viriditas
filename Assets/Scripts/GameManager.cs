@@ -21,6 +21,8 @@ public class GameManager : MonoBehaviourPunCallbacks
     [SerializeField] private GameObject milestonesPanel;
     [SerializeField] private Button toggleMilestonesButton;
     [SerializeField] private TextMeshProUGUI milestonesText;
+    [SerializeField] private ChallengeProgressUI challengeProgressUI;
+    
 
     [Header("Game Components")]
     [SerializeField] private EmergentScenarioGenerator scenarioGenerator;
@@ -30,6 +32,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     private ChallengeData currentChallenge;
     private Dictionary<string, bool> milestoneCompletion = new Dictionary<string, bool>();
     private Dictionary<string, int> playerScores = new Dictionary<string, int>();
+    private Dictionary<string, float[]> playerPersonalProgress = new Dictionary<string, float[]>();
     private int collectiveScore = 0;
     private float lastScenarioTime;
     private List<string> recentPlayerActions = new List<string>();
@@ -84,9 +87,9 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     public void InitializeGame()
     {
-        SpawnCharacters();
-        InitializeChallenge();
-        PlayerProfileManager.Instance.UpdatePlayerList(); // Add this line
+    SpawnCharacters();
+    InitializeChallenge();
+    PlayerProfileManager.Instance.InitializeProfiles();
     }
 
     private void SpawnCharacters()
@@ -150,6 +153,10 @@ public class GameManager : MonoBehaviourPunCallbacks
                     Debug.LogError($"AIManager component not found on spawned character {characterName}");
                 }
             }
+
+            // Initialize player scores and personal progress
+            playerScores[characterName] = 0;
+            playerPersonalProgress[characterName] = new float[3] { 0f, 0f, 0f };
         }
         else
         {
@@ -301,7 +308,8 @@ public class GameManager : MonoBehaviourPunCallbacks
             UpdateCollectiveScore(10);
         }
 
-        CheckMilestoneProgress(action);
+        CheckMilestoneProgress(characterName, action);
+        UpdatePlayerScore(characterName, scoreIncrease);
     }
 
     private int EvaluateActionImpact(string action)
@@ -314,33 +322,36 @@ public class GameManager : MonoBehaviourPunCallbacks
         return action.ToLower().Contains(currentChallenge.title.ToLower());
     }
 
-    private void CheckMilestoneProgress(string action)
+    private void CheckMilestoneProgress(string characterName, string action)
     {
-        foreach (var milestone in currentChallenge.milestones)
+        for (int i = 0; i < currentChallenge.milestones.Count; i++)
         {
+            string milestone = currentChallenge.milestones[i];
             if (!milestoneCompletion[milestone] && action.ToLower().Contains(milestone.ToLower()))
             {
-                CompleteMilestone(milestone);
+                CompleteMilestone(characterName, milestone, i);
                 break;
             }
         }
     }
 
-    public void CompleteMilestone(string milestone)
+    public void CompleteMilestone(string characterName, string milestone, int milestoneIndex)
     {
         if (milestoneCompletion[milestone] == false)
         {
             milestoneCompletion[milestone] = true;
             UpdateCollectiveScore(100);
-            photonView.RPC("SyncMilestoneCompletion", RpcTarget.All, milestone);
+            UpdatePersonalProgress(characterName, milestoneIndex, 1f);
+            photonView.RPC("SyncMilestoneCompletion", RpcTarget.All, milestone, characterName, milestoneIndex);
             CheckAllMilestonesCompleted();
         }
     }
 
     [PunRPC]
-    private void SyncMilestoneCompletion(string milestone)
+    private void SyncMilestoneCompletion(string milestone, string characterName, int milestoneIndex)
     {
         milestoneCompletion[milestone] = true;
+        UpdatePersonalProgress(characterName, milestoneIndex, 1f);
         UpdateMilestonesDisplay();
     }
 
@@ -404,6 +415,25 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
+    private void UpdatePersonalProgress(string characterName, int goalIndex, float progress)
+    {
+    if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
+    {
+        personalProgress[goalIndex] = progress;
+        photonView.RPC("SyncPersonalProgress", RpcTarget.All, characterName, goalIndex, progress);
+    }
+    }  
+
+    [PunRPC]
+    private void SyncPersonalProgress(string characterName, int goalIndex, float progress)
+    {
+        if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
+        {
+            personalProgress[goalIndex] = progress;
+            UpdatePlayerProfileUI(characterName);
+        }
+    }
+
     private void EndChallenge()
     {
         photonView.RPC("ShowResults", RpcTarget.All);
@@ -443,26 +473,42 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     private void UpdateScoreDisplay()
-{
+    {
     float progress = (float)collectiveScore / currentChallenge.goalScore;
     challengeProgressBar.value = progress;
-    
-    PlayerProfileManager playerProfileManager = FindObjectOfType<PlayerProfileManager>();
+
+    float[] milestoneProgress = new float[currentChallenge.milestones.Count];
+    for (int i = 0; i < currentChallenge.milestones.Count; i++)
+    {
+        milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
+    }
+    challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
+
+    PlayerProfileManager playerProfileManager = PlayerProfileManager.Instance;
     if (playerProfileManager != null)
     {
         foreach (var kvp in playerScores)
         {
             string characterName = kvp.Key;
-            float playerProgress = (float)kvp.Value / currentChallenge.goalScore;
-            playerProfileManager.UpdatePlayerProgress(characterName, playerProgress, playerProgress);
+            UpdatePlayerProfileUI(characterName);
         }
     }
-}
+    }
 
-    public void UpdatePlayerProgress(UniversalCharacterController character, float overallProgress, float personalProgress)
+    private void UpdatePlayerProfileUI(string characterName)
     {
-        character.UpdateProgress(overallProgress, personalProgress);
-        PlayerProfileManager.Instance.UpdatePlayerProgress(character.characterName, overallProgress, personalProgress);
+        if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress) &&
+            playerScores.TryGetValue(characterName, out int score))
+        {
+            float overallProgress = (float)score / currentChallenge.goalScore;
+            PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, overallProgress, personalProgress);
+        }
+    }
+
+    public void UpdatePlayerProgress(UniversalCharacterController character, float overallProgress, float[] personalProgress)
+    {
+    character.UpdateProgress(overallProgress, personalProgress);
+    PlayerProfileManager.Instance.UpdatePlayerProgress(character.characterName, overallProgress, personalProgress);
     }
 
     public void UpdatePlayerInsights(UniversalCharacterController character, int insightCount)
