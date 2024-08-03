@@ -3,7 +3,18 @@ using System.Collections.Generic;
 
 public class LocationManager : MonoBehaviour
 {
-    [SerializeField] private List<string> actions = new List<string>();
+    [System.Serializable]
+    public class LocationAction
+    {
+        public string actionName;
+        [TextArea(3, 5)]
+        public string description;
+        public float baseSuccessRate;
+        public string requiredRole; // Can be empty if no specific role is required
+    }
+
+    public string locationName;
+    public List<LocationAction> availableActions = new List<LocationAction>();
     public Color locationColor = Color.white;
 
     private void Start()
@@ -26,7 +37,7 @@ public class LocationManager : MonoBehaviour
         UniversalCharacterController character = other.GetComponent<UniversalCharacterController>();
         if (character != null)
         {
-            Debug.Log($"{character.characterName} entered {gameObject.name}");
+            character.EnterLocation(this);
         }
     }
 
@@ -35,12 +46,23 @@ public class LocationManager : MonoBehaviour
         UniversalCharacterController character = other.GetComponent<UniversalCharacterController>();
         if (character != null)
         {
-            Debug.Log($"{character.characterName} exited {gameObject.name}");
+            character.ExitLocation();
         }
     }
 
+    public List<LocationAction> GetAvailableActions(string characterRole)
+    {
+        return availableActions.FindAll(action => string.IsNullOrEmpty(action.requiredRole) || action.requiredRole == characterRole);
+    }
+
+    // Add this method to fix the error
     public List<string> GetActions()
     {
-        return new List<string>(actions);
+        List<string> actionNames = new List<string>();
+        foreach (LocationAction action in availableActions)
+        {
+            actionNames.Add(action.actionName);
+        }
+        return actionNames;
     }
 }

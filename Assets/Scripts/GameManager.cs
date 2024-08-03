@@ -22,7 +22,6 @@ public class GameManager : MonoBehaviourPunCallbacks
     [SerializeField] private Button toggleMilestonesButton;
     [SerializeField] private TextMeshProUGUI milestonesText;
     [SerializeField] private ChallengeProgressUI challengeProgressUI;
-    
 
     [Header("Game Components")]
     [SerializeField] private EmergentScenarioGenerator scenarioGenerator;
@@ -49,7 +48,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         {"Dr. Flora Tremblay", "Think Tank"},
         {"Indigo", "Maker Space"},
         {"Lilith Fernandez", "Media Center"},
-        {"River Osei", "Sound Studio"},
+        {"River Osei", "Economics Center"},
         {"Sierra Nakamura", "Innovation Hub"}
     };
 
@@ -87,9 +86,9 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     public void InitializeGame()
     {
-    SpawnCharacters();
-    InitializeChallenge();
-    PlayerProfileManager.Instance.InitializeProfiles();
+        SpawnCharacters();
+        InitializeChallenge();
+        PlayerProfileManager.Instance.InitializeProfiles();
     }
 
     private void SpawnCharacters()
@@ -302,6 +301,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         int scoreIncrease = EvaluateActionImpact(action);
         UpdateCollectiveScore(scoreIncrease);
         AddPlayerAction(action);
+        ActionLogManager.Instance.LogAction(characterName, action);
 
         if (ActionContributesToChallenge(action))
         {
@@ -417,11 +417,11 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void UpdatePersonalProgress(string characterName, int goalIndex, float progress)
     {
-    if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
-    {
-        personalProgress[goalIndex] = progress;
-        photonView.RPC("SyncPersonalProgress", RpcTarget.All, characterName, goalIndex, progress);
-    }
+        if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
+        {
+            personalProgress[goalIndex] = progress;
+            photonView.RPC("SyncPersonalProgress", RpcTarget.All, characterName, goalIndex, progress);
+        }
     }  
 
     [PunRPC]
@@ -474,25 +474,25 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void UpdateScoreDisplay()
     {
-    float progress = (float)collectiveScore / currentChallenge.goalScore;
-    challengeProgressBar.value = progress;
+        float progress = (float)collectiveScore / currentChallenge.goalScore;
+        challengeProgressBar.value = progress;
 
-    float[] milestoneProgress = new float[currentChallenge.milestones.Count];
-    for (int i = 0; i < currentChallenge.milestones.Count; i++)
-    {
-        milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
-    }
-    challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
-
-    PlayerProfileManager playerProfileManager = PlayerProfileManager.Instance;
-    if (playerProfileManager != null)
-    {
-        foreach (var kvp in playerScores)
+        float[] milestoneProgress = new float[currentChallenge.milestones.Count];
+        for (int i = 0; i < currentChallenge.milestones.Count; i++)
         {
-            string characterName = kvp.Key;
-            UpdatePlayerProfileUI(characterName);
+            milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
         }
-    }
+        challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
+
+        PlayerProfileManager playerProfileManager = PlayerProfileManager.Instance;
+        if (playerProfileManager != null)
+        {
+            foreach (var kvp in playerScores)
+            {
+                string characterName = kvp.Key;
+                UpdatePlayerProfileUI(characterName);
+            }
+        }
     }
 
     private void UpdatePlayerProfileUI(string characterName)
@@ -507,8 +507,8 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     public void UpdatePlayerProgress(UniversalCharacterController character, float overallProgress, float[] personalProgress)
     {
-    character.UpdateProgress(overallProgress, personalProgress);
-    PlayerProfileManager.Instance.UpdatePlayerProgress(character.characterName, overallProgress, personalProgress);
+        character.UpdateProgress(overallProgress, personalProgress);
+        PlayerProfileManager.Instance.UpdatePlayerProgress(character.characterName, overallProgress, personalProgress);
     }
 
     public void UpdatePlayerInsights(UniversalCharacterController character, int insightCount)

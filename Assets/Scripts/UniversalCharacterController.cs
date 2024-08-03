@@ -39,9 +39,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private float lastDialogueAttemptTime = 0f;
     private const float DialogueCooldown = 0.5f;
 
-   public float OverallProgress { get; private set; }
+    public float OverallProgress { get; private set; }
     public float[] PersonalProgress { get; private set; } = new float[3];
     public int InsightCount { get; private set; }
+
+    private LocationManager currentLocation;
 
     public enum CharacterState
     {
@@ -294,14 +296,20 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void PerformAction(string actionName)
     {
-        SetState(CharacterState.PerformingAction);
-        if (actionIndicator != null)
-        {
-            actionIndicator.text = actionName + "...";
-            actionIndicator.gameObject.SetActive(true);
-            StartCoroutine(FadeOutActionIndicator());
-        }
-        CheckPersonalGoalProgress(actionName);
+    SetState(CharacterState.PerformingAction);
+    if (actionIndicator != null)
+    {
+        actionIndicator.text = actionName + "...";
+        actionIndicator.gameObject.SetActive(true);
+        StartCoroutine(FadeOutActionIndicator());
+    }
+    CheckPersonalGoalProgress(actionName);
+
+    // Log the action
+    ActionLogManager.Instance.LogAction(characterName, actionName);
+
+    // Notify GameManager about the action
+    GameManager.Instance.UpdateGameState(characterName, actionName);
     }
 
     private IEnumerator FadeOutActionIndicator()
@@ -362,12 +370,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void UpdateProgress(float overallProgress, float[] personalProgress)
     {
-    OverallProgress = overallProgress;
-    PersonalProgress = personalProgress;
-    if (photonView.IsMine)
-    {
-        PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, OverallProgress, PersonalProgress);
-    }
+        OverallProgress = overallProgress;
+        PersonalProgress = personalProgress;
+        if (photonView.IsMine)
+        {
+            PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, OverallProgress, PersonalProgress);
+        }
     }
 
     public void UpdateInsights(int count)
@@ -376,6 +384,40 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (photonView.IsMine)
         {
             PlayerProfileManager.Instance.UpdatePlayerInsights(characterName, InsightCount);
+        }
+    }
+
+    public void EnterLocation(LocationManager location)
+    {
+        currentLocation = location;
+        if (IsPlayerControlled && photonView.IsMine)
+        {
+            LocationActionUI.Instance.ShowActionsForLocation(this, location);
+        }
+        else
+        {
+            NPC_Behavior npcBehavior = GetComponent<NPC_Behavior>();
+            if (npcBehavior != null)
+            {
+                npcBehavior.SetCurrentLocation(location);
+            }
+        }
+    }
+
+    public void ExitLocation()
+    {
+        currentLocation = null;
+        if (IsPlayerControlled && photonView.IsMine)
+        {
+            LocationActionUI.Instance.HideActions();
+        }
+        else
+        {
+            NPC_Behavior npcBehavior = GetComponent<NPC_Behavior>();
+            if (npcBehavior != null)
+            {
+                npcBehavior.SetCurrentLocation(null);
+            }
         }
     }
 

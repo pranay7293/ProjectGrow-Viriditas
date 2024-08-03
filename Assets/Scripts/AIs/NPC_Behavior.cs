@@ -20,6 +20,8 @@ public class NPC_Behavior : MonoBehaviour
     private float interactionCooldown = 30f;
     private float lastInteractionTime;
 
+    private LocationManager currentLocationManager;
+
     public void Initialize(UniversalCharacterController controller, NPC_Data data, AIManager manager)
     {
         characterController = controller;
@@ -49,6 +51,10 @@ public class NPC_Behavior : MonoBehaviour
             {
                 CompleteAction();
             }
+        }
+        else if (currentLocationManager != null)
+        {
+            PerformLocationAction();
         }
 
         UpdateState();
@@ -113,55 +119,68 @@ public class NPC_Behavior : MonoBehaviour
         }
     }
 
-    private void PerformLocationAction()
-    {
-        List<string> actions = LocationManagerMaster.Instance.GetLocationActions(currentLocation);
-        if (actions.Count > 0)
-        {
-            currentAction = ChooseBestAction(actions);
-            characterController.PerformAction(currentAction);
-            actionStartTime = Time.time;
-            Debug.Log($"{characterController.characterName} is {currentAction} at {currentLocation}");
+   private void PerformLocationAction()
+{
+    if (currentLocationManager == null) return;
 
-            string detailedAction = GenerateDetailedAction(currentAction);
-            DialogueManager.Instance.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {detailedAction} at {currentLocation}");
-        }
+    List<LocationManager.LocationAction> availableActions = currentLocationManager.GetAvailableActions(characterController.aiSettings.characterRole);
+    if (availableActions.Count == 0) return;
+
+    LocationManager.LocationAction selectedAction = ChooseBestAction(availableActions);
+    ExecuteAction(selectedAction);
+}
+
+private void ExecuteAction(LocationManager.LocationAction action)
+{
+    currentAction = action.actionName;
+    actionStartTime = Time.time;
+    characterController.PerformAction(action.actionName);
+    
+    // Log the action
+    ActionLogManager.Instance.LogAction(characterController.characterName, $"performing {action.actionName} at {currentLocationManager.locationName}");
+    
+    // Evaluate the action outcome
+    RiskRewardManager.Instance.EvaluateActionOutcome(characterController, action);
+}
+
+private LocationManager.LocationAction ChooseBestAction(List<LocationManager.LocationAction> actions)
+{
+    GameState currentState = GameManager.Instance.GetCurrentGameState();
+    List<string> personalGoals = aiManager.GetPersonalGoals();
+    string currentChallenge = currentState.CurrentChallenge.title;
+
+    // Score each action based on relevance to goals and challenge
+    var scoredActions = actions.Select(action => new
+    {
+        Action = action,
+        Score = ScoreAction(action, personalGoals, currentChallenge)
+    }).ToList();
+
+    // Choose the action with the highest score
+    return scoredActions.OrderByDescending(sa => sa.Score).First().Action;
+}
+
+private float ScoreAction(LocationManager.LocationAction action, List<string> personalGoals, string currentChallenge)
+{
+    float score = 0;
+
+    // Check if the action contributes to personal goals
+    if (personalGoals.Any(goal => action.actionName.ToLower().Contains(goal.ToLower())))
+    {
+        score += 2;
     }
 
-    private string ChooseBestAction(List<string> actions)
+    // Check if the action contributes to the current challenge
+    if (action.actionName.ToLower().Contains(currentChallenge.ToLower()))
     {
-        List<string> milestones = GameManager.Instance.GetCurrentChallenge().milestones;
-        foreach (string action in actions)
-        {
-            if (milestones.Any(milestone => action.ToLower().Contains(milestone.ToLower())))
-            {
-                return action;
-            }
-        }
-        return actions[Random.Range(0, actions.Count)];
+        score += 3;
     }
 
-    private string GenerateDetailedAction(string baseAction)
-    {
-        string role = characterController.aiSettings.characterRole;
-        string personality = characterController.aiSettings.characterPersonality;
+    // Add a small random factor to prevent always choosing the same action
+    score += Random.Range(0f, 0.5f);
 
-        Dictionary<string, string> detailedActions = new Dictionary<string, string>
-        {
-            {"Researching", $"conducting advanced {role.ToLower()} research"},
-            {"Experimenting", $"running complex {role.ToLower()} experiments"},
-            {"Analyzing", $"performing in-depth {role.ToLower()} analysis"},
-            {"Collaborating", $"engaging in {personality.ToLower()} collaboration with colleagues"},
-            {"Innovating", $"developing cutting-edge {role.ToLower()} innovations"}
-        };
-
-        if (detailedActions.TryGetValue(baseAction, out string detailedAction))
-        {
-            return detailedAction;
-        }
-
-        return $"working on {baseAction.ToLower()} tasks";
-    }
+    return score;
+}
 
     private void AttemptNPCInteraction()
     {
@@ -240,5 +259,10 @@ public class NPC_Behavior : MonoBehaviour
         {
             characterController.SetState(UniversalCharacterController.CharacterState.Idle);
         }
+    }
+
+    public void SetCurrentLocation(LocationManager location)
+    {
+        currentLocationManager = location;
     }
 }
