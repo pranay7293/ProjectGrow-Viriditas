@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using Photon.Pun;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using System.Linq;
@@ -11,13 +12,11 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     [Header("Game Settings")]
     [SerializeField] private float challengeDuration = 900f; // 15 minutes
-    [SerializeField] private float scenarioGenerationInterval = 300f; // 5 minutes
 
     [Header("UI References")]
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI challengeText;
     [SerializeField] private Slider challengeProgressBar;
-    [SerializeField] private TextMeshProUGUI emergentScenarioDisplay;
     [SerializeField] private GameObject milestonesPanel;
     [SerializeField] private Button toggleMilestonesButton;
     [SerializeField] private TextMeshProUGUI milestonesText;
@@ -25,15 +24,17 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     [Header("Game Components")]
     [SerializeField] private EmergentScenarioGenerator scenarioGenerator;
+    [SerializeField] private EmergentScenarioUI scenarioUI;
     [SerializeField] private Transform[] spawnPoints;
 
     private float remainingTime;
+    private float gameStartTime;
     private ChallengeData currentChallenge;
+    private HubData currentHub;
     private Dictionary<string, bool> milestoneCompletion = new Dictionary<string, bool>();
     private Dictionary<string, int> playerScores = new Dictionary<string, int>();
     private Dictionary<string, float[]> playerPersonalProgress = new Dictionary<string, float[]>();
     private int collectiveScore = 0;
-    private float lastScenarioTime;
     private List<string> recentPlayerActions = new List<string>();
     private Dictionary<string, UniversalCharacterController> spawnedCharacters = new Dictionary<string, UniversalCharacterController>();
     private Dictionary<string, int> playerInsights = new Dictionary<string, int>();
@@ -80,7 +81,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         if (PhotonNetwork.IsMasterClient)
         {
             UpdateGameTime();
-            CheckForNewScenario();
+            CheckForEmergentScenario();
         }
     }
 
@@ -89,6 +90,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         SpawnCharacters();
         InitializeChallenge();
         PlayerProfileManager.Instance.InitializeProfiles();
+        gameStartTime = Time.time;
     }
 
     private void SpawnCharacters()
@@ -153,7 +155,6 @@ public class GameManager : MonoBehaviourPunCallbacks
                 }
             }
 
-            // Initialize player scores and personal progress
             playerScores[characterName] = 0;
             playerPersonalProgress[characterName] = new float[3] { 0f, 0f, 0f };
         }
@@ -170,9 +171,9 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void InitializeChallenge()
     {
+        currentHub = GetSelectedHub();
         currentChallenge = GetSelectedChallenge();
         remainingTime = challengeDuration;
-        lastScenarioTime = 0f;
         recentPlayerActions.Clear();
         collectiveScore = 0;
         
@@ -187,26 +188,41 @@ public class GameManager : MonoBehaviourPunCallbacks
         photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, collectiveScore, playerScores);
     }
 
+    private HubData GetSelectedHub()
+    {
+    int selectedHubIndex = PlayerPrefs.GetInt("SelectedHubIndex", 0);
+    HubData[] allHubs = Resources.LoadAll<HubData>("Hubs");
+    
+    if (selectedHubIndex >= 0 && selectedHubIndex < allHubs.Length)
+    {
+        return allHubs[selectedHubIndex];
+    }
+    else
+    {
+        Debug.LogError("Selected hub index out of range. Using default hub.");
+        return allHubs[0]; // Return the first hub as a default
+    }
+    }
+    
     private ChallengeData GetSelectedChallenge()
     {
-        string challengeTitle = "Default Challenge";
+        string challengeTitle = PlayerPrefs.GetString("SelectedChallengeTitle", "Default Challenge");
+        
         if (PhotonNetwork.CurrentRoom != null && 
             PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("SelectedChallengeTitle", out object title))
         {
             challengeTitle = (string)title;
         }
-        else
-        {
-            challengeTitle = PlayerPrefs.GetString("SelectedChallengeTitle", "Default Challenge");
-        }
         
         Debug.Log($"Attempting to get challenge: {challengeTitle}");
-        ChallengeData challenge = ChallengeDatabase.GetChallenge(challengeTitle);
+        
+        // Find the challenge in the current hub
+        ChallengeData challenge = currentHub.challenges.Find(c => c.title == challengeTitle);
         
         if (challenge == null)
         {
-            Debug.LogError($"Failed to load challenge: {challengeTitle}");
-            // Provide a fallback challenge or handle this case appropriately
+            Debug.LogError($"Failed to load challenge: {challengeTitle}. Using first challenge in hub.");
+            challenge = currentHub.challenges[0]; // Use the first challenge as a fallback
         }
         
         return challenge;
@@ -259,31 +275,37 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private void CheckForNewScenario()
+    private void CheckForEmergentScenario()
     {
-        if (Time.time - lastScenarioTime >= scenarioGenerationInterval)
+        float gameTime = Time.time - gameStartTime;
+        if ((gameTime >= 300f && gameTime < 301f) || (gameTime >= 600f && gameTime < 601f))
         {
-            lastScenarioTime = Time.time;
-            GenerateNewScenario();
+            if (PhotonNetwork.IsMasterClient)
+            {
+                TriggerEmergentScenario();
+            }
         }
     }
 
-    private async void GenerateNewScenario()
+    private void TriggerEmergentScenario()
     {
-        string newScenario = await scenarioGenerator.GenerateScenario(currentChallenge.title, recentPlayerActions);
-        ApplyScenario(newScenario);
-        recentPlayerActions.Clear();
+        StartCoroutine(GenerateAndDisplayScenario());
     }
 
-    private void ApplyScenario(string scenario)
+    private IEnumerator GenerateAndDisplayScenario()
     {
-        photonView.RPC("NotifyNewScenario", RpcTarget.All, scenario);
+        var scenarioTask = scenarioGenerator.GenerateScenario(currentChallenge.title, recentPlayerActions);
+        yield return new WaitUntil(() => scenarioTask.IsCompleted);
+
+        var scenario = scenarioTask.Result;
+        photonView.RPC("RPC_DisplayEmergentScenario", RpcTarget.All, JsonUtility.ToJson(scenario));
     }
 
     [PunRPC]
-    private void NotifyNewScenario(string scenario)
+    private void RPC_DisplayEmergentScenario(string scenarioJson)
     {
-        emergentScenarioDisplay.text = scenario;
+        var scenario = JsonUtility.FromJson<EmergentScenarioGenerator.ScenarioData>(scenarioJson);
+        scenarioUI.DisplayScenario(scenario, currentHub.hubColor);
     }
 
     public void AddPlayerAction(string action)
@@ -380,12 +402,6 @@ public class GameManager : MonoBehaviourPunCallbacks
             UpdateCollectiveScore(500); // Bonus for completing all milestones
             EndChallenge();
         }
-    }
-
-    public void UpdateEmergentScenario(string scenario)
-    {
-        emergentScenarioDisplay.text = scenario;
-        // Implement any additional logic for handling the new scenario
     }
 
     public bool IsMilestoneCompleted(string milestone)
@@ -580,5 +596,25 @@ public class GameManager : MonoBehaviourPunCallbacks
     public List<string> GetAICharacterNames()
     {
         return spawnedCharacters.Where(kvp => !kvp.Value.IsPlayerControlled).Select(kvp => kvp.Key).ToList();
+    }
+
+    public void ResetPlayerPositions()
+    {
+        foreach (var character in spawnedCharacters.Values)
+        {
+            if (characterLocations.TryGetValue(character.characterName, out string locationName))
+            {
+                Transform spawnPoint = GetSpawnPointByName(locationName);
+                if (spawnPoint != null)
+                {
+                    character.transform.position = spawnPoint.position;
+                }
+            }
+        }
+    }
+
+    public Color GetCurrentHubColor()
+    {
+        return currentHub.hubColor;
     }
 }
