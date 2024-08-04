@@ -10,6 +10,7 @@ public class LocationManager : MonoBehaviour
         [TextArea(3, 5)]
         public string description;
         public float baseSuccessRate;
+        public float duration;
         public string requiredRole; // Can be empty if no specific role is required
     }
 
@@ -53,16 +54,5 @@ public class LocationManager : MonoBehaviour
     public List<LocationAction> GetAvailableActions(string characterRole)
     {
         return availableActions.FindAll(action => string.IsNullOrEmpty(action.requiredRole) || action.requiredRole == characterRole);
-    }
-
-    // Add this method to fix the error
-    public List<string> GetActions()
-    {
-        List<string> actionNames = new List<string>();
-        foreach (LocationAction action in availableActions)
-        {
-            actionNames.Add(action.actionName);
-        }
-        return actionNames;
     }
 }

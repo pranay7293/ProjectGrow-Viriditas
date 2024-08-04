@@ -296,20 +296,27 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void PerformAction(string actionName)
     {
-    SetState(CharacterState.PerformingAction);
-    if (actionIndicator != null)
-    {
-        actionIndicator.text = actionName + "...";
-        actionIndicator.gameObject.SetActive(true);
-        StartCoroutine(FadeOutActionIndicator());
-    }
-    CheckPersonalGoalProgress(actionName);
+        if (!photonView.IsMine) return;
 
-    // Log the action
-    ActionLogManager.Instance.LogAction(characterName, actionName);
+        SetState(CharacterState.PerformingAction);
+        if (actionIndicator != null)
+        {
+            actionIndicator.text = actionName + "...";
+            actionIndicator.gameObject.SetActive(true);
+            StartCoroutine(FadeOutActionIndicator());
+        }
+        CheckPersonalGoalProgress(actionName);
 
-    // Notify GameManager about the action
-    GameManager.Instance.UpdateGameState(characterName, actionName);
+        // Log the action
+        ActionLogManager.Instance.LogAction(characterName, actionName);
+
+        // Notify GameManager about the action
+        GameManager.Instance.UpdateGameState(characterName, actionName);
+
+        Debug.Log($"{characterName} performed action: {actionName}");
+
+        // Trigger the RiskRewardManager to evaluate the outcome
+        RiskRewardManager.Instance.EvaluateActionOutcome(this, new LocationManager.LocationAction { actionName = actionName });
     }
 
     private IEnumerator FadeOutActionIndicator()
@@ -392,7 +399,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         currentLocation = location;
         if (IsPlayerControlled && photonView.IsMine)
         {
-            LocationActionUI.Instance.ShowActionsForLocation(this, location);
+            StartCoroutine(DelayedShowActions(location));
         }
         else
         {
@@ -402,6 +409,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 npcBehavior.SetCurrentLocation(location);
             }
         }
+    }
+
+    private IEnumerator DelayedShowActions(LocationManager location)
+    {
+    yield return new WaitForSeconds(2f); // 2 second delay, adjust as needed
+    LocationActionUI.Instance.ShowActionsForLocation(this, location);
     }
 
     public void ExitLocation()

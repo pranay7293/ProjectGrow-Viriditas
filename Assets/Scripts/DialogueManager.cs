@@ -374,22 +374,31 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     [PunRPC]
     private async void RPC_TriggerNPCDialogue(int initiatorViewID, int targetViewID)
     {
-        UniversalCharacterController initiator = PhotonView.Find(initiatorViewID).GetComponent<UniversalCharacterController>();
-        UniversalCharacterController target = PhotonView.Find(targetViewID).GetComponent<UniversalCharacterController>();
+    PhotonView initiatorView = PhotonView.Find(initiatorViewID);
+    PhotonView targetView = PhotonView.Find(targetViewID);
 
-        if (initiator != null && target != null)
-        {
-            string initiatorDialogue = await OpenAIService.Instance.GetResponse(GetNPCDialoguePrompt(initiator, target), initiator.aiSettings);
-            string targetResponse = await OpenAIService.Instance.GetResponse(GetNPCDialoguePrompt(target, initiator), target.aiSettings);
+    if (initiatorView == null || targetView == null)
+    {
+        Debug.LogWarning("One or both characters have been destroyed. Skipping NPC dialogue.");
+        return;
+    }
 
-            AddToChatLog(initiator.characterName, initiatorDialogue);
-            AddToChatLog(target.characterName, targetResponse);
+    UniversalCharacterController initiator = initiatorView.GetComponent<UniversalCharacterController>();
+    UniversalCharacterController target = targetView.GetComponent<UniversalCharacterController>();
 
-            GameManager.Instance.UpdateGameState(initiator.characterName, initiatorDialogue);
-            GameManager.Instance.UpdateGameState(target.characterName, targetResponse);
+    if (initiator != null && target != null)
+    {
+        string initiatorDialogue = await OpenAIService.Instance.GetResponse(GetNPCDialoguePrompt(initiator, target), initiator.aiSettings);
+        string targetResponse = await OpenAIService.Instance.GetResponse(GetNPCDialoguePrompt(target, initiator), target.aiSettings);
 
-            UpdateRelationshipAfterInteraction(initiator, target, initiatorDialogue, targetResponse);
-        }
+        AddToChatLog(initiator.characterName, initiatorDialogue);
+        AddToChatLog(target.characterName, targetResponse);
+
+        GameManager.Instance.UpdateGameState(initiator.characterName, initiatorDialogue);
+        GameManager.Instance.UpdateGameState(target.characterName, targetResponse);
+
+        UpdateRelationshipAfterInteraction(initiator, target, initiatorDialogue, targetResponse);
+    }
     }
 
     private string GetNPCDialoguePrompt(UniversalCharacterController speaker, UniversalCharacterController listener)
@@ -399,16 +408,22 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void UpdateRelationshipAfterInteraction(UniversalCharacterController initiator, UniversalCharacterController target, string initiatorDialogue, string targetResponse)
     {
-        float relationshipChange = CalculateRelationshipChange(initiatorDialogue, targetResponse);
+    if (initiator == null || target == null)
+    {
+        Debug.LogWarning("One or both characters have been destroyed. Skipping relationship update.");
+        return;
+    }
 
-        AIManager initiatorAI = initiator.GetComponent<AIManager>();
-        AIManager targetAI = target.GetComponent<AIManager>();
+    float relationshipChange = CalculateRelationshipChange(initiatorDialogue, targetResponse);
 
-        if (initiatorAI != null && targetAI != null)
-        {
-            initiatorAI.UpdateRelationship(target.characterName, relationshipChange);
-            targetAI.UpdateRelationship(initiator.characterName, relationshipChange);
-        }
+    AIManager initiatorAI = initiator.GetComponent<AIManager>();
+    AIManager targetAI = target.GetComponent<AIManager>();
+
+    if (initiatorAI != null && targetAI != null)
+    {
+        initiatorAI.UpdateRelationship(target.characterName, relationshipChange);
+        targetAI.UpdateRelationship(initiator.characterName, relationshipChange);
+    }
     }
 
     private float CalculateRelationshipChange(string dialogue1, string dialogue2)

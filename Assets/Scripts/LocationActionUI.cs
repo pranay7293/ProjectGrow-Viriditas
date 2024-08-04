@@ -11,7 +11,6 @@ public class LocationActionUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI locationNameText;
     [SerializeField] private Button actionButtonPrefab;
     [SerializeField] private Transform actionButtonContainer;
-    [SerializeField] private TextMeshProUGUI actionDescriptionText;
     [SerializeField] private Button closeButton;
 
     private UniversalCharacterController currentCharacter;
@@ -22,7 +21,6 @@ public class LocationActionUI : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -70,14 +68,32 @@ public class LocationActionUI : MonoBehaviour
             Button newButton = Instantiate(actionButtonPrefab, actionButtonContainer);
             TextMeshProUGUI buttonText = newButton.GetComponentInChildren<TextMeshProUGUI>();
             buttonText.text = action.actionName;
+            
+            // Set up the OnClick event
             newButton.onClick.AddListener(() => OnActionButtonClicked(action));
+
+            // Set up success probability and time indicator
+            TextMeshProUGUI probabilityText = newButton.transform.Find("ProbabilityText").GetComponent<TextMeshProUGUI>();
+            TextMeshProUGUI timeText = newButton.transform.Find("TimeText").GetComponent<TextMeshProUGUI>();
+            
+            float successRate = CalculateSuccessRate(currentCharacter, action);
+            probabilityText.text = $"{successRate:P0} Success";
+            timeText.text = $"{action.duration}s";
         }
     }
 
     private void OnActionButtonClicked(LocationManager.LocationAction action)
     {
-        actionDescriptionText.text = action.description;
+        Debug.Log($"Action clicked: {action.actionName}");
         currentCharacter.PerformAction(action.actionName);
         RiskRewardManager.Instance.EvaluateActionOutcome(currentCharacter, action);
+        HideActions();
+    }
+
+    private float CalculateSuccessRate(UniversalCharacterController character, LocationManager.LocationAction action)
+    {
+        float baseRate = action.baseSuccessRate;
+        float roleBonus = (character.aiSettings.characterRole == action.requiredRole) ? 0.2f : 0f;
+        return Mathf.Clamp01(baseRate + roleBonus);
     }
 }

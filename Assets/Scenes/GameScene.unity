@@ -1269,7 +1269,6 @@ GameObject:
   - component: {fileID: 182078933}
   - component: {fileID: 182078936}
   - component: {fileID: 182078935}
-  - component: {fileID: 182078934}
   m_Layer: 0
   m_Name: Panel
   m_TagString: Untagged
@@ -1291,40 +1290,13 @@ RectTransform:
   m_Children:
   - {fileID: 2040125262}
   - {fileID: 467250263}
-  - {fileID: 827870496}
   m_Father: {fileID: 1547172806}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 1000}
-  m_SizeDelta: {x: 450, y: 300}
+  m_SizeDelta: {x: 750, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &182078934
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 182078932}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Padding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
-    m_Bottom: 0
-  m_ChildAlignment: 1
-  m_Spacing: 0
-  m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 0
-  m_ChildControlHeight: 0
-  m_ChildScaleWidth: 0
-  m_ChildScaleHeight: 0
-  m_ReverseArrangement: 0
 --- !u!114 &182078935
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1338,7 +1310,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.09411765, g: 0.09411765, b: 0.09411765, a: 0.9607843}
+  m_Color: {r: 0.6226415, g: 0.6226415, b: 0.6226415, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2102,14 +2074,17 @@ MonoBehaviour:
   - actionName: Model
     description: Create economic simulations
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Forecast
     description: Predict market trends
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Trade
     description: Engage in virtual market exchanges
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   locationColor: {r: 1, g: 0.20392157, b: 0.85490197, a: 0}
 --- !u!1 &279453476
@@ -3652,14 +3627,17 @@ MonoBehaviour:
   - actionName: Create
     description: Produce bio-infused artworks
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Exhibit
     description: Showcase artistic creations
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Critique
     description: Analyze and discuss art pieces
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   locationColor: {r: 0.06666667, g: 0.6901961, b: 0.12156863, a: 0}
 --- !u!1 &340054443
@@ -4333,10 +4311,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 182078933}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
+  m_SizeDelta: {x: 750, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &467250264
 MonoBehaviour:
@@ -4347,18 +4325,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 467250262}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 0
-    m_Right: 0
+    m_Left: 10
+    m_Right: 10
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 1
-  m_Spacing: 5
+  m_ChildAlignment: 4
+  m_Spacing: 0
   m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
+  m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 0
   m_ChildControlHeight: 0
   m_ChildScaleWidth: 0
@@ -4535,14 +4513,17 @@ MonoBehaviour:
   - actionName: Simulate
     description: Run space environment tests
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Innovate
     description: Develop space technologies
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Explore
     description: Study extraterrestrial biology
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   locationColor: {r: 0, g: 0, b: 0, a: 0}
 --- !u!1 &517150535
@@ -4673,7 +4654,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &521415913
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5892,14 +5873,17 @@ MonoBehaviour:
   - actionName: Debate
     description: Engage in ethical discussions
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Strategize
     description: Develop ethical guidelines
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Philosophize
     description: Explore moral implications
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   locationColor: {r: 1, g: 0.6666667, b: 0.9607843, a: 0}
 --- !u!1 &641673792
@@ -7539,14 +7523,17 @@ MonoBehaviour:
   - actionName: Tinker
     description: Work on DIY inventions
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Fabricate
     description: Create physical prototypes
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Collaborate
     description: Work on community projects
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   locationColor: {r: 0.43137255, g: 0.07058824, b: 0.69803923, a: 0}
 --- !u!4 &711526837 stripped
@@ -9007,140 +8994,6 @@ CanvasRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 802198589}
-  m_CullTransparentMesh: 1
---- !u!1 &827870495
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 827870496}
-  - component: {fileID: 827870498}
-  - component: {fileID: 827870497}
-  m_Layer: 0
-  m_Name: ActionDescription
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &827870496
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 827870495}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 182078933}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 50}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &827870497
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 827870495}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: ACTION
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 5e22c67c443164b66bca99c223111133, type: 2}
-  m_sharedMaterial: {fileID: 116802541643450836, guid: 5e22c67c443164b66bca99c223111133, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
-  m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 0
-  m_HorizontalAlignment: 2
-  m_VerticalAlignment: 512
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 1
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!222 &827870498
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 827870495}
   m_CullTransparentMesh: 1
 --- !u!1 &859407911
 GameObject:
@@ -14571,14 +14424,17 @@ MonoBehaviour:
   - actionName: Broadcast
     description: Share news and updates
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Interview
     description: Gather information from characters
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Produce
     description: Create and edit media content
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   locationColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &1242851739
@@ -17326,14 +17182,17 @@ MonoBehaviour:
   - actionName: Experiment
     description: Conduct scientific tests
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Analyze
     description: Examine research data
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Document
     description: Record findings and results
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   locationColor: {r: 0.93333334, g: 0.6313726, b: 0.10980392, a: 0}
 --- !u!1 &1547172805
@@ -17362,7 +17221,7 @@ Transform:
   m_GameObject: {fileID: 1547172805}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -710, y: -531.2359, z: -61.285896}
+  m_LocalPosition: {x: 0, y: -500, z: -61.285896}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -17386,7 +17245,6 @@ MonoBehaviour:
   locationNameText: {fileID: 802198591}
   actionButtonPrefab: {fileID: 6266023773118352797, guid: aea78a87b977c444eba01a56c8bf6ae9, type: 3}
   actionButtonContainer: {fileID: 467250263}
-  actionDescriptionText: {fileID: 827870497}
   closeButton: {fileID: 1553027525}
 --- !u!1 &1553027523
 GameObject:
@@ -17424,7 +17282,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: 650}
+  m_AnchoredPosition: {x: 0, y: 688.5}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1553027525
@@ -19856,14 +19714,17 @@ MonoBehaviour:
   - actionName: Ideate
     description: Generate new business concepts
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Prototype
     description: Create startup project models
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Pitch
     description: Present ideas to potential investors
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   locationColor: {r: 0.6509804, g: 0.15686275, b: 0.0627451, a: 0}
 --- !u!1 &1723417897
@@ -20297,14 +20158,17 @@ MonoBehaviour:
   - actionName: Engineer
     description: Design biological systems
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Cultivate
     description: Grow biological samples
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Automate
     description: Optimize bioprocesses
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   locationColor: {r: 0.3882353, g: 0.3882353, b: 0.3882353, a: 0}
 --- !u!1 &1741184711
@@ -22849,10 +22713,10 @@ RectTransform:
   - {fileID: 802198590}
   m_Father: {fileID: 182078933}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 440, y: 50}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 375, y: -25}
+  m_SizeDelta: {x: 750, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2040125263
 MonoBehaviour:
@@ -25732,14 +25596,17 @@ MonoBehaviour:
   - actionName: Treat
     description: Provide medical care to patients
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Research
     description: Conduct medical experiments
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   - actionName: Consult
     description: Advise on medical issues
     baseSuccessRate: 50
+    duration: 0
     requiredRole: 
   locationColor: {r: 0.050980393, g: 0.5254902, b: 0.972549, a: 0}
 --- !u!1660057539 &9223372036854775807

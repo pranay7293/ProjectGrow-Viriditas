@@ -28,6 +28,9 @@ public class RiskRewardManager : MonoBehaviour
         GameManager.Instance.UpdatePlayerScore(character.characterName, scoreChange);
         GameManager.Instance.UpdateGameState(character.characterName, $"{outcomeDescription} action: {action.actionName}");
 
+        // Display outcome to the player
+        DisplayOutcome(isSuccessful, scoreChange);
+
         // Update character's mental model
         AIManager aiManager = character.GetComponent<AIManager>();
         if (aiManager != null)
@@ -45,5 +48,12 @@ public class RiskRewardManager : MonoBehaviour
         // You can add more modifiers here based on character stats, experience, etc.
 
         return Mathf.Clamp01(baseRate + roleBonus);
+    }
+
+    private void DisplayOutcome(bool isSuccessful, int scoreChange)
+    {
+        // Implement this method to show a UI element with the outcome
+        // For example, you could use a prefab with animation to display "+10 points" or "-5 points"
+        Debug.Log($"Action {(isSuccessful ? "Succeeded" : "Failed")}! Score change: {scoreChange}");
     }
 }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using Photon.Pun;
+using UnityEngine.EventSystems;
 
 public class InputManager : MonoBehaviourPunCallbacks
 {
@@ -33,7 +34,7 @@ public class InputManager : MonoBehaviourPunCallbacks
     {
         get
         {
-            if (IsInDialogue) return Vector3.zero;
+            if (IsInDialogue || IsPointerOverUIElement()) return Vector3.zero;
 
             var moveVector = Vector3.zero;
 
@@ -55,7 +56,7 @@ public class InputManager : MonoBehaviourPunCallbacks
 
         if (localPlayer != null && localPlayer.photonView.IsMine)
         {
-            if (PlayerInteractActivate && !IsInDialogue)
+            if (PlayerInteractActivate && !IsInDialogue && !IsPointerOverUIElement())
             {
                 localPlayer.TriggerDialogue();
             }
@@ -72,26 +73,31 @@ public class InputManager : MonoBehaviourPunCallbacks
 
             if (IsInDialogue)
             {
-                if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
-                {
-                    DialogueManager.Instance.SelectDialogueOption(0);
-                }
-                else if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
-                {
-                    DialogueManager.Instance.SelectDialogueOption(1);
-                }
-                else if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
-                {
-                    DialogueManager.Instance.SelectDialogueOption(2);
-                }
-                else if (Input.GetKeyDown(toggleCustomInputKey))
-                {
-                    DialogueManager.Instance.ToggleCustomInput();
-                }
+                HandleDialogueInput();
             }
         }
 
         UpdateCursorState();
+    }
+
+    private void HandleDialogueInput()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
+        {
+            DialogueManager.Instance.SelectDialogueOption(0);
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
+        {
+            DialogueManager.Instance.SelectDialogueOption(1);
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
+        {
+            DialogueManager.Instance.SelectDialogueOption(2);
+        }
+        else if (Input.GetKeyDown(toggleCustomInputKey))
+        {
+            DialogueManager.Instance.ToggleCustomInput();
+        }
     }
 
     public void StartDialogue()
@@ -129,7 +135,13 @@ public class InputManager : MonoBehaviourPunCallbacks
 
     private void UpdateCursorState()
     {
-        Cursor.visible = IsInDialogue || IsChatLogOpen;
-        Cursor.lockState = (IsInDialogue || IsChatLogOpen) ? CursorLockMode.None : CursorLockMode.Locked;
+        bool shouldShowCursor = IsInDialogue || IsChatLogOpen || IsPointerOverUIElement();
+        Cursor.visible = shouldShowCursor;
+        Cursor.lockState = shouldShowCursor ? CursorLockMode.None : CursorLockMode.Locked;
+    }
+
+    private bool IsPointerOverUIElement()
+    {
+        return EventSystem.current.IsPointerOverGameObject();
     }
 }

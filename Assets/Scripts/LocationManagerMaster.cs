@@ -38,13 +38,13 @@ public class LocationManagerMaster : MonoBehaviour
         return Vector3.zero;
     }
 
-    public List<string> GetLocationActions(string locationName)
+    public List<LocationManager.LocationAction> GetLocationActions(string locationName, string characterRole = "")
     {
         if (locations.TryGetValue(locationName, out LocationManager location))
         {
-            return location.GetActions();
+            return location.GetAvailableActions(characterRole);
         }
-        return new List<string>();
+        return new List<LocationManager.LocationAction>();
     }
 
     public List<string> GetAllLocations()
@@ -63,8 +63,8 @@ public class LocationManagerMaster : MonoBehaviour
 
         foreach (var location in locations)
         {
-            List<string> locationActions = location.Value.GetActions();
-            if (locationActions.Any(action => subgoals.Any(subgoal => action.ToLower().Contains(subgoal.ToLower()))))
+            List<LocationManager.LocationAction> locationActions = location.Value.GetAvailableActions("");
+            if (locationActions.Any(action => subgoals.Any(subgoal => action.actionName.ToLower().Contains(subgoal.ToLower()))))
             {
                 relevantLocations.Add(location.Key);
             }
