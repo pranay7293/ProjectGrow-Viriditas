@@ -171,21 +171,20 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void InitializeChallenge()
     {
-        currentHub = GetSelectedHub();
-        currentChallenge = GetSelectedChallenge();
-        remainingTime = challengeDuration;
-        recentPlayerActions.Clear();
-        collectiveScore = 0;
-        
-        milestoneCompletion.Clear();
-        foreach (var milestone in currentChallenge.milestones)
-        {
-            milestoneCompletion[milestone] = false;
-        }
+    currentChallenge = GetSelectedChallenge();
+    remainingTime = challengeDuration;
+    recentPlayerActions.Clear();
+    collectiveScore = 0;
+    
+    milestoneCompletion.Clear();
+    foreach (var milestone in currentChallenge.milestones)
+    {
+        milestoneCompletion[milestone] = false;
+    }
 
-        SerializableChallengeData serializableChallenge = new SerializableChallengeData(currentChallenge);
-        string challengeJson = JsonUtility.ToJson(serializableChallenge);
-        photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, collectiveScore, playerScores);
+    SerializableChallengeData serializableChallenge = new SerializableChallengeData(currentChallenge);
+    string challengeJson = JsonUtility.ToJson(serializableChallenge);
+    photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, collectiveScore, playerScores);
     }
 
     private HubData GetSelectedHub()
@@ -204,28 +203,37 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
     }
     
-    private ChallengeData GetSelectedChallenge()
+   private ChallengeData GetSelectedChallenge()
     {
-        string challengeTitle = PlayerPrefs.GetString("SelectedChallengeTitle", "Default Challenge");
+    string challengeTitle = PlayerPrefs.GetString("SelectedChallengeTitle", "Default Challenge");
+    
+    if (PhotonNetwork.CurrentRoom != null && 
+        PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("SelectedChallengeTitle", out object title))
+    {
+        challengeTitle = (string)title;
+    }
+    
+    Debug.Log($"Attempting to get challenge: {challengeTitle}");
+    
+    // Load all challenges
+    ChallengeData[] allChallenges = Resources.LoadAll<ChallengeData>("Challenges");
+    
+    // Find the challenge with the matching title
+    ChallengeData selectedChallenge = allChallenges.FirstOrDefault(c => c.title == challengeTitle);
+    
+    if (selectedChallenge == null)
+    {
+        Debug.LogError($"Failed to load challenge: {challengeTitle}. Using first available challenge.");
+        selectedChallenge = allChallenges.FirstOrDefault();
         
-        if (PhotonNetwork.CurrentRoom != null && 
-            PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("SelectedChallengeTitle", out object title))
+        if (selectedChallenge == null)
         {
-            challengeTitle = (string)title;
+            Debug.LogError("No challenges found in Resources/Challenges. Please ensure challenge assets exist.");
+            // Here, you might want to handle this critical error, perhaps by returning to the main menu
         }
-        
-        Debug.Log($"Attempting to get challenge: {challengeTitle}");
-        
-        // Find the challenge in the current hub
-        ChallengeData challenge = currentHub.challenges.Find(c => c.title == challengeTitle);
-        
-        if (challenge == null)
-        {
-            Debug.LogError($"Failed to load challenge: {challengeTitle}. Using first challenge in hub.");
-            challenge = currentHub.challenges[0]; // Use the first challenge as a fallback
-        }
-        
-        return challenge;
+    }
+    
+    return selectedChallenge;
     }
 
     private void ToggleMilestonesPanel()
