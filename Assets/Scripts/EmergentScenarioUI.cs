@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
 using System.Linq;
@@ -54,29 +55,34 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
         }
     }
 
-    public void DisplayScenario(EmergentScenarioGenerator.ScenarioData scenario, Color hubColor)
+    public void DisplayScenario(EmergentScenarioGenerator.ScenarioData scenario)
     {
+        Debug.Log($"DisplayScenario called at {Time.time}");
+        
+        // Ensure the panel is active before we start modifying its contents
+        scenarioPanel.SetActive(true);
+
+        // Set up the scenario content
         scenarioDescriptionText.text = scenario.description;
         SetupOptions(scenario.options);
         
-        // Apply hub color to the background
-        backgroundImage.color = hubColor;
+        // Set background to white
+        backgroundImage.color = Color.white;
         
-        // Ensure border is visible
+        // Ensure the border is visible
         borderImage.color = Color.white;
-        
-        // Adjust text color for better contrast
-        Color textColor = GetContrastingTextColor(hubColor);
-        scenarioDescriptionText.color = textColor;
-        whatIfText.color = textColor;
-        timerText.color = textColor;
-        foreach (var optionText in optionTexts)
-        {
-            optionText.color = textColor;
-        }
 
-        scenarioPanel.SetActive(true);
+        // Start the voting process
         StartVoting(scenario.options);
+
+        // No need for fade in animation for the prototype
+        // Just make sure the CanvasGroup alpha is set to 1
+        CanvasGroup canvasGroup = scenarioPanel.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+        {
+            canvasGroup = scenarioPanel.AddComponent<CanvasGroup>();
+        }
+        canvasGroup.alpha = 1f;
     }
 
     private void SetupOptions(List<string> options)
@@ -118,7 +124,6 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
     {
         votes[playerID] = optionIndex;
         
-        // If all players have voted, end voting immediately
         if (votes.Count == PhotonNetwork.CurrentRoom.PlayerCount)
         {
             EndVoting();
@@ -130,7 +135,10 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
         isVoting = false;
         int winningOption = DetermineWinningOption();
         EmergentScenarioGenerator.Instance.ResolveScenario(optionTexts[winningOption].text);
+        
+        // No need for fade out animation for the prototype
         scenarioPanel.SetActive(false);
+        GameManager.Instance.ResetPlayerPositions();
     }
 
     private int DetermineWinningOption()
@@ -151,11 +159,5 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
                                        .ToList();
 
         return winningOptions[Random.Range(0, winningOptions.Count)];
-    }
-
-    private Color GetContrastingTextColor(Color backgroundColor)
-    {
-        float brightness = (backgroundColor.r * 299 + backgroundColor.g * 587 + backgroundColor.b * 114) / 1000;
-        return brightness > 0.5f ? Color.black : Color.white;
     }
 }

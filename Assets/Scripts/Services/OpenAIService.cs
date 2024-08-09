@@ -30,19 +30,6 @@ public class OpenAIService : MonoBehaviour
     private readonly HttpClient httpClient = new HttpClient();
     private float lastApiCallTime;
 
-    private string ModelToString(OpenAIModel model)
-    {
-        switch (model)
-        {
-            case OpenAIModel.GPT4o:
-                return "gpt-4o";
-            case OpenAIModel.GPT4oMini:
-                return "gpt-4o-mini";
-            default:
-                return "gpt-4o";
-        }
-    }
-
     private void Awake()
     {
         if (Instance == null)
@@ -54,6 +41,19 @@ public class OpenAIService : MonoBehaviour
         else
         {
             Destroy(gameObject);
+        }
+    }
+
+    private string ModelToString(OpenAIModel model)
+    {
+        switch (model)
+        {
+            case OpenAIModel.GPT4o:
+                return "gpt-4o";
+            case OpenAIModel.GPT4oMini:
+                return "gpt-4o-mini";
+            default:
+                return "gpt-4o";
         }
     }
 
@@ -130,6 +130,60 @@ public class OpenAIService : MonoBehaviour
 
     return string.IsNullOrEmpty(response) ? "Not sure how to respond to that..." : response;
     }
+
+   public async Task<EmergentScenarioGenerator.ScenarioData> GenerateScenario(string currentChallenge, List<string> recentPlayerActions)
+    {
+        if (Time.time - lastApiCallTime < apiCallCooldown)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
+        }
+
+        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, create a brief emergent scenario. Provide a scenario description (max 15 words) and 3 possible response options (max 10 words each). Format the response as follows:\n" +
+            "Description: [Scenario Description]\n" +
+            "1. [Option 1]\n" +
+            "2. [Option 2]\n" +
+            "3. [Option 3]";
+
+        string response = await GetChatCompletionAsync(prompt);
+        lastApiCallTime = Time.time;
+
+        if (string.IsNullOrEmpty(response))
+        {
+            return new EmergentScenarioGenerator.ScenarioData
+            {
+                description = "An unexpected event occurs, challenging the team.",
+                options = new List<string>
+                {
+                    "Investigate the cause",
+                    "Focus on damage control",
+                    "Seek external assistance"
+                }
+            };
+        }
+
+        return ParseScenarioResponse(response);
+    }
+
+private EmergentScenarioGenerator.ScenarioData ParseScenarioResponse(string response)
+{
+    var lines = response.Split('\n');
+    var scenarioData = new EmergentScenarioGenerator.ScenarioData();
+    scenarioData.options = new List<string>();
+
+    foreach (var line in lines)
+    {
+        if (line.StartsWith("Description:"))
+        {
+            scenarioData.description = line.Substring("Description:".Length).Trim();
+        }
+        else if (line.StartsWith("1.") || line.StartsWith("2.") || line.StartsWith("3."))
+        {
+            scenarioData.options.Add(line.Substring(3).Trim());
+        }
+    }
+
+    return scenarioData;
+}
 
     private async Task<string> GetChatCompletionAsync(string prompt)
     {

@@ -171,69 +171,67 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void InitializeChallenge()
     {
-    currentChallenge = GetSelectedChallenge();
-    remainingTime = challengeDuration;
-    recentPlayerActions.Clear();
-    collectiveScore = 0;
-    
-    milestoneCompletion.Clear();
-    foreach (var milestone in currentChallenge.milestones)
-    {
-        milestoneCompletion[milestone] = false;
-    }
+        currentChallenge = GetSelectedChallenge();
+        currentHub = GetSelectedHub();
+        remainingTime = challengeDuration;
+        recentPlayerActions.Clear();
+        collectiveScore = 0;
+        
+        milestoneCompletion.Clear();
+        foreach (var milestone in currentChallenge.milestones)
+        {
+            milestoneCompletion[milestone] = false;
+        }
 
-    SerializableChallengeData serializableChallenge = new SerializableChallengeData(currentChallenge);
-    string challengeJson = JsonUtility.ToJson(serializableChallenge);
-    photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, collectiveScore, playerScores);
+        SerializableChallengeData serializableChallenge = new SerializableChallengeData(currentChallenge);
+        string challengeJson = JsonUtility.ToJson(serializableChallenge);
+        photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, collectiveScore, playerScores);
     }
 
     private HubData GetSelectedHub()
     {
-    int selectedHubIndex = PlayerPrefs.GetInt("SelectedHubIndex", 0);
-    HubData[] allHubs = Resources.LoadAll<HubData>("Hubs");
-    
-    if (selectedHubIndex >= 0 && selectedHubIndex < allHubs.Length)
-    {
-        return allHubs[selectedHubIndex];
-    }
-    else
-    {
-        Debug.LogError("Selected hub index out of range. Using default hub.");
-        return allHubs[0]; // Return the first hub as a default
-    }
-    }
-    
-   private ChallengeData GetSelectedChallenge()
-    {
-    string challengeTitle = PlayerPrefs.GetString("SelectedChallengeTitle", "Default Challenge");
-    
-    if (PhotonNetwork.CurrentRoom != null && 
-        PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("SelectedChallengeTitle", out object title))
-    {
-        challengeTitle = (string)title;
-    }
-    
-    Debug.Log($"Attempting to get challenge: {challengeTitle}");
-    
-    // Load all challenges
-    ChallengeData[] allChallenges = Resources.LoadAll<ChallengeData>("Challenges");
-    
-    // Find the challenge with the matching title
-    ChallengeData selectedChallenge = allChallenges.FirstOrDefault(c => c.title == challengeTitle);
-    
-    if (selectedChallenge == null)
-    {
-        Debug.LogError($"Failed to load challenge: {challengeTitle}. Using first available challenge.");
-        selectedChallenge = allChallenges.FirstOrDefault();
+        int selectedHubIndex = PlayerPrefs.GetInt("SelectedHubIndex", 0);
+        HubData[] allHubs = Resources.LoadAll<HubData>("Hubs");
         
-        if (selectedChallenge == null)
+        if (selectedHubIndex >= 0 && selectedHubIndex < allHubs.Length)
         {
-            Debug.LogError("No challenges found in Resources/Challenges. Please ensure challenge assets exist.");
-            // Here, you might want to handle this critical error, perhaps by returning to the main menu
+            return allHubs[selectedHubIndex];
+        }
+        else
+        {
+            Debug.LogError("Selected hub index out of range. Using default hub.");
+            return allHubs[0]; // Return the first hub as a default
         }
     }
     
-    return selectedChallenge;
+    private ChallengeData GetSelectedChallenge()
+    {
+        string challengeTitle = PlayerPrefs.GetString("SelectedChallengeTitle", "Default Challenge");
+        
+        if (PhotonNetwork.CurrentRoom != null && 
+            PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("SelectedChallengeTitle", out object title))
+        {
+            challengeTitle = (string)title;
+        }
+        
+        Debug.Log($"Attempting to get challenge: {challengeTitle}");
+        
+        ChallengeData[] allChallenges = Resources.LoadAll<ChallengeData>("Challenges");
+        
+        ChallengeData selectedChallenge = allChallenges.FirstOrDefault(c => c.title == challengeTitle);
+        
+        if (selectedChallenge == null)
+        {
+            Debug.LogError($"Failed to load challenge: {challengeTitle}. Using first available challenge.");
+            selectedChallenge = allChallenges.FirstOrDefault();
+            
+            if (selectedChallenge == null)
+            {
+                Debug.LogError("No challenges found in Resources/Challenges. Please ensure challenge assets exist.");
+            }
+        }
+        
+        return selectedChallenge;
     }
 
     private void ToggleMilestonesPanel()
@@ -283,37 +281,76 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
+    private bool hasTriggered5MinScenario = false;
+    private bool hasTriggered10MinScenario = false;
+
     private void CheckForEmergentScenario()
     {
         float gameTime = Time.time - gameStartTime;
-        if ((gameTime >= 300f && gameTime < 301f) || (gameTime >= 600f && gameTime < 601f))
+        
+        if (!hasTriggered5MinScenario && gameTime >= 300f && gameTime < 301f)
         {
             if (PhotonNetwork.IsMasterClient)
             {
+                Debug.Log($"Triggering 5-minute scenario at {gameTime}");
                 TriggerEmergentScenario();
+                hasTriggered5MinScenario = true;
+            }
+        }
+        else if (!hasTriggered10MinScenario && gameTime >= 600f && gameTime < 601f)
+        {
+            if (PhotonNetwork.IsMasterClient)
+            {
+                Debug.Log($"Triggering 10-minute scenario at {gameTime}");
+                TriggerEmergentScenario();
+                hasTriggered10MinScenario = true;
             }
         }
     }
 
-    private void TriggerEmergentScenario()
+    private async void TriggerEmergentScenario()
     {
-        StartCoroutine(GenerateAndDisplayScenario());
-    }
+        if (scenarioGenerator == null)
+        {
+            Debug.LogError("EmergentScenarioGenerator not found in the scene.");
+            return;
+        }
 
-    private IEnumerator GenerateAndDisplayScenario()
-    {
-        var scenarioTask = scenarioGenerator.GenerateScenario(currentChallenge.title, recentPlayerActions);
-        yield return new WaitUntil(() => scenarioTask.IsCompleted);
+        Debug.Log($"TriggerEmergentScenario called at {Time.time}");
 
-        var scenario = scenarioTask.Result;
-        photonView.RPC("RPC_DisplayEmergentScenario", RpcTarget.All, JsonUtility.ToJson(scenario));
+        var scenario = await scenarioGenerator.GenerateScenario(currentChallenge.title, recentPlayerActions);
+        if (scenario != null)
+        {
+            photonView.RPC("RPC_DisplayEmergentScenario", RpcTarget.All, scenario.description, scenario.options.ToArray());
+        }
+        else
+        {
+            Debug.LogError("Failed to generate scenario.");
+        }
     }
 
     [PunRPC]
-    private void RPC_DisplayEmergentScenario(string scenarioJson)
+    private void RPC_DisplayEmergentScenario(string description, string[] options)
     {
-        var scenario = JsonUtility.FromJson<EmergentScenarioGenerator.ScenarioData>(scenarioJson);
-        scenarioUI.DisplayScenario(scenario, currentHub.hubColor);
+        Debug.Log($"RPC_DisplayEmergentScenario called at {Time.time}");
+
+        if (scenarioUI == null)
+        {
+            scenarioUI = FindObjectOfType<EmergentScenarioUI>(true);
+        }
+
+        if (scenarioUI != null)
+        {
+            scenarioUI.DisplayScenario(new EmergentScenarioGenerator.ScenarioData
+            {
+                description = description,
+                options = new List<string>(options)
+            });
+        }
+        else
+        {
+            Debug.LogError("EmergentScenarioUI not found. Cannot display scenario.");
+        }
     }
 
     public void AddPlayerAction(string action)
@@ -399,7 +436,6 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             playerInsights[playerName]--;
             UpdatePlayerScore(playerName, 20);
-            // Implement logic to boost progress on milestones or personal objectives
         }
     }
 
@@ -407,7 +443,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         if (milestoneCompletion.All(m => m.Value))
         {
-            UpdateCollectiveScore(500); // Bonus for completing all milestones
+            UpdateCollectiveScore(500);
             EndChallenge();
         }
     }

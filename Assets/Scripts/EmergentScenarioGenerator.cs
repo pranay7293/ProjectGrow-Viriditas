@@ -7,8 +7,6 @@ public class EmergentScenarioGenerator : MonoBehaviourPunCallbacks
 {
     public static EmergentScenarioGenerator Instance { get; private set; }
 
-    private OpenAIService openAIService;
-
     [System.Serializable]
     public class ScenarioData
     {
@@ -29,21 +27,15 @@ public class EmergentScenarioGenerator : MonoBehaviourPunCallbacks
         }
     }
 
-    private void Start()
-    {
-        openAIService = OpenAIService.Instance;
-        if (openAIService == null)
-        {
-            Debug.LogError("OpenAIService not found in the scene. Please add it to continue.");
-        }
-    }
-
     public async Task<ScenarioData> GenerateScenario(string currentChallenge, List<string> recentPlayerActions)
     {
-        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, create a brief emergent scenario. Provide a scenario description (max 3 sentences) and 3 possible response options (1 sentence each). Format the response as JSON with 'description' and 'options' fields.";
+    if (OpenAIService.Instance == null)
+    {
+        Debug.LogError("OpenAIService not found in the scene. Please add it to continue.");
+        return null;
+    }
 
-        string response = await openAIService.GetResponse(prompt, null);
-        return JsonUtility.FromJson<ScenarioData>(response);
+    return await OpenAIService.Instance.GenerateScenario(currentChallenge, recentPlayerActions);
     }
 
     public void ResolveScenario(string chosenOption)
