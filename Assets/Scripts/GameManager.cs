@@ -377,6 +377,18 @@ public class GameManager : MonoBehaviourPunCallbacks
 
         CheckMilestoneProgress(characterName, action);
         UpdatePlayerScore(characterName, scoreIncrease);
+
+        // Check for collaboration
+        UniversalCharacterController character = GetCharacterByName(characterName);
+        if (character != null)
+        {
+            AIManager aiManager = character.GetComponent<AIManager>();
+            if (aiManager != null)
+            {
+                LocationManager.LocationAction locationAction = new LocationManager.LocationAction { actionName = action };
+                aiManager.ConsiderCollaboration(locationAction);
+            }
+        }
     }
 
     private int EvaluateActionImpact(string action)

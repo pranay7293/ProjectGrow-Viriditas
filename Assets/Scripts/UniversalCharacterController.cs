@@ -20,6 +20,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     [Header("Gameplay")]
     public int personalScore = 0;
     public string currentObjective;
+
+    [HideInInspector] public LocationManager currentLocation;
+
     private List<string> personalGoals = new List<string>();
     private Dictionary<string, bool> personalGoalCompletion = new Dictionary<string, bool>();
 
@@ -30,6 +33,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private Renderer characterRenderer;
     private Material characterMaterial;
     private TextMeshPro actionIndicator;
+
+    public LocationManager.LocationAction currentAction;
+    private float actionStartTime;
+    private Coroutine actionCoroutine;
 
     private Vector3 moveDirection;
     private float rotationY;
@@ -42,8 +49,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public float OverallProgress { get; private set; }
     public float[] PersonalProgress { get; private set; } = new float[3];
     public int InsightCount { get; private set; }
-
-    private LocationManager currentLocation;
 
     public enum CharacterState
     {
@@ -294,47 +299,71 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return currentState;
     }
 
-    public void PerformAction(string actionName)
+    public void StartAction(LocationManager.LocationAction action)
     {
-        if (!photonView.IsMine) return;
-
-        SetState(CharacterState.PerformingAction);
-        if (actionIndicator != null)
+        if (currentAction != null)
         {
-            actionIndicator.text = actionName + "...";
-            actionIndicator.gameObject.SetActive(true);
-            StartCoroutine(FadeOutActionIndicator());
+            StopAction();
         }
-        CheckPersonalGoalProgress(actionName);
+
+        currentAction = action;
+        actionStartTime = Time.time;
+        SetState(CharacterState.PerformingAction);
+
+        if (actionCoroutine != null)
+        {
+            StopCoroutine(actionCoroutine);
+        }
+        actionCoroutine = StartCoroutine(PerformAction());
 
         // Log the action
-        ActionLogManager.Instance.LogAction(characterName, actionName);
+        ActionLogManager.Instance.LogAction(characterName, action.actionName);
 
         // Notify GameManager about the action
-        GameManager.Instance.UpdateGameState(characterName, actionName);
+        GameManager.Instance.UpdateGameState(characterName, action.actionName);
 
-        Debug.Log($"{characterName} performed action: {actionName}");
-
-        // Trigger the RiskRewardManager to evaluate the outcome
-        RiskRewardManager.Instance.EvaluateActionOutcome(this, new LocationManager.LocationAction { actionName = actionName });
+        Debug.Log($"{characterName} started action: {action.actionName}");
     }
 
-    private IEnumerator FadeOutActionIndicator()
+    private IEnumerator PerformAction()
     {
-        yield return new WaitForSeconds(3f);
-        float duration = 1f;
         float elapsedTime = 0f;
-        Color startColor = actionIndicator.color;
-        Color endColor = new Color(startColor.r, startColor.g, startColor.b, 0f);
-
-        while (elapsedTime < duration)
+        while (elapsedTime < currentAction.duration)
         {
-            elapsedTime += Time.deltaTime;
-            actionIndicator.color = Color.Lerp(startColor, endColor, elapsedTime / duration);
+            elapsedTime = Time.time - actionStartTime;
+            float progress = elapsedTime / currentAction.duration;
+            
+            if (photonView.IsMine)
+            {
+                LocationActionUI.Instance.UpdateActionProgress(progress);
+            }
+
             yield return null;
         }
-        actionIndicator.text = "";
-        actionIndicator.gameObject.SetActive(false);
+
+        CompleteAction();
+    }
+
+    private void CompleteAction()
+    {
+        if (photonView.IsMine)
+        {
+            RiskRewardManager.Instance.EvaluateActionOutcome(this, currentAction);
+        }
+        
+        CheckPersonalGoalProgress(currentAction.actionName);
+        currentAction = null;
+        SetState(CharacterState.Idle);
+    }
+
+    public void StopAction()
+    {
+        if (actionCoroutine != null)
+        {
+            StopCoroutine(actionCoroutine);
+        }
+        currentAction = null;
+        SetState(CharacterState.Idle);
     }
 
     private void InitializePersonalGoals()
@@ -413,8 +442,15 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private IEnumerator DelayedShowActions(LocationManager location)
     {
-    yield return new WaitForSeconds(2f); // 2 second delay, adjust as needed
-    LocationActionUI.Instance.ShowActionsForLocation(this, location);
+        yield return new WaitForSeconds(0.5f);
+        if (LocationActionUI.Instance != null)
+        {
+            LocationActionUI.Instance.ShowActionsForLocation(this, location);
+        }
+        else
+        {
+            Debug.LogWarning("LocationActionUI.Instance is null");
+        }
     }
 
     public void ExitLocation()
@@ -466,6 +502,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             stream.SendNext(OverallProgress);
             stream.SendNext(PersonalProgress);
             stream.SendNext(InsightCount);
+            stream.SendNext(currentAction != null ? currentAction.actionName : "");
+            stream.SendNext(actionStartTime);
         }
         else
         {
@@ -479,6 +517,18 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             OverallProgress = (float)stream.ReceiveNext();
             PersonalProgress = (float[])stream.ReceiveNext();
             InsightCount = (int)stream.ReceiveNext();
+            string actionName = (string)stream.ReceiveNext();
+            actionStartTime = (float)stream.ReceiveNext();
+
+            if (!string.IsNullOrEmpty(actionName) && currentAction == null && currentLocation != null)
+            {
+                LocationManager.LocationAction action = currentLocation.availableActions.Find(a => a.actionName == actionName);
+                if (action != null)
+                {
+                    StartAction(action);
+                }
+            }
+
             if (characterMaterial != null && receivedColor != characterColor)
             {
                 characterColor = receivedColor;

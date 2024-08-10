@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 6.9228697, g: 3.7068658, b: 2.3681529, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -2342,16 +2342,19 @@ MonoBehaviour:
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Forecast
     description: Predict market trends
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Trade
     description: Engage in virtual market exchanges
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   locationColor: {r: 1, g: 0.20392157, b: 0.85490197, a: 0}
 --- !u!4 &280927794 stripped
 Transform:
@@ -3761,16 +3764,19 @@ MonoBehaviour:
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Exhibit
     description: Showcase artistic creations
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Critique
     description: Analyze and discuss art pieces
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   locationColor: {r: 0.06666667, g: 0.6901961, b: 0.12156863, a: 0}
 --- !u!1 &340054443
 GameObject:
@@ -4781,16 +4787,19 @@ MonoBehaviour:
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Innovate
     description: Develop space technologies
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Explore
     description: Study extraterrestrial biology
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   locationColor: {r: 0, g: 0, b: 0, a: 0}
 --- !u!1 &517150535
 GameObject:
@@ -6141,16 +6150,19 @@ MonoBehaviour:
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Strategize
     description: Develop ethical guidelines
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Philosophize
     description: Explore moral implications
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   locationColor: {r: 1, g: 0.6666667, b: 0.9607843, a: 0}
 --- !u!114 &641673794 stripped
 MonoBehaviour:
@@ -7628,16 +7640,19 @@ MonoBehaviour:
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Fabricate
     description: Create physical prototypes
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Collaborate
     description: Work on community projects
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   locationColor: {r: 0.43137255, g: 0.07058824, b: 0.69803923, a: 0}
 --- !u!4 &711526837 stripped
 Transform:
@@ -11505,6 +11520,50 @@ Transform:
   - {fileID: 711526837}
   m_Father: {fileID: 1361567475}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1092439256
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1092439257}
+  - component: {fileID: 1092439258}
+  m_Layer: 0
+  m_Name: CollabManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1092439257
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1092439256}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -5.0618706, y: 1.3026552, z: -19.208176}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1992242691}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1092439258
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1092439256}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ba34251e3f9148898bda8efa9f523bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1106936948
 GameObject:
   m_ObjectHideFlags: 0
@@ -12169,16 +12228,19 @@ MonoBehaviour:
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Interview
     description: Gather information from characters
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Produce
     description: Create and edit media content
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   locationColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &1242851739
 GameObject:
@@ -14815,16 +14877,19 @@ MonoBehaviour:
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Analyze
     description: Examine research data
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Document
     description: Record findings and results
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   locationColor: {r: 0.93333334, g: 0.6313726, b: 0.10980392, a: 0}
 --- !u!1 &1547172805
 GameObject:
@@ -14877,6 +14942,9 @@ MonoBehaviour:
   actionButtonPrefab: {fileID: 6266023773118352797, guid: aea78a87b977c444eba01a56c8bf6ae9, type: 3}
   actionButtonContainer: {fileID: 467250263}
   closeButton: {fileID: 1553027525}
+  actionProgressBar: {fileID: 0}
+  actionProgressText: {fileID: 0}
+  outcomeText: {fileID: 0}
 --- !u!1 &1553027523
 GameObject:
   m_ObjectHideFlags: 0
@@ -17482,16 +17550,19 @@ MonoBehaviour:
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Prototype
     description: Create startup project models
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Pitch
     description: Present ideas to potential investors
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   locationColor: {r: 0.6509804, g: 0.15686275, b: 0.0627451, a: 0}
 --- !u!1 &1723417897
 GameObject:
@@ -17803,16 +17874,19 @@ MonoBehaviour:
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Cultivate
     description: Grow biological samples
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Automate
     description: Optimize bioprocesses
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   locationColor: {r: 0.3882353, g: 0.3882353, b: 0.3882353, a: 0}
 --- !u!1 &1741184711
 GameObject:
@@ -19654,6 +19728,7 @@ Transform:
   - {fileID: 921893861}
   - {fileID: 727009542}
   - {fileID: 617272531}
+  - {fileID: 1092439257}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2000129821
@@ -23508,16 +23583,19 @@ MonoBehaviour:
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Research
     description: Conduct medical experiments
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   - actionName: Consult
     description: Advise on medical issues
     baseSuccessRate: 50
     duration: 0
     requiredRole: 
+    actionIcon: {fileID: 0}
   locationColor: {r: 0.050980393, g: 0.5254902, b: 0.972549, a: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

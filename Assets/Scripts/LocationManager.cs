@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Photon.Pun;
 
-public class LocationManager : MonoBehaviour
+public class LocationManager : MonoBehaviourPunCallbacks
 {
     [System.Serializable]
     public class LocationAction
@@ -10,8 +11,9 @@ public class LocationManager : MonoBehaviour
         [TextArea(3, 5)]
         public string description;
         public float baseSuccessRate;
-        public float duration;
-        public string requiredRole; // Can be empty if no specific role is required
+        public int duration; // 15, 30, or 45 seconds
+        public string requiredRole;
+        public Sprite actionIcon;
     }
 
     public string locationName;
@@ -54,5 +56,20 @@ public class LocationManager : MonoBehaviour
     public List<LocationAction> GetAvailableActions(string characterRole)
     {
         return availableActions.FindAll(action => string.IsNullOrEmpty(action.requiredRole) || action.requiredRole == characterRole);
+    }
+
+    [PunRPC]
+    public void StartAction(int actionIndex, int characterViewID)
+    {
+        if (actionIndex < 0 || actionIndex >= availableActions.Count) return;
+
+        PhotonView characterView = PhotonView.Find(characterViewID);
+        if (characterView == null) return;
+
+        UniversalCharacterController character = characterView.GetComponent<UniversalCharacterController>();
+        if (character == null) return;
+
+        LocationAction action = availableActions[actionIndex];
+        character.StartAction(action);
     }
 }

@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
 using System.Linq;
+using Photon.Pun;
 
-public class NPC_Behavior : MonoBehaviour
+public class NPC_Behavior : MonoBehaviourPunCallbacks
 {
     private UniversalCharacterController characterController;
     private NPC_Data npcData;
@@ -11,12 +12,6 @@ public class NPC_Behavior : MonoBehaviour
     private AIManager aiManager;
 
     private float lastDecisionTime;
-    private string currentLocation;
-    private string currentAction;
-    private float actionCooldown = 5f;
-    private float actionDuration = 3f;
-    private float actionStartTime;
-
     private float interactionCooldown = 30f;
     private float lastInteractionTime;
 
@@ -33,7 +28,6 @@ public class NPC_Behavior : MonoBehaviour
             navMeshAgent = gameObject.AddComponent<NavMeshAgent>();
         }
         navMeshAgent.speed = characterController.walkSpeed;
-        currentLocation = LocationManagerMaster.Instance.GetClosestLocation(transform.position);
         lastDecisionTime = Time.time;
         lastInteractionTime = Time.time;
     }
@@ -45,20 +39,14 @@ public class NPC_Behavior : MonoBehaviour
             MakeDecision();
         }
 
-        if (currentAction != null)
+        if (characterController.GetState() == UniversalCharacterController.CharacterState.Moving)
         {
-            if (Time.time - actionStartTime > actionDuration)
+            if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
             {
-                CompleteAction();
+                characterController.SetState(UniversalCharacterController.CharacterState.Idle);
             }
         }
-        else if (currentLocationManager != null)
-        {
-            PerformLocationAction();
-        }
 
-        UpdateState();
-        
         if (Time.time - lastInteractionTime > interactionCooldown)
         {
             AttemptNPCInteraction();
@@ -115,72 +103,61 @@ public class NPC_Behavior : MonoBehaviour
             navMeshAgent.SetDestination(destination);
             characterController.SetState(UniversalCharacterController.CharacterState.Moving);
             Debug.Log($"{characterController.characterName} is moving to {location}");
-            currentLocation = location;
         }
     }
 
-   private void PerformLocationAction()
-{
-    if (currentLocationManager == null) return;
-
-    List<LocationManager.LocationAction> availableActions = currentLocationManager.GetAvailableActions(characterController.aiSettings.characterRole);
-    if (availableActions.Count == 0) return;
-
-    LocationManager.LocationAction selectedAction = ChooseBestAction(availableActions);
-    ExecuteAction(selectedAction);
-}
-
-private void ExecuteAction(LocationManager.LocationAction action)
-{
-    currentAction = action.actionName;
-    actionStartTime = Time.time;
-    characterController.PerformAction(action.actionName);
-    
-    // Log the action
-    ActionLogManager.Instance.LogAction(characterController.characterName, $"performing {action.actionName} at {currentLocationManager.locationName}");
-    
-    // Evaluate the action outcome
-    RiskRewardManager.Instance.EvaluateActionOutcome(characterController, action);
-}
-
-private LocationManager.LocationAction ChooseBestAction(List<LocationManager.LocationAction> actions)
-{
-    GameState currentState = GameManager.Instance.GetCurrentGameState();
-    List<string> personalGoals = aiManager.GetPersonalGoals();
-    string currentChallenge = currentState.CurrentChallenge.title;
-
-    // Score each action based on relevance to goals and challenge
-    var scoredActions = actions.Select(action => new
+    private void PerformLocationAction()
     {
-        Action = action,
-        Score = ScoreAction(action, personalGoals, currentChallenge)
-    }).ToList();
+        if (currentLocationManager == null) return;
 
-    // Choose the action with the highest score
-    return scoredActions.OrderByDescending(sa => sa.Score).First().Action;
-}
+        List<LocationManager.LocationAction> availableActions = currentLocationManager.GetAvailableActions(characterController.aiSettings.characterRole);
+        if (availableActions.Count == 0) return;
 
-private float ScoreAction(LocationManager.LocationAction action, List<string> personalGoals, string currentChallenge)
-{
-    float score = 0;
-
-    // Check if the action contributes to personal goals
-    if (personalGoals.Any(goal => action.actionName.ToLower().Contains(goal.ToLower())))
-    {
-        score += 2;
+        LocationManager.LocationAction selectedAction = ChooseBestAction(availableActions);
+        aiManager.ConsiderCollaboration(selectedAction);
+        ExecuteAction(selectedAction);
     }
 
-    // Check if the action contributes to the current challenge
-    if (action.actionName.ToLower().Contains(currentChallenge.ToLower()))
+    private void ExecuteAction(LocationManager.LocationAction action)
     {
-        score += 3;
+        characterController.photonView.RPC("StartAction", RpcTarget.All, action.actionName);
+        
+        ActionLogManager.Instance.LogAction(characterController.characterName, $"performing {action.actionName} at {currentLocationManager.locationName}");
     }
 
-    // Add a small random factor to prevent always choosing the same action
-    score += Random.Range(0f, 0.5f);
+    private LocationManager.LocationAction ChooseBestAction(List<LocationManager.LocationAction> actions)
+    {
+        GameState currentState = GameManager.Instance.GetCurrentGameState();
+        List<string> personalGoals = aiManager.GetPersonalGoals();
+        string currentChallenge = currentState.CurrentChallenge.title;
 
-    return score;
-}
+        var scoredActions = actions.Select(action => new
+        {
+            Action = action,
+            Score = ScoreAction(action, personalGoals, currentChallenge)
+        }).ToList();
+
+        return scoredActions.OrderByDescending(sa => sa.Score).First().Action;
+    }
+
+    private float ScoreAction(LocationManager.LocationAction action, List<string> personalGoals, string currentChallenge)
+    {
+        float score = 0;
+
+        if (personalGoals.Any(goal => action.actionName.ToLower().Contains(goal.ToLower())))
+        {
+            score += 2;
+        }
+
+        if (action.actionName.ToLower().Contains(currentChallenge.ToLower()))
+        {
+            score += 3;
+        }
+
+        score += Random.Range(0f, 0.5f);
+
+        return score;
+    }
 
     private void AttemptNPCInteraction()
     {
@@ -214,9 +191,7 @@ private float ScoreAction(LocationManager.LocationAction action, List<string> pe
     private void WorkOnChallenge()
     {
         string currentChallenge = GameManager.Instance.GetCurrentChallenge().title;
-        characterController.PerformAction($"Working on {currentChallenge}");
-        actionStartTime = Time.time;
-        Debug.Log($"{characterController.characterName} is working on {currentChallenge}");
+        characterController.photonView.RPC("StartAction", RpcTarget.All, $"Working on {currentChallenge}");
 
         string detailedAction = $"focusing intensely on solving {currentChallenge}";
         DialogueManager.Instance.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {detailedAction}");
@@ -231,33 +206,13 @@ private float ScoreAction(LocationManager.LocationAction action, List<string> pe
         
         if (incompleteGoal != null)
         {
-            characterController.PerformAction($"Pursuing personal goal: {incompleteGoal}");
-            actionStartTime = Time.time;
-            Debug.Log($"{characterController.characterName} is pursuing personal goal: {incompleteGoal}");
+            characterController.photonView.RPC("StartAction", RpcTarget.All, $"Pursuing personal goal: {incompleteGoal}");
 
             DialogueManager.Instance.AddToChatLog(characterController.characterName, $"{characterController.characterName} is focusing on their personal goal: {incompleteGoal}");
         }
         else
         {
-            WorkOnChallenge(); // If all personal goals are complete, work on the main challenge
-        }
-    }
-
-    private void CompleteAction()
-    {
-        if (currentAction != null)
-        {
-            GameManager.Instance.UpdateGameState(characterController.characterName, currentAction);
-            currentAction = null;
-            characterController.SetState(UniversalCharacterController.CharacterState.Idle);
-        }
-    }
-
-    private void UpdateState()
-    {
-        if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
-        {
-            characterController.SetState(UniversalCharacterController.CharacterState.Idle);
+            WorkOnChallenge();
         }
     }
 

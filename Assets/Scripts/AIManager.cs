@@ -72,4 +72,32 @@ public class AIManager : MonoBehaviourPunCallbacks
     {
         return characterController.GetPersonalGoalCompletion();
     }
+
+    public bool ConsiderCollaboration(LocationManager.LocationAction action)
+    {
+        if (CollabManager.Instance.CanCollaborate(action))
+        {
+            float collaborationChance = CalculateCollaborationChance(action);
+            if (Random.value < collaborationChance)
+            {
+                CollabManager.Instance.StartCollaboration(characterController, action);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private float CalculateCollaborationChance(LocationManager.LocationAction action)
+    {
+        float baseChance = 0.5f;
+        if (action.actionName.ToLower().Contains(characterController.aiSettings.characterRole.ToLower()))
+        {
+            baseChance += 0.2f;
+        }
+        if (GameManager.Instance.GetCurrentChallenge().title.ToLower().Contains(action.actionName.ToLower()))
+        {
+            baseChance += 0.2f;
+        }
+        return Mathf.Clamp01(baseChance);
+    }
 }

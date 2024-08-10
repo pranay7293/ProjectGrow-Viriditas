@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Photon.Pun;
 using System.Collections.Generic;
 
 public class LocationActionUI : MonoBehaviour
@@ -12,6 +13,9 @@ public class LocationActionUI : MonoBehaviour
     [SerializeField] private Button actionButtonPrefab;
     [SerializeField] private Transform actionButtonContainer;
     [SerializeField] private Button closeButton;
+    [SerializeField] private Image actionProgressBar;
+    [SerializeField] private TextMeshProUGUI actionProgressText;
+    [SerializeField] private TextMeshProUGUI outcomeText;
 
     private UniversalCharacterController currentCharacter;
     private List<LocationManager.LocationAction> currentActions;
@@ -32,6 +36,9 @@ public class LocationActionUI : MonoBehaviour
     {
         closeButton.onClick.AddListener(HideActions);
         actionPanel.SetActive(false);
+        actionProgressBar.gameObject.SetActive(false);
+        actionProgressText.gameObject.SetActive(false);
+        outcomeText.gameObject.SetActive(false);
     }
 
     public void ShowActionsForLocation(UniversalCharacterController character, LocationManager location)
@@ -69,31 +76,51 @@ public class LocationActionUI : MonoBehaviour
             TextMeshProUGUI buttonText = newButton.GetComponentInChildren<TextMeshProUGUI>();
             buttonText.text = action.actionName;
             
-            // Set up the OnClick event
-            newButton.onClick.AddListener(() => OnActionButtonClicked(action));
+            Image iconImage = newButton.transform.Find("ActionIcon").GetComponent<Image>();
+            iconImage.sprite = action.actionIcon;
 
-            // Set up success probability and time indicator
-            TextMeshProUGUI probabilityText = newButton.transform.Find("ProbabilityText").GetComponent<TextMeshProUGUI>();
-            TextMeshProUGUI timeText = newButton.transform.Find("TimeText").GetComponent<TextMeshProUGUI>();
-            
-            float successRate = CalculateSuccessRate(currentCharacter, action);
-            probabilityText.text = $"{successRate:P0} Success";
-            timeText.text = $"{action.duration}s";
+            TextMeshProUGUI durationText = newButton.transform.Find("DurationText").GetComponent<TextMeshProUGUI>();
+            durationText.text = $"{action.duration} SEC";
+
+            TextMeshProUGUI successRateText = newButton.transform.Find("SuccessRateText").GetComponent<TextMeshProUGUI>();
+            successRateText.text = $"{action.baseSuccessRate * 100}%";
+
+            newButton.onClick.AddListener(() => OnActionButtonClicked(action));
         }
     }
 
     private void OnActionButtonClicked(LocationManager.LocationAction action)
     {
-        Debug.Log($"Action clicked: {action.actionName}");
-        currentCharacter.PerformAction(action.actionName);
-        RiskRewardManager.Instance.EvaluateActionOutcome(currentCharacter, action);
-        HideActions();
+        currentCharacter.photonView.RPC("StartAction", RpcTarget.All, currentActions.IndexOf(action), currentCharacter.photonView.ViewID);
+        ShowActionProgress();
     }
 
-    private float CalculateSuccessRate(UniversalCharacterController character, LocationManager.LocationAction action)
+    private void ShowActionProgress()
     {
-        float baseRate = action.baseSuccessRate;
-        float roleBonus = (character.aiSettings.characterRole == action.requiredRole) ? 0.2f : 0f;
-        return Mathf.Clamp01(baseRate + roleBonus);
+        actionProgressBar.gameObject.SetActive(true);
+        actionProgressText.gameObject.SetActive(true);
+        ClearActionButtons();
+    }
+
+    public void UpdateActionProgress(float progress)
+    {
+        actionProgressBar.fillAmount = progress;
+        actionProgressText.text = $"{Mathf.RoundToInt(progress * 100)}%";
+    }
+
+    public void ShowOutcome(string outcome)
+    {
+        actionProgressBar.gameObject.SetActive(false);
+        actionProgressText.gameObject.SetActive(false);
+        outcomeText.gameObject.SetActive(true);
+        outcomeText.text = outcome;
+
+        Invoke(nameof(HideOutcome), 2f);
+    }
+
+    public void HideOutcome()
+    {
+        outcomeText.gameObject.SetActive(false);
+        ShowActionsForLocation(currentCharacter, currentCharacter.currentLocation);
     }
 }
