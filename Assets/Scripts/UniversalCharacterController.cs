@@ -434,6 +434,24 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
     }
 
+    public void ResetToSpawnPoint(Vector3 spawnPosition)
+    {
+        if (photonView.IsMine)
+        {
+            if (IsPlayerControlled)
+            {
+                characterController.enabled = false;
+                transform.position = spawnPosition;
+                characterController.enabled = true;
+            }
+            else
+            {
+                navMeshAgent.Warp(spawnPosition);
+            }
+            SetState(CharacterState.Idle);
+        }
+    }
+
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)

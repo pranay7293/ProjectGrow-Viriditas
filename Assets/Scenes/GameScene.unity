@@ -23255,14 +23255,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Scenario Panel
       objectReference: {fileID: 0}
-    - target: {fileID: 1400940454824017198, guid: 4842436c616e24788a8b701522686e5f, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3794884122448306024, guid: 4842436c616e24788a8b701522686e5f, type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 795509262}
     - target: {fileID: 4162382933832072469, guid: 4842436c616e24788a8b701522686e5f, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -23343,14 +23335,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6537860658660861602, guid: 4842436c616e24788a8b701522686e5f, type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 795509262}
-    - target: {fileID: 7173261061428739848, guid: 4842436c616e24788a8b701522686e5f, type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 795509262}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

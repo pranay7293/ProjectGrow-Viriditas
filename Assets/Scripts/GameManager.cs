@@ -644,6 +644,15 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     public void ResetPlayerPositions()
     {
+    if (PhotonNetwork.IsMasterClient)
+    {
+        photonView.RPC("RPC_ResetPlayerPositions", RpcTarget.All);
+    }
+    }
+
+    [PunRPC]
+    private void RPC_ResetPlayerPositions()
+    {
         foreach (var character in spawnedCharacters.Values)
         {
             if (characterLocations.TryGetValue(character.characterName, out string locationName))
@@ -651,7 +660,7 @@ public class GameManager : MonoBehaviourPunCallbacks
                 Transform spawnPoint = GetSpawnPointByName(locationName);
                 if (spawnPoint != null)
                 {
-                    character.transform.position = spawnPoint.position;
+                    character.ResetToSpawnPoint(spawnPoint.position);
                 }
             }
         }

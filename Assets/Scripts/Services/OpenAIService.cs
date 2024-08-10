@@ -138,7 +138,7 @@ public class OpenAIService : MonoBehaviour
             await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
         }
 
-        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, create a brief emergent scenario. Provide a scenario description (max 15 words) and 3 possible response options (max 10 words each). Format the response as follows:\n" +
+        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, create a brief emergent scenario. Provide a scenario description (max 15 words) and 3 possible response options (max 10 words for each response). Format the response as follows:\n" +
             "Description: [Scenario Description]\n" +
             "1. [Option 1]\n" +
             "2. [Option 2]\n" +

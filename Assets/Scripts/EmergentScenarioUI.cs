@@ -136,7 +136,6 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
         int winningOption = DetermineWinningOption();
         EmergentScenarioGenerator.Instance.ResolveScenario(optionTexts[winningOption].text);
         
-        // No need for fade out animation for the prototype
         scenarioPanel.SetActive(false);
         GameManager.Instance.ResetPlayerPositions();
     }

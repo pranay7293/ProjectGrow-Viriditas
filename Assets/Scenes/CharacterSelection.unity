@@ -2579,9 +2579,29 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4619281917658361223, guid: c527944b699584fe0868adb091038c03, type: 3}
+      propertyPath: m_Color.a
+      value: 0.87058824
+      objectReference: {fileID: 0}
     - target: {fileID: 8199740929401894538, guid: c527944b699584fe0868adb091038c03, type: 3}
       propertyPath: m_Name
       value: CharacterButton_Dr.Eden
+      objectReference: {fileID: 0}
+    - target: {fileID: 8320062802361608655, guid: c527944b699584fe0868adb091038c03, type: 3}
+      propertyPath: m_fontColor.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8320062802361608655, guid: c527944b699584fe0868adb091038c03, type: 3}
+      propertyPath: m_fontColor.g
+      value: 0.8666667
+      objectReference: {fileID: 0}
+    - target: {fileID: 8320062802361608655, guid: c527944b699584fe0868adb091038c03, type: 3}
+      propertyPath: m_fontColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8320062802361608655, guid: c527944b699584fe0868adb091038c03, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4294477325
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
