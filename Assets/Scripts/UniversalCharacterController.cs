@@ -540,10 +540,51 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         UpdateCollabVisuals(false);
     }
 
+    private GameObject collabRing;
+    private const float ringPulseSpeed = 1f;
+    private const float ringMinScale = 0.9f;
+    private const float ringMaxScale = 1.1f;
+    private const float ringYOffset = 0.01f; // Adjust this value as needed
+
     private void UpdateCollabVisuals(bool isCollaborating)
     {
-        // Implement visual feedback for collaboration state
-        // For example, enable/disable a glowing ring around the character
+        if (isCollaborating)
+        {
+            if (collabRing == null)
+            {
+                collabRing = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                collabRing.transform.SetParent(transform);
+                collabRing.transform.localPosition = new Vector3(0, ringYOffset, 0); // Apply Y offset here
+                collabRing.transform.localScale = new Vector3(2f, 0.01f, 2f);
+                
+                Renderer ringRenderer = collabRing.GetComponent<Renderer>();
+                ringRenderer.material = new Material(Shader.Find("Standard"));
+                ringRenderer.material.color = new Color(1f, 1f, 1f, 0.3f);
+                
+                Destroy(collabRing.GetComponent<Collider>());
+                
+                StartCoroutine(PulseRing());
+            }
+        }
+        else
+        {
+            if (collabRing != null)
+            {
+                Destroy(collabRing);
+                collabRing = null;
+            }
+        }
+    }
+
+    private IEnumerator PulseRing()
+    {
+        while (collabRing != null)
+        {
+            float pulse = Mathf.PingPong(Time.time * ringPulseSpeed, 1f);
+            float scale = Mathf.Lerp(ringMinScale, ringMaxScale, pulse);
+            collabRing.transform.localScale = new Vector3(2f * scale, 0.01f, 2f * scale);
+            yield return null;
+        }
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
