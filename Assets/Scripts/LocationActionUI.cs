@@ -79,8 +79,8 @@ public class LocationActionUI : MonoBehaviour
 
     private void OnActionButtonClicked(int index)
     {
-        LocationManager.LocationAction selectedAction = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole)[index];
-        currentCharacter.StartAction(selectedAction);
+    LocationManager.LocationAction selectedAction = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole)[index];
+    currentCharacter.StartAction(selectedAction);
     }
 
     public void UpdateActionProgress(int buttonIndex, float progress)

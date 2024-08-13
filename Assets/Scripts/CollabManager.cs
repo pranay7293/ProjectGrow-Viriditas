@@ -62,7 +62,11 @@ public class CollabManager : MonoBehaviourPunCallbacks
         UniversalCharacterController initiator = initiatorView.GetComponent<UniversalCharacterController>();
         if (initiator == null) return;
 
-        activeCollabs[actionName] = new List<UniversalCharacterController> { initiator };
+        if (!activeCollabs.ContainsKey(actionName))
+        {
+            activeCollabs[actionName] = new List<UniversalCharacterController>();
+        }
+        activeCollabs[actionName].Add(initiator);
         SetCollabCooldown(initiator.characterName);
     }
 

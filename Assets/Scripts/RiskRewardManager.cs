@@ -45,11 +45,11 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
             scoreChange = -5;
         }
 
-        photonView.RPC("RPC_ApplyActionOutcome", RpcTarget.All, character.photonView.ViewID, outcome, scoreChange);
+        photonView.RPC("RPC_ApplyActionOutcome", RpcTarget.All, character.photonView.ViewID, outcome, scoreChange, action.actionName);
     }
 
     [PunRPC]
-    public void RPC_ApplyActionOutcome(int characterViewID, string outcome, int scoreChange)
+    public void RPC_ApplyActionOutcome(int characterViewID, string outcome, int scoreChange, string actionName)
     {
         PhotonView characterView = PhotonView.Find(characterViewID);
         if (characterView == null) return;
@@ -58,7 +58,7 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
         if (character == null) return;
 
         GameManager.Instance.UpdatePlayerScore(character.characterName, scoreChange);
-        GameManager.Instance.UpdateGameState(character.characterName, $"{outcome}: {character.currentAction.actionName}");
+        GameManager.Instance.UpdateGameState(character.characterName, $"{outcome}: {actionName}");
 
         if (character.photonView.IsMine)
         {
@@ -69,7 +69,7 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
         AIManager aiManager = character.GetComponent<AIManager>();
         if (aiManager != null)
         {
-            aiManager.AddMemory($"{outcome} on {character.currentAction.actionName} at {Time.time}");
+            aiManager.AddMemory($"{outcome} on {actionName} at {Time.time}");
             aiManager.UpdateEmotionalState(outcome == "SUCCESS" ? EmotionalState.Happy : (outcome == "FAILURE" ? EmotionalState.Sad : EmotionalState.Neutral));
         }
     }

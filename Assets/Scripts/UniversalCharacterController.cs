@@ -34,9 +34,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private Material characterMaterial;
     private TextMeshPro actionIndicator;
 
-    public LocationManager.LocationAction currentAction;
+    private LocationManager.LocationAction currentAction;
     private float actionStartTime;
     private Coroutine actionCoroutine;
+    public string CurrentActionName => currentAction?.actionName ?? "";
 
     private Vector3 moveDirection;
     private float rotationY;
@@ -305,29 +306,25 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void StartAction(LocationManager.LocationAction action)
     {
-        if (currentAction != null)
-        {
-            StopAction();
-        }
+    if (currentAction != null)
+    {
+        StopAction();
+    }
 
-        currentAction = action;
-        currentActionIndex = currentLocation.availableActions.IndexOf(action);
-        actionStartTime = Time.time;
-        SetState(CharacterState.PerformingAction);
+    currentAction = action;
+    actionStartTime = Time.time;
+    SetState(CharacterState.PerformingAction);
 
-        if (actionCoroutine != null)
-        {
-            StopCoroutine(actionCoroutine);
-        }
-        actionCoroutine = StartCoroutine(PerformAction());
+    if (actionCoroutine != null)
+    {
+        StopCoroutine(actionCoroutine);
+    }
+    actionCoroutine = StartCoroutine(PerformAction());
 
-        // Log the action
-        ActionLogManager.Instance.LogAction(characterName, action.actionName);
+    ActionLogManager.Instance.LogAction(characterName, action.actionName);
+    GameManager.Instance.UpdateGameState(characterName, action.actionName);
 
-        // Notify GameManager about the action
-        GameManager.Instance.UpdateGameState(characterName, action.actionName);
-
-        Debug.Log($"{characterName} started action: {action.actionName}");
+    Debug.Log($"{characterName} started action: {action.actionName}");
     }
 
     private IEnumerator PerformAction()
@@ -583,11 +580,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
             if (!string.IsNullOrEmpty(actionName) && currentAction == null && currentLocation != null)
             {
-                LocationManager.LocationAction action = currentLocation.availableActions.Find(a => a.actionName == actionName);
-                if (action != null)
-                {
-                    StartAction(action);
-                }
+            LocationManager.LocationAction action = currentLocation.availableActions.Find(a => a.actionName == actionName);
+            if (action != null)
+            {
+                StartAction(action);
+            }
             }
 
             if (characterMaterial != null && receivedColor != characterColor)

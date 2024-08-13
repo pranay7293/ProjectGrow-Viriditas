@@ -59,17 +59,17 @@ public class LocationManager : MonoBehaviourPunCallbacks
     }
 
     [PunRPC]
-    public void StartAction(int actionIndex, int characterViewID)
+    public void StartAction(string actionName, int characterViewID)
     {
-        if (actionIndex < 0 || actionIndex >= availableActions.Count) return;
+    LocationAction action = availableActions.Find(a => a.actionName == actionName);
+    if (action == null) return;
 
-        PhotonView characterView = PhotonView.Find(characterViewID);
-        if (characterView == null) return;
+    PhotonView characterView = PhotonView.Find(characterViewID);
+    if (characterView == null) return;
 
-        UniversalCharacterController character = characterView.GetComponent<UniversalCharacterController>();
-        if (character == null) return;
+    UniversalCharacterController character = characterView.GetComponent<UniversalCharacterController>();
+    if (character == null) return;
 
-        LocationAction action = availableActions[actionIndex];
-        character.StartAction(action);
+    character.StartAction(action);
     }
 }
