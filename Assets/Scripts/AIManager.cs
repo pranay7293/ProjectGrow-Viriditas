@@ -75,12 +75,12 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     public bool ConsiderCollaboration(LocationManager.LocationAction action)
     {
-        if (CollabManager.Instance.CanCollaborate(action))
+        if (CollabManager.Instance.CanInitiateCollab(characterController))
         {
             float collaborationChance = CalculateCollaborationChance(action);
             if (Random.value < collaborationChance)
             {
-                CollabManager.Instance.StartCollaboration(characterController, action);
+                characterController.InitiateCollab(action.actionName);
                 return true;
             }
         }
@@ -99,5 +99,25 @@ public class AIManager : MonoBehaviourPunCallbacks
             baseChance += 0.2f;
         }
         return Mathf.Clamp01(baseChance);
+    }
+
+    public bool DecideOnCollaboration(string actionName)
+    {
+        float collaborationChance = 0.5f; // Base 50% chance
+
+        if (actionName.ToLower().Contains(characterController.aiSettings.characterRole.ToLower()))
+        {
+            collaborationChance += 0.2f;
+        }
+
+        if (GameManager.Instance.GetCurrentChallenge().title.ToLower().Contains(actionName.ToLower()))
+        {
+            collaborationChance += 0.2f;
+        }
+
+        float averageRelationship = npcData.GetAverageRelationship();
+        collaborationChance += averageRelationship * 0.1f;
+
+        return Random.value < collaborationChance;
     }
 }

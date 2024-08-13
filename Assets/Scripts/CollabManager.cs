@@ -6,7 +6,12 @@ public class CollabManager : MonoBehaviourPunCallbacks
 {
     public static CollabManager Instance { get; private set; }
 
-    private Dictionary<string, List<UniversalCharacterController>> activeCollaborations = new Dictionary<string, List<UniversalCharacterController>>();
+    [SerializeField] private float collabRadius = 5f;
+    [SerializeField] private float collabCooldown = 45f;
+    [SerializeField] private int maxCollaborators = 2;
+
+    private Dictionary<string, List<UniversalCharacterController>> activeCollabs = new Dictionary<string, List<UniversalCharacterController>>();
+    private Dictionary<string, float> collabCooldowns = new Dictionary<string, float>();
 
     private void Awake()
     {
@@ -21,75 +26,102 @@ public class CollabManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public bool CanCollaborate(LocationManager.LocationAction action)
+    private void Update()
     {
-        return !activeCollaborations.ContainsKey(action.actionName) || activeCollaborations[action.actionName].Count < 3;
+        UpdateCooldowns();
     }
 
-    public void StartCollaboration(UniversalCharacterController character, LocationManager.LocationAction action)
+    public bool CanInitiateCollab(UniversalCharacterController initiator)
     {
-        if (!activeCollaborations.ContainsKey(action.actionName))
-        {
-            activeCollaborations[action.actionName] = new List<UniversalCharacterController>();
-        }
-
-        if (!activeCollaborations[action.actionName].Contains(character))
-        {
-            photonView.RPC("RPC_AddCollaborator", RpcTarget.All, character.photonView.ViewID, action.actionName);
-        }
+        return !collabCooldowns.ContainsKey(initiator.characterName);
     }
 
-    [PunRPC]
-    private void RPC_AddCollaborator(int characterViewID, string actionName)
+    public List<UniversalCharacterController> GetEligibleCollaborators(UniversalCharacterController initiator)
     {
-        PhotonView characterView = PhotonView.Find(characterViewID);
-        if (characterView == null) return;
+        List<UniversalCharacterController> eligibleCollaborators = new List<UniversalCharacterController>();
+        Collider[] colliders = Physics.OverlapSphere(initiator.transform.position, collabRadius);
 
-        UniversalCharacterController character = characterView.GetComponent<UniversalCharacterController>();
-        if (character == null) return;
-
-        if (!activeCollaborations.ContainsKey(actionName))
+        foreach (Collider collider in colliders)
         {
-            activeCollaborations[actionName] = new List<UniversalCharacterController>();
-        }
-
-        activeCollaborations[actionName].Add(character);
-    }
-
-    public void EndCollaboration(UniversalCharacterController character, LocationManager.LocationAction action)
-    {
-        if (activeCollaborations.ContainsKey(action.actionName) && activeCollaborations[action.actionName].Contains(character))
-        {
-            photonView.RPC("RPC_RemoveCollaborator", RpcTarget.All, character.photonView.ViewID, action.actionName);
-        }
-    }
-
-    [PunRPC]
-    private void RPC_RemoveCollaborator(int characterViewID, string actionName)
-    {
-        PhotonView characterView = PhotonView.Find(characterViewID);
-        if (characterView == null) return;
-
-        UniversalCharacterController character = characterView.GetComponent<UniversalCharacterController>();
-        if (character == null) return;
-
-        if (activeCollaborations.ContainsKey(actionName))
-        {
-            activeCollaborations[actionName].Remove(character);
-            if (activeCollaborations[actionName].Count == 0)
+            UniversalCharacterController character = collider.GetComponent<UniversalCharacterController>();
+            if (character != null && character != initiator && !collabCooldowns.ContainsKey(character.characterName))
             {
-                activeCollaborations.Remove(actionName);
+                eligibleCollaborators.Add(character);
             }
         }
+
+        return eligibleCollaborators;
     }
 
-    public float GetCollaborationBonus(LocationManager.LocationAction action)
+    [PunRPC]
+    public void InitiateCollab(string actionName, int initiatorViewID)
     {
-        if (activeCollaborations.ContainsKey(action.actionName))
+        PhotonView initiatorView = PhotonView.Find(initiatorViewID);
+        if (initiatorView == null) return;
+
+        UniversalCharacterController initiator = initiatorView.GetComponent<UniversalCharacterController>();
+        if (initiator == null) return;
+
+        activeCollabs[actionName] = new List<UniversalCharacterController> { initiator };
+        SetCollabCooldown(initiator.characterName);
+    }
+
+    [PunRPC]
+    public void JoinCollab(string actionName, int joinerViewID)
+    {
+        if (!activeCollabs.ContainsKey(actionName)) return;
+
+        PhotonView joinerView = PhotonView.Find(joinerViewID);
+        if (joinerView == null) return;
+
+        UniversalCharacterController joiner = joinerView.GetComponent<UniversalCharacterController>();
+        if (joiner == null) return;
+
+        if (activeCollabs[actionName].Count < maxCollaborators)
         {
-            int collaboratorCount = activeCollaborations[action.actionName].Count;
-            return collaboratorCount * 0.1f; // 10% bonus per collaborator
+            activeCollabs[actionName].Add(joiner);
+            SetCollabCooldown(joiner.characterName);
+        }
+    }
+
+    public void EndCollab(string actionName)
+    {
+        if (activeCollabs.ContainsKey(actionName))
+        {
+            activeCollabs.Remove(actionName);
+        }
+    }
+
+    public float GetCollabSuccessBonus(string actionName)
+    {
+        if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
+        {
+            return (collaborators.Count - 1) * 0.15f;
         }
         return 0f;
+    }
+
+    private void SetCollabCooldown(string characterName)
+    {
+        collabCooldowns[characterName] = collabCooldown;
+    }
+
+    private void UpdateCooldowns()
+    {
+        List<string> expiredCooldowns = new List<string>();
+
+        foreach (var cooldown in collabCooldowns)
+        {
+            collabCooldowns[cooldown.Key] -= Time.deltaTime;
+            if (collabCooldowns[cooldown.Key] <= 0)
+            {
+                expiredCooldowns.Add(cooldown.Key);
+            }
+        }
+
+        foreach (string character in expiredCooldowns)
+        {
+            collabCooldowns.Remove(character);
+        }
     }
 }

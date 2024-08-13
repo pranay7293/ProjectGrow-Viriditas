@@ -78,9 +78,8 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
     {
         float baseRate = action.baseSuccessRate;
         float roleBonus = (character.aiSettings.characterRole == action.requiredRole) ? 0.2f : 0f;
+        float collabBonus = CollabManager.Instance.GetCollabSuccessBonus(action.actionName);
         
-        // Add more modifiers here based on character stats, experience, etc.
-
-        return Mathf.Clamp01(baseRate + roleBonus);
+        return Mathf.Clamp01(baseRate + roleBonus + collabBonus);
     }
 }

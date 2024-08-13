@@ -1301,6 +1301,14 @@ MonoBehaviour:
   aiSettings: {fileID: 11400000, guid: ebfbe978746d540ecb8f1e3d8b8c9103, type: 2}
   personalScore: 0
   currentObjective: 
+  currentLocation: {fileID: 0}
+  currentAction:
+    actionName: 
+    description: 
+    baseSuccessRate: 0
+    duration: 0
+    requiredRole: 
+    actionIcon: {fileID: 0}
 --- !u!114 &4096835321216489299
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Photon.Pun;
 using System.Collections.Generic;
 
 public class LocationActionUI : MonoBehaviour
@@ -9,16 +8,14 @@ public class LocationActionUI : MonoBehaviour
     public static LocationActionUI Instance { get; private set; }
 
     [SerializeField] private GameObject actionPanel;
-    [SerializeField] private TextMeshProUGUI locationNameText;
-    [SerializeField] private Button actionButtonPrefab;
-    [SerializeField] private Transform actionButtonContainer;
-    [SerializeField] private Button closeButton;
-    [SerializeField] private Image actionProgressBar;
-    [SerializeField] private TextMeshProUGUI actionProgressText;
     [SerializeField] private TextMeshProUGUI outcomeText;
+    [SerializeField] private TextMeshProUGUI locationNameText;
+    [SerializeField] private TextMeshProUGUI actionDescriptionText;
+    [SerializeField] private Button closeButton;
+    [SerializeField] private ActionButton[] actionButtons;
 
     private UniversalCharacterController currentCharacter;
-    private List<LocationManager.LocationAction> currentActions;
+    private LocationManager currentLocation;
 
     private void Awake()
     {
@@ -36,91 +33,137 @@ public class LocationActionUI : MonoBehaviour
     {
         closeButton.onClick.AddListener(HideActions);
         actionPanel.SetActive(false);
-        actionProgressBar.gameObject.SetActive(false);
-        actionProgressText.gameObject.SetActive(false);
         outcomeText.gameObject.SetActive(false);
+
+        for (int i = 0; i < actionButtons.Length; i++)
+        {
+            int index = i;
+            actionButtons[i].Button.onClick.AddListener(() => OnActionButtonClicked(index));
+        }
     }
 
     public void ShowActionsForLocation(UniversalCharacterController character, LocationManager location)
     {
         currentCharacter = character;
-        currentActions = location.GetAvailableActions(character.aiSettings.characterRole);
+        currentLocation = location;
 
         locationNameText.text = location.locationName;
-        ClearActionButtons();
-        CreateActionButtons();
+        List<LocationManager.LocationAction> availableActions = location.GetAvailableActions(character.aiSettings.characterRole);
+
+        for (int i = 0; i < actionButtons.Length; i++)
+        {
+            if (i < availableActions.Count)
+            {
+                actionButtons[i].gameObject.SetActive(true);
+                SetupActionButton(actionButtons[i], availableActions[i]);
+            }
+            else
+            {
+                actionButtons[i].gameObject.SetActive(false);
+            }
+        }
 
         actionPanel.SetActive(true);
+        UpdateCollabUI();
+    }
+
+    private void SetupActionButton(ActionButton button, LocationManager.LocationAction action)
+    {
+        button.ActionName.text = action.actionName;
+        button.ActionIcon.sprite = action.actionIcon;
+        button.ActionIcon.color = Color.white;
+        button.ActionDuration.text = $"{action.duration} SEC";
+        button.CircularProgressBar.fillAmount = 0;
+        button.CollabButton.gameObject.SetActive(false);
+    }
+
+    private void OnActionButtonClicked(int index)
+    {
+        LocationManager.LocationAction selectedAction = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole)[index];
+        currentCharacter.StartAction(selectedAction);
+    }
+
+    public void UpdateActionProgress(int buttonIndex, float progress)
+    {
+        if (buttonIndex >= 0 && buttonIndex < actionButtons.Length)
+        {
+            actionButtons[buttonIndex].CircularProgressBar.fillAmount = progress;
+        }
+    }
+
+    public void ShowOutcome(string outcome)
+    {
+        outcomeText.gameObject.SetActive(true);
+        outcomeText.text = outcome;
+        Invoke(nameof(HideOutcome), 2f);
+    }
+
+    private void HideOutcome()
+    {
+        outcomeText.gameObject.SetActive(false);
     }
 
     public void HideActions()
     {
         actionPanel.SetActive(false);
         currentCharacter = null;
-        currentActions = null;
+        currentLocation = null;
     }
 
-    private void ClearActionButtons()
+    public void UpdateActionDescription(string description)
     {
-        foreach (Transform child in actionButtonContainer)
+        actionDescriptionText.text = description;
+    }
+
+    private void UpdateCollabUI()
+    {
+    List<UniversalCharacterController> eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(currentCharacter);
+    
+    foreach (var button in actionButtons)
+    {
+        button.CollabButton.gameObject.SetActive(eligibleCollaborators.Count > 0);
+        button.CollabButton.onClick.RemoveAllListeners();
+        button.CollabButton.onClick.AddListener(() => InitiateCollab(button.ActionName.text));
+    }
+    }
+
+    private void InitiateCollab(string actionName)
+    {
+        currentCharacter.InitiateCollab(actionName);
+        ShowCollabPromptForNearbyCharacters(actionName);
+    }
+
+    private void ShowCollabPromptForNearbyCharacters(string actionName)
+    {
+        List<UniversalCharacterController> eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(currentCharacter);
+        
+        foreach (var collaborator in eligibleCollaborators)
         {
-            Destroy(child.gameObject);
+            if (collaborator.IsPlayerControlled)
+            {
+                CollabPromptUI.Instance.ShowPrompt(collaborator, actionName);
+            }
+            else
+            {
+                AIManager aiManager = collaborator.GetComponent<AIManager>();
+                if (aiManager != null && aiManager.DecideOnCollaboration(actionName))
+                {
+                    collaborator.JoinCollab(actionName);
+                }
+            }
         }
     }
+}
 
-    private void CreateActionButtons()
-    {
-        foreach (var action in currentActions)
-        {
-            Button newButton = Instantiate(actionButtonPrefab, actionButtonContainer);
-            TextMeshProUGUI buttonText = newButton.GetComponentInChildren<TextMeshProUGUI>();
-            buttonText.text = action.actionName;
-            
-            Image iconImage = newButton.transform.Find("ActionIcon").GetComponent<Image>();
-            iconImage.sprite = action.actionIcon;
-
-            TextMeshProUGUI durationText = newButton.transform.Find("DurationText").GetComponent<TextMeshProUGUI>();
-            durationText.text = $"{action.duration} SEC";
-
-            TextMeshProUGUI successRateText = newButton.transform.Find("SuccessRateText").GetComponent<TextMeshProUGUI>();
-            successRateText.text = $"{action.baseSuccessRate * 100}%";
-
-            newButton.onClick.AddListener(() => OnActionButtonClicked(action));
-        }
-    }
-
-    private void OnActionButtonClicked(LocationManager.LocationAction action)
-    {
-        currentCharacter.photonView.RPC("StartAction", RpcTarget.All, currentActions.IndexOf(action), currentCharacter.photonView.ViewID);
-        ShowActionProgress();
-    }
-
-    private void ShowActionProgress()
-    {
-        actionProgressBar.gameObject.SetActive(true);
-        actionProgressText.gameObject.SetActive(true);
-        ClearActionButtons();
-    }
-
-    public void UpdateActionProgress(float progress)
-    {
-        actionProgressBar.fillAmount = progress;
-        actionProgressText.text = $"{Mathf.RoundToInt(progress * 100)}%";
-    }
-
-    public void ShowOutcome(string outcome)
-    {
-        actionProgressBar.gameObject.SetActive(false);
-        actionProgressText.gameObject.SetActive(false);
-        outcomeText.gameObject.SetActive(true);
-        outcomeText.text = outcome;
-
-        Invoke(nameof(HideOutcome), 2f);
-    }
-
-    public void HideOutcome()
-    {
-        outcomeText.gameObject.SetActive(false);
-        ShowActionsForLocation(currentCharacter, currentCharacter.currentLocation);
-    }
+[System.Serializable]
+public class ActionButton
+{
+    public GameObject gameObject;
+    public Image CircularBackground;
+    public Image CircularProgressBar;
+    public Image ActionIcon;
+    public TextMeshProUGUI ActionName;
+    public TextMeshProUGUI ActionDuration;
+    public Button Button;
+    public Button CollabButton;
 }

@@ -391,6 +391,27 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
+    public void HandleCollabCompletion(string actionName, List<UniversalCharacterController> collaborators)
+{
+    foreach (var collaborator in collaborators)
+    {
+        // Update scores and generate insights
+        UpdatePlayerScore(collaborator.characterName, 10); // Base score for collaboration
+        
+        if (Random.value < 0.3f) // 30% chance to generate an insight
+        {
+            int insightCount = collaborator.InsightCount + 1;
+            collaborator.UpdateInsights(insightCount);
+        }
+    }
+
+    // End the collaboration
+    foreach (var collaborator in collaborators)
+    {
+        collaborator.EndCollab(actionName);
+    }
+}
+
     private int EvaluateActionImpact(string action)
     {
         return Random.Range(1, 10);

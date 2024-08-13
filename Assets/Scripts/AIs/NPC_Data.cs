@@ -41,6 +41,19 @@ public class NPC_Data : MonoBehaviour
         return mentalModel.Relationships.TryGetValue(characterName, out float value) ? value : 0f;
     }
 
+    public float GetAverageRelationship()
+    {
+    if (mentalModel.Relationships.Count == 0)
+        return 0f;
+
+    float sum = 0f;
+    foreach (var relationship in mentalModel.Relationships.Values)
+    {
+        sum += relationship;
+    }
+    return sum / mentalModel.Relationships.Count;
+    }
+
     public void UpdateKnowledge(string key, string value)
     {
         mentalModel.UpdateBelief(key, 0.1f); // Small increase in belief strength

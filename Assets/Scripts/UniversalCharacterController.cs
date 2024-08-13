@@ -299,6 +299,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return currentState;
     }
 
+    //Location and Time-based Actions 
+
+    private int currentActionIndex = -1;
+
     public void StartAction(LocationManager.LocationAction action)
     {
         if (currentAction != null)
@@ -307,6 +311,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
 
         currentAction = action;
+        currentActionIndex = currentLocation.availableActions.IndexOf(action);
         actionStartTime = Time.time;
         SetState(CharacterState.PerformingAction);
 
@@ -335,7 +340,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             
             if (photonView.IsMine)
             {
-                LocationActionUI.Instance.UpdateActionProgress(progress);
+                LocationActionUI.Instance.UpdateActionProgress(currentActionIndex, progress);
             }
 
             yield return null;
@@ -486,6 +491,62 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             }
             SetState(CharacterState.Idle);
         }
+    }
+
+    public bool IsCollaborating { get; private set; }
+
+    public void InitiateCollab(string actionName)
+    {
+        if (photonView.IsMine && !IsCollaborating && CollabManager.Instance.CanInitiateCollab(this))
+        {
+            IsCollaborating = true;
+            photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID);
+        }
+    }
+
+    [PunRPC]
+    private void RPC_InitiateCollab(string actionName, int initiatorViewID)
+    {
+        CollabManager.Instance.InitiateCollab(actionName, initiatorViewID);
+        UpdateCollabVisuals(true);
+    }
+
+    public void JoinCollab(string actionName)
+    {
+        if (photonView.IsMine && !IsCollaborating && CollabManager.Instance.CanInitiateCollab(this))
+        {
+            IsCollaborating = true;
+            photonView.RPC("RPC_JoinCollab", RpcTarget.All, actionName, photonView.ViewID);
+        }
+    }
+
+    [PunRPC]
+    private void RPC_JoinCollab(string actionName, int joinerViewID)
+    {
+        CollabManager.Instance.JoinCollab(actionName, joinerViewID);
+        UpdateCollabVisuals(true);
+    }
+
+    public void EndCollab(string actionName)
+    {
+        if (photonView.IsMine && IsCollaborating)
+        {
+            IsCollaborating = false;
+            photonView.RPC("RPC_EndCollab", RpcTarget.All, actionName);
+        }
+    }
+
+    [PunRPC]
+    private void RPC_EndCollab(string actionName)
+    {
+        CollabManager.Instance.EndCollab(actionName);
+        UpdateCollabVisuals(false);
+    }
+
+    private void UpdateCollabVisuals(bool isCollaborating)
+    {
+        // Implement visual feedback for collaboration state
+        // For example, enable/disable a glowing ring around the character
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
