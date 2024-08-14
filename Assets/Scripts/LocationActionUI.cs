@@ -83,12 +83,13 @@ public class LocationActionUI : MonoBehaviour
     currentCharacter.StartAction(selectedAction);
     }
 
-    public void UpdateActionProgress(int buttonIndex, float progress)
+    public void UpdateActionProgress(string actionName, float progress)
     {
-        if (buttonIndex >= 0 && buttonIndex < actionButtons.Length)
-        {
-            actionButtons[buttonIndex].CircularProgressBar.fillAmount = progress;
-        }
+    ActionButton button = System.Array.Find(actionButtons, b => b.ActionName.text == actionName);
+    if (button != null)
+    {
+        button.CircularProgressBar.fillAmount = progress;
+    }
     }
 
     public void ShowOutcome(string outcome)

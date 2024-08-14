@@ -183,6 +183,11 @@ public class GameManager : MonoBehaviourPunCallbacks
             milestoneCompletion[milestone] = false;
         }
 
+        // Initialize ChallengeProgressUI with the hub color
+        challengeProgressUI.Initialize(currentHub.hubColor);
+
+        challengeText.text = currentChallenge.title;
+
         SerializableChallengeData serializableChallenge = new SerializableChallengeData(currentChallenge);
         string challengeJson = JsonUtility.ToJson(serializableChallenge);
         photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, collectiveScore, playerScores);

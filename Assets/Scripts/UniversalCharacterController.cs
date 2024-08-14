@@ -51,6 +51,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public float[] PersonalProgress { get; private set; } = new float[3];
     public int InsightCount { get; private set; }
 
+    private CharacterProgressBar progressBar;
+
     public enum CharacterState
     {
         Idle,
@@ -104,6 +106,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             {
                 SetupAIControlled();
             }
+            InitializeProgressBar();
         }
         InitializePersonalGoals();
     }
@@ -171,6 +174,28 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         cameraController.InputSource = inputSource;
     }
 
+    private void InitializeProgressBar()
+    {
+        GameObject progressBarPrefab = Resources.Load<GameObject>("CharacterProgressBar");
+        if (progressBarPrefab != null)
+        {
+            GameObject progressBarObject = Instantiate(progressBarPrefab, transform);
+            progressBar = progressBarObject.GetComponent<CharacterProgressBar>();
+            if (progressBar != null)
+            {
+                progressBar.Initialize(this);
+            }
+            else
+            {
+                Debug.LogError("CharacterProgressBar component not found on instantiated prefab.");
+            }
+        }
+        else
+        {
+            Debug.LogError("CharacterProgressBar prefab not found in Resources folder.");
+        }
+    }
+
     private void Update()
     {
         if (photonView.IsMine)
@@ -236,7 +261,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (nearestNPC != null && IsPlayerInRange(nearestNPC.transform))
         {
             DialogueManager.Instance.InitiateDialogue(nearestNPC);
-        } 
+        }
     }
 
     private UniversalCharacterController FindNearestNPC()
@@ -293,6 +318,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public void SetState(CharacterState newState)
     {
         currentState = newState;
+        if (progressBar != null)
+        {
+            progressBar.SetKeyState(newState.ToString());
+        }
     }
 
     public CharacterState GetState()
@@ -300,31 +329,32 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return currentState;
     }
 
-    //Location and Time-based Actions 
-
-    private int currentActionIndex = -1;
-
     public void StartAction(LocationManager.LocationAction action)
     {
-    if (currentAction != null)
-    {
-        StopAction();
-    }
+        if (currentAction != null)
+        {
+            StopAction();
+        }
 
-    currentAction = action;
-    actionStartTime = Time.time;
-    SetState(CharacterState.PerformingAction);
+        currentAction = action;
+        actionStartTime = Time.time;
+        SetState(CharacterState.PerformingAction);
 
-    if (actionCoroutine != null)
-    {
-        StopCoroutine(actionCoroutine);
-    }
-    actionCoroutine = StartCoroutine(PerformAction());
+        if (actionCoroutine != null)
+        {
+            StopCoroutine(actionCoroutine);
+        }
+        actionCoroutine = StartCoroutine(PerformAction());
 
-    ActionLogManager.Instance.LogAction(characterName, action.actionName);
-    GameManager.Instance.UpdateGameState(characterName, action.actionName);
+        ActionLogManager.Instance.LogAction(characterName, action.actionName);
+        GameManager.Instance.UpdateGameState(characterName, action.actionName);
 
-    Debug.Log($"{characterName} started action: {action.actionName}");
+        if (progressBar != null)
+        {
+            progressBar.SetKeyState("Action: " + action.actionName);
+        }
+
+        Debug.Log($"{characterName} started action: {action.actionName}");
     }
 
     private IEnumerator PerformAction()
@@ -337,7 +367,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             
             if (photonView.IsMine)
             {
-                LocationActionUI.Instance.UpdateActionProgress(currentActionIndex, progress);
+                LocationActionUI.Instance.UpdateActionProgress(currentAction.actionName, progress);
             }
 
             yield return null;
@@ -505,7 +535,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void RPC_InitiateCollab(string actionName, int initiatorViewID)
     {
         CollabManager.Instance.InitiateCollab(actionName, initiatorViewID);
-        UpdateCollabVisuals(true);
+        if (progressBar != null)
+        {
+            progressBar.SetKeyState("Collab: " + actionName);
+        }
     }
 
     public void JoinCollab(string actionName)
@@ -521,7 +554,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void RPC_JoinCollab(string actionName, int joinerViewID)
     {
         CollabManager.Instance.JoinCollab(actionName, joinerViewID);
-        UpdateCollabVisuals(true);
+        if (progressBar != null)
+        {
+            progressBar.SetKeyState("Collab: " + actionName);
+        }
     }
 
     public void EndCollab(string actionName)
@@ -537,53 +573,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void RPC_EndCollab(string actionName)
     {
         CollabManager.Instance.EndCollab(actionName);
-        UpdateCollabVisuals(false);
-    }
-
-    private GameObject collabRing;
-    private const float ringPulseSpeed = 1f;
-    private const float ringMinScale = 0.9f;
-    private const float ringMaxScale = 1.1f;
-    private const float ringYOffset = 0.01f; // Adjust this value as needed
-
-    private void UpdateCollabVisuals(bool isCollaborating)
-    {
-        if (isCollaborating)
+        if (progressBar != null)
         {
-            if (collabRing == null)
-            {
-                collabRing = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                collabRing.transform.SetParent(transform);
-                collabRing.transform.localPosition = new Vector3(0, ringYOffset, 0); // Apply Y offset here
-                collabRing.transform.localScale = new Vector3(2f, 0.01f, 2f);
-                
-                Renderer ringRenderer = collabRing.GetComponent<Renderer>();
-                ringRenderer.material = new Material(Shader.Find("Standard"));
-                ringRenderer.material.color = new Color(1f, 1f, 1f, 0.3f);
-                
-                Destroy(collabRing.GetComponent<Collider>());
-                
-                StartCoroutine(PulseRing());
-            }
-        }
-        else
-        {
-            if (collabRing != null)
-            {
-                Destroy(collabRing);
-                collabRing = null;
-            }
-        }
-    }
-
-    private IEnumerator PulseRing()
-    {
-        while (collabRing != null)
-        {
-            float pulse = Mathf.PingPong(Time.time * ringPulseSpeed, 1f);
-            float scale = Mathf.Lerp(ringMinScale, ringMaxScale, pulse);
-            collabRing.transform.localScale = new Vector3(2f * scale, 0.01f, 2f * scale);
-            yield return null;
+            progressBar.SetKeyState("");
+            progressBar.SetCooldown(CollabManager.Instance.GetCollabCooldown());
         }
     }
 
@@ -621,11 +614,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
             if (!string.IsNullOrEmpty(actionName) && currentAction == null && currentLocation != null)
             {
-            LocationManager.LocationAction action = currentLocation.availableActions.Find(a => a.actionName == actionName);
-            if (action != null)
-            {
-                StartAction(action);
-            }
+                LocationManager.LocationAction action = currentLocation.availableActions.Find(a => a.actionName == actionName);
+                if (action != null)
+                {
+                    StartAction(action);
+                }
             }
 
             if (characterMaterial != null && receivedColor != characterColor)

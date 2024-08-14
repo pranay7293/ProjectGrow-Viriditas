@@ -128,4 +128,9 @@ public class CollabManager : MonoBehaviourPunCallbacks
             collabCooldowns.Remove(character);
         }
     }
+
+    public float GetCollabCooldown()
+    {
+        return collabCooldown;
+    }
 }
