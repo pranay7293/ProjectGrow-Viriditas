@@ -124,7 +124,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2748930741491851383
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1131,13 +1131,6 @@ MonoBehaviour:
   personalScore: 0
   currentObjective: 
   currentLocation: {fileID: 0}
-  currentAction:
-    actionName: 
-    description: 
-    baseSuccessRate: 0
-    duration: 0
-    requiredRole: 
-    actionIcon: {fileID: 0}
 --- !u!114 &4096835321216489299
 MonoBehaviour:
   m_ObjectHideFlags: 0

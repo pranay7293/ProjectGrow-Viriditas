@@ -78,6 +78,15 @@ public class PlayerProfileManager : MonoBehaviourPunCallbacks
         }
     }
 
+    private void UpdatePlayerListItem(GameObject placeholder, Player player)
+    {
+        TextMeshProUGUI playerNameText = placeholder.GetComponentInChildren<TextMeshProUGUI>();
+        if (playerNameText != null)
+        {
+            playerNameText.text = player.IsLocal ? "ME" : player.NickName;
+        }
+    }
+
     public void InitializeProfiles()
     {
         isGameScene = true;
@@ -105,15 +114,6 @@ public class PlayerProfileManager : MonoBehaviourPunCallbacks
         }
 
         SortPlayersByScore();
-    }
-
-    private void UpdatePlayerListItem(GameObject placeholder, Player player)
-    {
-        TextMeshProUGUI playerNameText = placeholder.GetComponentInChildren<TextMeshProUGUI>();
-        if (playerNameText != null)
-        {
-            playerNameText.text = player.IsLocal ? "ME" : player.NickName;
-        }
     }
 
     private void CreateCharacterProfile(string characterName)

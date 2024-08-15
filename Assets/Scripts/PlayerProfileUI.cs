@@ -14,19 +14,26 @@ public class PlayerProfileUI : MonoBehaviour
     [SerializeField] private GameObject insightCounter;
     [SerializeField] private TextMeshProUGUI insightCountText;
 
-    private Color unfilledColor = new Color(0x2A / 255f, 0x2A / 255f, 0x2A / 255f); // #2A2A2A
+    private Color unfilledColor = new Color(0x3A / 255f, 0x3A / 255f, 0x3A / 255f); // #3A3A3A
     private Color avatarRingColor = new Color(0x18 / 255f, 0x18 / 255f, 0x18 / 255f); // #181818
 
     public void SetPlayerInfo(string name, Color color, bool isAI, bool isLocalPlayer)
     {
-        nameText.text = name;
-        avatarRing.color = avatarRingColor;
-        characterBackground.color = color;
-        avatarSilhouette.color = Color.white;
+        if (nameText != null) nameText.text = name;
+        if (avatarRing != null) avatarRing.color = avatarRingColor;
         
-        agentIcon.SetActive(isAI);
-        localPlayerIcon.SetActive(isLocalPlayer && !isAI);
-        insightCounter.SetActive(!isAI);
+        // Handle white color case (like Lilith)
+        if (characterBackground != null)
+        {
+            characterBackground.color = color == Color.white ? unfilledColor : color;
+        }
+        
+        if (avatarSilhouette != null) avatarSilhouette.color = Color.white;
+        
+        if (agentIcon != null) agentIcon.SetActive(isAI);
+        if (localPlayerIcon != null) localPlayerIcon.SetActive(isLocalPlayer && !isAI);
+        if (insightCounter != null) insightCounter.SetActive(!isAI);
+        UpdateInsights(0); // Initialize insights to zero
 
         SetPersonalGoalSliderColors(color);
     }
@@ -35,13 +42,18 @@ public class PlayerProfileUI : MonoBehaviour
     {
         foreach (var slider in personalGoalSliders)
         {
-            var backgroundImage = slider.transform.Find("Background").GetComponent<Image>();
-            backgroundImage.color = unfilledColor;
+            if (slider != null)
+            {
+                var backgroundImage = slider.transform.Find("Background")?.GetComponent<Image>();
+                if (backgroundImage != null) backgroundImage.color = unfilledColor;
 
-            var fillImage = slider.fillRect.GetComponent<Image>();
-            fillImage.color = fillColor;
+                var fillImage = slider.fillRect?.GetComponent<Image>();
+                if (fillImage != null) fillImage.color = fillColor;
 
-            slider.value = 0;
+                slider.value = 0;
+                slider.maxValue = 1;
+                slider.wholeNumbers = true;
+            }
         }
     }
 
@@ -49,13 +61,19 @@ public class PlayerProfileUI : MonoBehaviour
     {
         for (int i = 0; i < personalGoalSliders.Length && i < progress.Length; i++)
         {
-            personalGoalSliders[i].value = progress[i];
+            if (personalGoalSliders[i] != null)
+            {
+                personalGoalSliders[i].value = progress[i] >= 1f ? 1f : 0f;
+            }
         }
     }
 
     public void UpdateInsights(int count)
     {
-        insightCountText.text = count.ToString();
-        insightCounter.SetActive(count > 0);
+        if (insightCountText != null) 
+        {
+            insightCountText.text = count.ToString();
+            if (insightCounter != null) insightCounter.SetActive(count > 0);
+        }
     }
 }

@@ -72,7 +72,7 @@ public class LocationActionUI : MonoBehaviour
         button.ActionName.text = action.actionName;
         button.ActionIcon.sprite = action.actionIcon;
         button.ActionIcon.color = Color.white;
-        button.ActionDuration.text = $"{action.duration} SEC";
+        button.ActionDuration.text = $"{action.duration}";
         button.CircularProgressBar.fillAmount = 0;
         button.CollabButton.gameObject.SetActive(false);
     }

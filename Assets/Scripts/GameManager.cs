@@ -170,26 +170,38 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void InitializeChallenge()
     {
-        currentChallenge = GetSelectedChallenge();
-        currentHub = GetSelectedHub();
-        remainingTime = challengeDuration;
-        recentPlayerActions.Clear();
-        collectiveScore = 0;
-        
-        milestoneCompletion.Clear();
-        foreach (var milestone in currentChallenge.milestones)
-        {
-            milestoneCompletion[milestone] = false;
-        }
+    currentChallenge = GetSelectedChallenge();
+    currentHub = GetSelectedHub();
+    if (currentChallenge == null || currentHub == null)
+    {
+        Debug.LogError("Failed to initialize challenge or hub.");
+        return;
+    }
 
-        // Initialize ChallengeProgressUI with the hub color
-        challengeProgressUI.Initialize(currentHub.hubColor);
+    remainingTime = challengeDuration;
+    recentPlayerActions.Clear();
+    collectiveScore = 0;
+    
+    milestoneCompletion.Clear();
+    foreach (var milestone in currentChallenge.milestones)
+    {
+        milestoneCompletion[milestone] = false;
+    }
 
+    challengeProgressUI.Initialize(currentHub.hubColor);
+
+    if (challengeText != null)
+    {
         challengeText.text = currentChallenge.title;
+    }
+    else
+    {
+        Debug.LogError("Challenge Text UI element is not assigned in GameManager.");
+    }
 
-        SerializableChallengeData serializableChallenge = new SerializableChallengeData(currentChallenge);
-        string challengeJson = JsonUtility.ToJson(serializableChallenge);
-        photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, collectiveScore, playerScores);
+    SerializableChallengeData serializableChallenge = new SerializableChallengeData(currentChallenge);
+    string challengeJson = JsonUtility.ToJson(serializableChallenge);
+    photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, collectiveScore, playerScores);
     }
 
     private HubData GetSelectedHub()

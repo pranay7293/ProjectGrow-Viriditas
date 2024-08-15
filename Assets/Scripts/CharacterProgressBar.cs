@@ -14,6 +14,7 @@ public class CharacterProgressBar : MonoBehaviour
     private UniversalCharacterController characterController;
 
     private const float COLLAB_COOLDOWN = 45f;
+    private Color unfilledColor = new Color(0x4A / 255f, 0x4A / 255f, 0x4A / 255f); // #4A4A4A
 
     public void Initialize(UniversalCharacterController controller)
     {
@@ -25,22 +26,39 @@ public class CharacterProgressBar : MonoBehaviour
         Color characterColor = controller.characterColor;
         foreach (Slider slider in personalGoalSliders)
         {
+            SetSliderColors(slider, characterColor);
             slider.maxValue = 1f;
             slider.value = 0f;
             slider.wholeNumbers = true;
-            slider.fillRect.GetComponent<Image>().color = characterColor;
         }
 
         // Setup cooldown slider
+        SetSliderColors(cooldownSlider, Color.white);
         cooldownSlider.maxValue = COLLAB_COOLDOWN;
         cooldownSlider.value = 0f;
-        cooldownSlider.fillRect.GetComponent<Image>().color = Color.white;
 
-        keyStateOverlay.color = new Color(characterColor.r, characterColor.g, characterColor.b, 0.8f);
+        // Setup key state overlay
+        keyStateOverlay.color = characterColor;
+        keyStateText.color = Color.white;
 
         // Hide key state and cooldown initially
         SetKeyState("");
         cooldownSlider.gameObject.SetActive(false);
+    }
+
+    private void SetSliderColors(Slider slider, Color fillColor)
+    {
+        Image backgroundImage = slider.transform.Find("Background")?.GetComponent<Image>();
+        if (backgroundImage != null)
+        {
+            backgroundImage.color = unfilledColor;
+        }
+
+        Image fillImage = slider.fillRect.GetComponent<Image>();
+        if (fillImage != null)
+        {
+            fillImage.color = fillColor;
+        }
     }
 
     private void LateUpdate()
@@ -58,7 +76,7 @@ public class CharacterProgressBar : MonoBehaviour
     {
         for (int i = 0; i < personalGoalSliders.Length; i++)
         {
-            personalGoalSliders[i].value = characterController.PersonalProgress[i];
+            personalGoalSliders[i].value = characterController.PersonalProgress[i] >= 1f ? 1f : 0f;
         }
     }
 

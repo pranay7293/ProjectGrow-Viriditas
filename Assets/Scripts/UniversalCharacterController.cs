@@ -176,24 +176,34 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void InitializeProgressBar()
     {
-        GameObject progressBarPrefab = Resources.Load<GameObject>("CharacterProgressBar");
-        if (progressBarPrefab != null)
-        {
-            GameObject progressBarObject = Instantiate(progressBarPrefab, transform);
-            progressBar = progressBarObject.GetComponent<CharacterProgressBar>();
-            if (progressBar != null)
-            {
-                progressBar.Initialize(this);
-            }
-            else
-            {
-                Debug.LogError("CharacterProgressBar component not found on instantiated prefab.");
-            }
-        }
-        else
-        {
-            Debug.LogError("CharacterProgressBar prefab not found in Resources folder.");
-        }
+    if (progressBar != null)
+    {
+        Debug.LogWarning($"Progress bar already initialized for {characterName}");
+        return;
+    }
+
+    GameObject progressBarPrefab = Resources.Load<GameObject>("CharacterProgressBar");
+    if (progressBarPrefab == null)
+    {
+        Debug.LogError($"CharacterProgressBar prefab not found in Resources folder for {characterName}");
+        return;
+    }
+
+    GameObject progressBarObject = Instantiate(progressBarPrefab, transform);
+    progressBar = progressBarObject.GetComponent<CharacterProgressBar>();
+    if (progressBar == null)
+    {
+        Debug.LogError($"CharacterProgressBar component not found on instantiated prefab for {characterName}");
+        Destroy(progressBarObject);
+        return;
+    }
+
+    // Position the progress bar above the character
+    progressBarObject.transform.localPosition = new Vector3(0, 2.25f, 0); // Adjust the Y value as needed
+    progressBarObject.transform.localRotation = Quaternion.identity;
+    progressBar.Initialize(this);
+
+    Debug.Log($"Progress bar initialized for {characterName}");
     }
 
     private void Update()
