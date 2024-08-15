@@ -16,7 +16,6 @@ public class GameManager : MonoBehaviourPunCallbacks
     [Header("UI References")]
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI challengeText;
-    [SerializeField] private Slider challengeProgressBar;
     [SerializeField] private GameObject milestonesPanel;
     [SerializeField] private Button toggleMilestonesButton;
     [SerializeField] private TextMeshProUGUI milestonesText;
@@ -572,9 +571,6 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void UpdateScoreDisplay()
     {
-        float progress = (float)collectiveScore / currentChallenge.goalScore;
-        challengeProgressBar.value = progress;
-
         float[] milestoneProgress = new float[currentChallenge.milestones.Count];
         for (int i = 0; i < currentChallenge.milestones.Count; i++)
         {
@@ -595,12 +591,10 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void UpdatePlayerProfileUI(string characterName)
     {
-        if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress) &&
-            playerScores.TryGetValue(characterName, out int score))
-        {
-            float overallProgress = (float)score / currentChallenge.goalScore;
-            PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, overallProgress, personalProgress);
-        }
+    if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
+    {
+        PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, 0f, personalProgress);
+    }
     }
 
     public void UpdatePlayerProgress(UniversalCharacterController character, float overallProgress, float[] personalProgress)

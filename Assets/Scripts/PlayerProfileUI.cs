@@ -5,63 +5,57 @@ using TMPro;
 public class PlayerProfileUI : MonoBehaviour
 {
     [SerializeField] private Image avatarRing;
+    [SerializeField] private Image characterBackground;
     [SerializeField] private Image avatarSilhouette;
     [SerializeField] private TextMeshProUGUI nameText;
-    [SerializeField] private Slider overallProgressBar;
-    [SerializeField] private Slider[] personalProgressBars;
+    [SerializeField] private Slider[] personalGoalSliders;
     [SerializeField] private GameObject agentIcon;
-    [SerializeField] private GameObject insightIcon;
+    [SerializeField] private GameObject localPlayerIcon;
+    [SerializeField] private GameObject insightCounter;
     [SerializeField] private TextMeshProUGUI insightCountText;
 
-    private Color defaultRingColor = Color.white;
-    private Color localPlayerRingColor = Color.yellow;
-    private Color defaultBarColor = new Color(0.5f, 0.5f, 0.5f, 1f); // Grey
+    private Color unfilledColor = new Color(0x2A / 255f, 0x2A / 255f, 0x2A / 255f); // #2A2A2A
+    private Color avatarRingColor = new Color(0x18 / 255f, 0x18 / 255f, 0x18 / 255f); // #181818
 
     public void SetPlayerInfo(string name, Color color, bool isAI, bool isLocalPlayer)
     {
         nameText.text = name;
-        avatarSilhouette.color = color;
-        agentIcon.SetActive(isAI);
-        insightIcon.SetActive(!isAI);
+        avatarRing.color = avatarRingColor;
+        characterBackground.color = color;
+        avatarSilhouette.color = Color.white;
         
-        SetAvatarRingColor(isLocalPlayer);
-        SetProgressBarColors(color);
+        agentIcon.SetActive(isAI);
+        localPlayerIcon.SetActive(isLocalPlayer && !isAI);
+        insightCounter.SetActive(!isAI);
+
+        SetPersonalGoalSliderColors(color);
     }
 
-    private void SetAvatarRingColor(bool isLocalPlayer)
+    private void SetPersonalGoalSliderColors(Color fillColor)
     {
-        avatarRing.color = isLocalPlayer ? localPlayerRingColor : defaultRingColor;
-    }
-
-    private void SetProgressBarColors(Color fillColor)
-    {
-        SetSliderColors(overallProgressBar, fillColor);
-        foreach (var bar in personalProgressBars)
+        foreach (var slider in personalGoalSliders)
         {
-            SetSliderColors(bar, fillColor);
+            var backgroundImage = slider.transform.Find("Background").GetComponent<Image>();
+            backgroundImage.color = unfilledColor;
+
+            var fillImage = slider.fillRect.GetComponent<Image>();
+            fillImage.color = fillColor;
+
+            slider.value = 0;
         }
     }
 
-    private void SetSliderColors(Slider slider, Color fillColor)
+    public void UpdatePersonalGoals(float[] progress)
     {
-        var colors = slider.colors;
-        colors.disabledColor = defaultBarColor;
-        colors.normalColor = fillColor;
-        slider.colors = colors;
-    }
-
-    public void UpdateProgress(float overallProgress, float[] personalProgress)
-    {
-        overallProgressBar.value = overallProgress;
-        for (int i = 0; i < personalProgressBars.Length && i < personalProgress.Length; i++)
+        for (int i = 0; i < personalGoalSliders.Length && i < progress.Length; i++)
         {
-            personalProgressBars[i].value = personalProgress[i];
+            personalGoalSliders[i].value = progress[i];
         }
     }
 
     public void UpdateInsights(int count)
     {
         insightCountText.text = count.ToString();
-        insightIcon.SetActive(count > 0);
+        insightCounter.SetActive(count > 0);
     }
 }

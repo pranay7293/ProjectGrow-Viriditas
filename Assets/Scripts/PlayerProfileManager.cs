@@ -163,7 +163,7 @@ public class PlayerProfileManager : MonoBehaviourPunCallbacks
     {
         if (playerProfiles.TryGetValue(characterName, out PlayerProfileUI profile))
         {
-            profile.UpdateProgress(overallProgress, personalProgress);
+            profile.UpdatePersonalGoals(personalProgress);
         }
     }
 
