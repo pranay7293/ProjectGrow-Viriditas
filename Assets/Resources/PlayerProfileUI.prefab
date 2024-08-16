@@ -752,8 +752,8 @@ MonoBehaviour:
   - {fileID: 6501472931379961361}
   agentIcon: {fileID: 8798468844406373099}
   localPlayerIcon: {fileID: 5522279295357433519}
-  insightCounter: {fileID: 6351229357488740523}
-  insightCountText: {fileID: 4521054802474557764}
+  eurekaCounter: {fileID: 0}
+  eurekaCountText: {fileID: 0}
 --- !u!1 &3730004168606345784
 GameObject:
   m_ObjectHideFlags: 0
@@ -1321,7 +1321,7 @@ GameObject:
   - component: {fileID: 1866305738326053624}
   - component: {fileID: 4711424106019402021}
   m_Layer: 0
-  m_Name: InsightCounter
+  m_Name: EurekaCounter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -346,10 +346,10 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         cg.alpha = end;
     }
 
-    public void GenerateInsightFromDialogue(string player1, string player2)
+    public void GenerateEurekaFromDialogue(string player1, string player2)
     {
-        GameManager.Instance.GenerateInsight(player1, player2);
-        // Update UI to show insight generation
+        GameManager.Instance.GenerateEureka(player1, player2);
+        // Update UI to show eureka generation
     }
 
     private string GetCurrentContext()

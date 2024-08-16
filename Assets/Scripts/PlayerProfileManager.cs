@@ -167,12 +167,12 @@ public class PlayerProfileManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public void UpdatePlayerInsights(string playerName, int insightCount)
+    public void UpdatePlayerEurekas(string playerName, int eurekaCount)
     {
         if (!isGameScene) return;
         if (playerProfiles.TryGetValue(playerName, out PlayerProfileUI profile))
         {
-            profile.UpdateInsights(insightCount);
+            profile.UpdateEurekas(eurekaCount);
         }
     }
 

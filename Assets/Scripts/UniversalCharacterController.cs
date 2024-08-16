@@ -49,7 +49,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public float OverallProgress { get; private set; }
     public float[] PersonalProgress { get; private set; } = new float[3];
-    public int InsightCount { get; private set; }
+    public int EurekaCount { get; private set; }
 
     private CharacterProgressBar progressBar;
 
@@ -456,12 +456,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
     }
 
-    public void UpdateInsights(int count)
+    public void UpdateEurekas(int count)
     {
-        InsightCount = count;
+        EurekaCount = count;
         if (photonView.IsMine)
         {
-            PlayerProfileManager.Instance.UpdatePlayerInsights(characterName, InsightCount);
+            PlayerProfileManager.Instance.UpdatePlayerEurekas(characterName, EurekaCount);
         }
     }
 
@@ -603,7 +603,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             stream.SendNext(characterColor);
             stream.SendNext(OverallProgress);
             stream.SendNext(PersonalProgress);
-            stream.SendNext(InsightCount);
+            stream.SendNext(EurekaCount);
             stream.SendNext(currentAction != null ? currentAction.actionName : "");
             stream.SendNext(actionStartTime);
         }
@@ -618,7 +618,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             Color receivedColor = (Color)stream.ReceiveNext();
             OverallProgress = (float)stream.ReceiveNext();
             PersonalProgress = (float[])stream.ReceiveNext();
-            InsightCount = (int)stream.ReceiveNext();
+            EurekaCount = (int)stream.ReceiveNext();
             string actionName = (string)stream.ReceiveNext();
             actionStartTime = (float)stream.ReceiveNext();
 

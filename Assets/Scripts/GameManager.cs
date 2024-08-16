@@ -36,7 +36,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     private int collectiveScore = 0;
     private List<string> recentPlayerActions = new List<string>();
     private Dictionary<string, UniversalCharacterController> spawnedCharacters = new Dictionary<string, UniversalCharacterController>();
-    private Dictionary<string, int> playerInsights = new Dictionary<string, int>();
+    private Dictionary<string, int> playerEurekas = new Dictionary<string, int>();
 
     private readonly Dictionary<string, string> characterLocations = new Dictionary<string, string>
     {
@@ -428,13 +428,13 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         foreach (var collaborator in collaborators)
         {
-            // Update scores and generate insights
+            // Update scores and generate eurekas
             UpdatePlayerScore(collaborator.characterName, 10); // Base score for collaboration
             
-            if (Random.value < 0.3f) // 30% chance to generate an insight
+            if (Random.value < 0.3f) // 30% chance to generate an eureka
             {
-                int insightCount = collaborator.InsightCount + 1;
-                collaborator.UpdateInsights(insightCount);
+                int eurekaCount = collaborator.EurekaCount + 1;
+                collaborator.UpdateEurekas(eurekaCount);
             }
         }
 
@@ -492,19 +492,19 @@ public class GameManager : MonoBehaviourPunCallbacks
         UpdateMilestonesDisplay();
     }
 
-    public void GenerateInsight(string player1, string player2)
+    public void GenerateEureka(string player1, string player2)
     {
-        playerInsights[player1]++;
-        playerInsights[player2]++;
+        playerEurekas[player1]++;
+        playerEurekas[player2]++;
         UpdatePlayerScore(player1, 10);
         UpdatePlayerScore(player2, 10);
     }
 
-    public void UseInsight(string playerName)
+    public void UseEureka(string playerName)
     {
-        if (playerInsights[playerName] > 0)
+        if (playerEurekas[playerName] > 0)
         {
-            playerInsights[playerName]--;
+            playerEurekas[playerName]--;
             UpdatePlayerScore(playerName, 20);
         }
     }
@@ -636,10 +636,10 @@ public class GameManager : MonoBehaviourPunCallbacks
         PlayerProfileManager.Instance.UpdatePlayerProgress(character.characterName, overallProgress, personalProgress);
     }
 
-    public void UpdatePlayerInsights(UniversalCharacterController character, int insightCount)
+    public void UpdatePlayerEurekas(UniversalCharacterController character, int eurekaCount)
     {
-        character.UpdateInsights(insightCount);
-        PlayerProfileManager.Instance.UpdatePlayerInsights(character.characterName, insightCount);
+        character.UpdateEurekas(eurekaCount);
+        PlayerProfileManager.Instance.UpdatePlayerEurekas(character.characterName, eurekaCount);
     }
 
     public int GetPlayerScore(string playerName)

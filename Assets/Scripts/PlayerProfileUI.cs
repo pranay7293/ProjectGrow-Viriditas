@@ -11,8 +11,8 @@ public class PlayerProfileUI : MonoBehaviour
     [SerializeField] private Slider[] personalGoalSliders;
     [SerializeField] private GameObject agentIcon;
     [SerializeField] private GameObject localPlayerIcon;
-    [SerializeField] private GameObject insightCounter;
-    [SerializeField] private TextMeshProUGUI insightCountText;
+    [SerializeField] private GameObject eurekaCounter;
+    [SerializeField] private TextMeshProUGUI eurekaCountText;
 
     private Color unfilledColor = new Color(0x3A / 255f, 0x3A / 255f, 0x3A / 255f); // #3A3A3A
     private Color avatarRingColor = new Color(0x18 / 255f, 0x18 / 255f, 0x18 / 255f); // #181818
@@ -32,8 +32,8 @@ public class PlayerProfileUI : MonoBehaviour
         
         if (agentIcon != null) agentIcon.SetActive(isAI);
         if (localPlayerIcon != null) localPlayerIcon.SetActive(isLocalPlayer && !isAI);
-        if (insightCounter != null) insightCounter.SetActive(!isAI);
-        UpdateInsights(0); // Initialize insights to zero
+        if (eurekaCounter != null) eurekaCounter.SetActive(!isAI);
+        UpdateEurekas(0); // Initialize eurekas to zero
 
         SetPersonalGoalSliderColors(color);
     }
@@ -68,12 +68,12 @@ public class PlayerProfileUI : MonoBehaviour
         }
     }
 
-    public void UpdateInsights(int count)
+    public void UpdateEurekas(int count)
     {
-        if (insightCountText != null) 
+        if (eurekaCountText != null) 
         {
-            insightCountText.text = count.ToString();
-            if (insightCounter != null) insightCounter.SetActive(count > 0);
+            eurekaCountText.text = count.ToString();
+            if (eurekaCounter != null) eurekaCounter.SetActive(count > 0);
         }
     }
 }
