@@ -161,6 +161,7 @@ public class GameManager : MonoBehaviourPunCallbacks
 
             playerScores[characterName] = 0;
             playerPersonalProgress[characterName] = new float[3] { 0f, 0f, 0f };
+            playerEurekas[characterName] = 0;
         }
         else
         {
@@ -188,20 +189,20 @@ public class GameManager : MonoBehaviourPunCallbacks
         collectiveScore = 0;
         
         milestoneCompletion.Clear();
-      for (int i = 0; i < currentChallenge.milestones.Count; i++)
-    {
-    string milestone = currentChallenge.milestones[i];
-    milestoneCompletion[milestone] = false;
-    
-    if (i < milestoneTexts.Length)
-    {
-        milestoneTexts[i].text = $"Milestone {i + 1}: {milestone}";
-    }
-    if (i < milestoneCheckboxes.Length)
-    {
-        milestoneCheckboxes[i].IsChecked = false;
-    }
-    }
+        for (int i = 0; i < currentChallenge.milestones.Count; i++)
+        {
+            string milestone = currentChallenge.milestones[i];
+            milestoneCompletion[milestone] = false;
+            
+            if (i < milestoneTexts.Length)
+            {
+                milestoneTexts[i].text = $"Milestone {i + 1}: {milestone}";
+            }
+            if (i < milestoneCheckboxes.Length)
+            {
+                milestoneCheckboxes[i].IsChecked = false;
+            }
+        }
 
         challengeProgressUI.Initialize(currentHub.hubColor);
 
@@ -265,7 +266,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         return selectedChallenge;
     }
 
-   public void ToggleMilestonesDisplay()
+    public void ToggleMilestonesDisplay()
     {
         milestonesDisplay.SetActive(!milestonesDisplay.activeSelf);
         if (milestonesDisplay.activeSelf)
@@ -276,15 +277,15 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void UpdateMilestonesDisplay()
     {
-    for (int i = 0; i < currentChallenge.milestones.Count; i++)
-    {
-        if (i < milestoneTexts.Length && i < milestoneCheckboxes.Length)
+        for (int i = 0; i < currentChallenge.milestones.Count; i++)
         {
-            string milestone = currentChallenge.milestones[i];
-            milestoneTexts[i].text = $"Milestone {i + 1}: {milestone}";
-            milestoneCheckboxes[i].IsChecked = milestoneCompletion[milestone];
+            if (i < milestoneTexts.Length && i < milestoneCheckboxes.Length)
+            {
+                string milestone = currentChallenge.milestones[i];
+                milestoneTexts[i].text = $"Milestone {i + 1}: {milestone}";
+                milestoneCheckboxes[i].IsChecked = milestoneCompletion[milestone];
+            }
         }
-    }
     }
 
     private void UpdateGameTime()
@@ -431,10 +432,10 @@ public class GameManager : MonoBehaviourPunCallbacks
             // Update scores and generate eurekas
             UpdatePlayerScore(collaborator.characterName, 10); // Base score for collaboration
             
-            if (Random.value < 0.3f) // 30% chance to generate an eureka
+            if (Random.value < 0.3f) // 30% chance to generate a eureka
             {
                 int eurekaCount = collaborator.EurekaCount + 1;
-                collaborator.UpdateEurekas(eurekaCount);
+                collaborator.IncrementEurekaCount();
             }
         }
 
@@ -492,20 +493,14 @@ public class GameManager : MonoBehaviourPunCallbacks
         UpdateMilestonesDisplay();
     }
 
-    public void GenerateEureka(string player1, string player2)
+    public void CompleteRandomMilestone(string eurekaDescription)
     {
-        playerEurekas[player1]++;
-        playerEurekas[player2]++;
-        UpdatePlayerScore(player1, 10);
-        UpdatePlayerScore(player2, 10);
-    }
-
-    public void UseEureka(string playerName)
-    {
-        if (playerEurekas[playerName] > 0)
+        List<string> incompleteMilestones = currentChallenge.milestones.FindAll(m => !milestoneCompletion[m]);
+        if (incompleteMilestones.Count > 0)
         {
-            playerEurekas[playerName]--;
-            UpdatePlayerScore(playerName, 20);
+            string milestone = incompleteMilestones[Random.Range(0, incompleteMilestones.Count)];
+            CompleteMilestone("Eureka", milestone, currentChallenge.milestones.IndexOf(milestone));
+            ActionLogManager.Instance.LogAction("Eureka", $"Milestone completed: {milestone} - {eurekaDescription}");
         }
     }
 
@@ -536,10 +531,14 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public void UpdateCollectiveScore(int points)
+    public void UpdateCollectiveScore(int points, bool isEureka = false)
     {
         if (PhotonNetwork.IsMasterClient)
         {
+            if (isEureka)
+            {
+                points *= 2; // Double points for Eureka achievements
+            }
             collectiveScore += points;
             photonView.RPC("SyncCollectiveScore", RpcTarget.All, collectiveScore);
         }
@@ -638,7 +637,7 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     public void UpdatePlayerEurekas(UniversalCharacterController character, int eurekaCount)
     {
-        character.UpdateEurekas(eurekaCount);
+        character.IncrementEurekaCount();
         PlayerProfileManager.Instance.UpdatePlayerEurekas(character.characterName, eurekaCount);
     }
 

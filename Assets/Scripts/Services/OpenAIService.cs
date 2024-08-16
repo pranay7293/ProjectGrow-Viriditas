@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 
 public class OpenAIService : MonoBehaviour
 {
@@ -116,22 +117,22 @@ public class OpenAIService : MonoBehaviour
 
     public async Task<string> GetResponse(string prompt, AISettings aiSettings)
     {
-    if (Time.time - lastApiCallTime < apiCallCooldown)
-    {
-        await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
+        if (Time.time - lastApiCallTime < apiCallCooldown)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
+        }
+
+        string fullPrompt = aiSettings != null
+            ? $"You are a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n{prompt}\n\nRespond in character, keeping your response concise (max 20 words) and natural:"
+            : prompt;
+
+        string response = await GetChatCompletionAsync(fullPrompt);
+        lastApiCallTime = Time.time;
+
+        return string.IsNullOrEmpty(response) ? "Not sure how to respond to that..." : response;
     }
 
-    string fullPrompt = aiSettings != null
-        ? $"You are a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n{prompt}\n\nRespond in character, keeping your response concise (max 20 words) and natural:"
-        : prompt;
-
-    string response = await GetChatCompletionAsync(fullPrompt);
-    lastApiCallTime = Time.time;
-
-    return string.IsNullOrEmpty(response) ? "Not sure how to respond to that..." : response;
-    }
-
-   public async Task<EmergentScenarioGenerator.ScenarioData> GenerateScenario(string currentChallenge, List<string> recentPlayerActions)
+    public async Task<EmergentScenarioGenerator.ScenarioData> GenerateScenario(string currentChallenge, List<string> recentPlayerActions)
     {
         if (Time.time - lastApiCallTime < apiCallCooldown)
         {
@@ -164,25 +165,35 @@ public class OpenAIService : MonoBehaviour
         return ParseScenarioResponse(response);
     }
 
-private EmergentScenarioGenerator.ScenarioData ParseScenarioResponse(string response)
-{
-    var lines = response.Split('\n');
-    var scenarioData = new EmergentScenarioGenerator.ScenarioData();
-    scenarioData.options = new List<string>();
-
-    foreach (var line in lines)
+    private EmergentScenarioGenerator.ScenarioData ParseScenarioResponse(string response)
     {
-        if (line.StartsWith("Description:"))
+        var lines = response.Split('\n');
+        var scenarioData = new EmergentScenarioGenerator.ScenarioData();
+        scenarioData.options = new List<string>();
+
+        foreach (var line in lines)
         {
-            scenarioData.description = line.Substring("Description:".Length).Trim();
+            if (line.StartsWith("Description:"))
+            {
+                scenarioData.description = line.Substring("Description:".Length).Trim();
+            }
+            else if (line.StartsWith("1.") || line.StartsWith("2.") || line.StartsWith("3."))
+            {
+                scenarioData.options.Add(line.Substring(3).Trim());
+            }
         }
-        else if (line.StartsWith("1.") || line.StartsWith("2.") || line.StartsWith("3."))
-        {
-            scenarioData.options.Add(line.Substring(3).Trim());
-        }
+
+        return scenarioData;
     }
 
-    return scenarioData;
+    public async Task<string> GenerateEurekaDescription(List<UniversalCharacterController> collaborators, GameState gameState)
+{
+    string collaboratorRoles = string.Join(", ", collaborators.Select(c => c.aiSettings.characterRole));
+    string prompt = $@"As {collaboratorRoles} collaborate on '{gameState.CurrentChallenge.title}', 
+    describe an unexpected breakthrough. Consider their diverse backgrounds, current game progress (Milestones: {string.Join(", ", gameState.CurrentChallenge.milestones)}), 
+    and potential real-world impact. Emphasize interdisciplinary insights. Be concise (20 words) and compelling:";
+
+    return await GetResponse(prompt, null);
 }
 
     private async Task<string> GetChatCompletionAsync(string prompt)

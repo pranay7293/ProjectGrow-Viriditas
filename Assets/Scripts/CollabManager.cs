@@ -88,12 +88,18 @@ public class CollabManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public void EndCollab(string actionName)
+    public async void FinalizeCollaboration(string actionName)
     {
-        if (activeCollabs.ContainsKey(actionName))
+    if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
+    {
+        if (EurekaManager.Instance.CheckForEureka(collaborators))
         {
-            activeCollabs.Remove(actionName);
+            await EurekaManager.Instance.TriggerEureka(collaborators);
         }
+        
+        GameManager.Instance.HandleCollabCompletion(actionName, collaborators);
+        activeCollabs.Remove(actionName);
+    }
     }
 
     public float GetCollabSuccessBonus(string actionName)
@@ -103,6 +109,11 @@ public class CollabManager : MonoBehaviourPunCallbacks
             return (collaborators.Count - 1) * 0.15f;
         }
         return 0f;
+    }
+
+    public float GetCollabCooldown()
+    {
+    return collabCooldown;
     }
 
     private void SetCollabCooldown(string characterName)
@@ -127,10 +138,5 @@ public class CollabManager : MonoBehaviourPunCallbacks
         {
             collabCooldowns.Remove(character);
         }
-    }
-
-    public float GetCollabCooldown()
-    {
-        return collabCooldown;
     }
 }

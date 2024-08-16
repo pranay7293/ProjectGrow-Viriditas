@@ -346,12 +346,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         cg.alpha = end;
     }
 
-    public void GenerateEurekaFromDialogue(string player1, string player2)
-    {
-        GameManager.Instance.GenerateEureka(player1, player2);
-        // Update UI to show eureka generation
-    }
-
     private string GetCurrentContext()
     {
         GameState currentState = GameManager.Instance.GetCurrentGameState();
