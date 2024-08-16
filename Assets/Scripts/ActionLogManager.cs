@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 
 public class ActionLogManager : MonoBehaviour
@@ -10,7 +9,6 @@ public class ActionLogManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI actionLogText;
     [SerializeField] private int maxLogEntries = 100;
     [SerializeField] private GameObject actionLogPanel;
-    [SerializeField] private Button toggleActionLogButton;
 
     private Queue<string> actionLog = new Queue<string>();
 
@@ -29,7 +27,6 @@ public class ActionLogManager : MonoBehaviour
 
     private void Start()
     {
-        toggleActionLogButton.onClick.AddListener(ToggleActionLog);
         actionLogPanel.SetActive(false);
     }
 

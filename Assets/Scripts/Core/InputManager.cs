@@ -13,7 +13,14 @@ public class InputManager : MonoBehaviourPunCallbacks
 
     [SerializeField] private KeyCode toggleChatLogKey = KeyCode.Tab;
     [SerializeField] private KeyCode endDialogueKey = KeyCode.Escape;
-    [SerializeField] private KeyCode toggleCustomInputKey = KeyCode.X;
+    [SerializeField] private KeyCode toggleCustomInputKey = 
+        Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer
+        ? KeyCode.LeftCommand
+        : KeyCode.LeftControl;
+    [SerializeField] private KeyCode toggleActionLogKey = KeyCode.F1;
+    [SerializeField] private KeyCode toggleMilestonesKey = KeyCode.F2;
+    [SerializeField] private KeyCode togglePersonalGoalsKey = KeyCode.F3;
+    [SerializeField] private KeyCode toggleGuideDisplayKey = KeyCode.F4;
 
     private UniversalCharacterController localPlayer;
 
@@ -56,28 +63,58 @@ public class InputManager : MonoBehaviourPunCallbacks
 
         if (localPlayer != null && localPlayer.photonView.IsMine)
         {
-            if (PlayerInteractActivate && !IsInDialogue && !IsPointerOverUIElement())
-            {
-                localPlayer.TriggerDialogue();
-            }
-
-            if (Input.GetKeyDown(endDialogueKey) && IsInDialogue)
-            {
-                EndDialogue();
-            }
-
-            if (Input.GetKeyDown(toggleChatLogKey))
-            {
-                ToggleChatLog();
-            }
-
-            if (IsInDialogue)
-            {
-                HandleDialogueInput();
-            }
+            HandlePlayerInput();
         }
 
         UpdateCursorState();
+    }
+
+    private void HandlePlayerInput()
+    {
+        if (PlayerInteractActivate && !IsInDialogue && !IsPointerOverUIElement())
+        {
+            localPlayer.TriggerDialogue();
+        }
+
+        if (Input.GetKeyDown(endDialogueKey) && IsInDialogue)
+        {
+            EndDialogue();
+        }
+
+        if (Input.GetKeyDown(toggleChatLogKey))
+        {
+            ToggleChatLog();
+        }
+
+        if (Input.GetKeyDown(toggleCustomInputKey))
+        {
+            ToggleCustomInput();
+        }
+
+        if (Input.GetKeyDown(toggleActionLogKey))
+        {
+            ToggleActionLog();
+        }
+
+        if (Input.GetKeyDown(toggleMilestonesKey))
+        {
+            ToggleMilestones();
+        }
+
+        if (Input.GetKeyDown(togglePersonalGoalsKey))
+        {
+            TogglePersonalGoals();
+        }
+
+        if (Input.GetKeyDown(toggleGuideDisplayKey))
+        {
+            ToggleGuideDisplay();
+        }
+
+        if (IsInDialogue)
+        {
+            HandleDialogueInput();
+        }
     }
 
     private void HandleDialogueInput()
@@ -94,10 +131,6 @@ public class InputManager : MonoBehaviourPunCallbacks
         {
             DialogueManager.Instance.SelectDialogueOption(2);
         }
-        else if (Input.GetKeyDown(toggleCustomInputKey))
-        {
-            DialogueManager.Instance.ToggleCustomInput();
-        }
     }
 
     public void StartDialogue()
@@ -113,11 +146,37 @@ public class InputManager : MonoBehaviourPunCallbacks
         UpdateCursorState();
     }
 
-    public void ToggleChatLog()
+    private void ToggleChatLog()
     {
         IsChatLogOpen = !IsChatLogOpen;
         DialogueManager.Instance.ToggleChatLog();
         UpdateCursorState();
+    }
+
+    private void ToggleCustomInput()
+    {
+        DialogueManager.Instance.ToggleCustomInput();
+    }
+
+    private void ToggleActionLog()
+    {
+        ActionLogManager.Instance.ToggleActionLog();
+    }
+
+    private void ToggleMilestones()
+    {
+        GameManager.Instance.ToggleMilestonesDisplay();
+    }
+
+    private void TogglePersonalGoals()
+    {
+        // Implement this when personal goals UI is created
+        Debug.Log("Toggle Personal Goals - Not yet implemented");
+    }
+
+    private void ToggleGuideDisplay()
+    {
+        GuideBoxManager.Instance.ToggleGuideDisplay();
     }
 
     private UniversalCharacterController FindLocalPlayer()

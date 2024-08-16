@@ -21,7 +21,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     [SerializeField] private TMP_InputField customInputField;
     [SerializeField] private Button submitCustomInputButton;
     [SerializeField] private Button endConversationButton;
-    [SerializeField] private Button openCustomInputButton;
     [SerializeField] private GameObject loadingIndicator;
 
     [Header("Chat Log")]
@@ -29,7 +28,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     [SerializeField] private TextMeshProUGUI chatLogText;
     [SerializeField] private TMP_Dropdown characterFilter;
     [SerializeField] private int maxChatLogEntries = 100;
-    [SerializeField] private Button toggleChatLogButton;
     [SerializeField] private ScrollRect chatLogScrollRect;
     [SerializeField] private CanvasGroup chatLogCanvasGroup;
     [SerializeField] private float fadeDuration = 0.3f;
@@ -72,19 +70,19 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void InitializeUI()
     {
-        dialoguePanel.SetActive(false);
-        chatLogPanel.SetActive(false);
-        loadingIndicator.SetActive(false);
-        submitCustomInputButton.onClick.AddListener(SubmitCustomInput);
-        toggleChatLogButton.onClick.AddListener(ToggleChatLog);
-        endConversationButton.onClick.AddListener(EndConversation);
-        openCustomInputButton.onClick.AddListener(ToggleCustomInput);
-        characterFilter.onValueChanged.AddListener(FilterChatLog);
-        
+    if (dialoguePanel != null) dialoguePanel.SetActive(false);
+    if (chatLogPanel != null) chatLogPanel.SetActive(false);
+    if (loadingIndicator != null) loadingIndicator.SetActive(false);
+    if (submitCustomInputButton != null) submitCustomInputButton.onClick.AddListener(SubmitCustomInput);
+    if (endConversationButton != null) endConversationButton.onClick.AddListener(EndConversation);
+    
+    if (customInputField != null)
+    {
         customInputField.onValueChanged.AddListener(OnCustomInputValueChanged);
         customInputField.onEndEdit.AddListener(OnCustomInputEndEdit);
-        
-        InitializeCharacterFilter();
+    }
+    
+    InitializeCharacterFilter();
     }
 
     private void InitializeCharacterFilter()
@@ -183,7 +181,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     {
         isCustomInputActive = active;
         dialogInputWindow.SetActive(active);
-        openCustomInputButton.gameObject.SetActive(!active);
 
         if (active)
         {

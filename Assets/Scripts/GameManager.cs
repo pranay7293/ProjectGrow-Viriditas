@@ -16,9 +16,9 @@ public class GameManager : MonoBehaviourPunCallbacks
     [Header("UI References")]
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI challengeText;
-    [SerializeField] private GameObject milestonesPanel;
-    [SerializeField] private Button toggleMilestonesButton;
-    [SerializeField] private TextMeshProUGUI milestonesText;
+    [SerializeField] private GameObject milestonesDisplay;
+    [SerializeField] private TextMeshProUGUI[] milestoneTexts;
+    [SerializeField] private CustomCheckbox[] milestoneCheckboxes;
     [SerializeField] private ChallengeProgressUI challengeProgressUI;
 
     [Header("Game Components")]
@@ -71,8 +71,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             InitializeGame();
         }
-        milestonesPanel.SetActive(false);
-        toggleMilestonesButton.onClick.AddListener(ToggleMilestonesPanel);
+        milestonesDisplay.SetActive(false);
     }
 
     private void Update()
@@ -81,6 +80,12 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             UpdateGameTime();
             CheckForEmergentScenario();
+        }
+
+        // Handle input for toggling milestones display
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            ToggleMilestonesDisplay();
         }
     }
 
@@ -170,38 +175,48 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void InitializeChallenge()
     {
-    currentChallenge = GetSelectedChallenge();
-    currentHub = GetSelectedHub();
-    if (currentChallenge == null || currentHub == null)
-    {
-        Debug.LogError("Failed to initialize challenge or hub.");
-        return;
-    }
+        currentChallenge = GetSelectedChallenge();
+        currentHub = GetSelectedHub();
+        if (currentChallenge == null || currentHub == null)
+        {
+            Debug.LogError("Failed to initialize challenge or hub.");
+            return;
+        }
 
-    remainingTime = challengeDuration;
-    recentPlayerActions.Clear();
-    collectiveScore = 0;
+        remainingTime = challengeDuration;
+        recentPlayerActions.Clear();
+        collectiveScore = 0;
+        
+        milestoneCompletion.Clear();
+      for (int i = 0; i < currentChallenge.milestones.Count; i++)
+    {
+    string milestone = currentChallenge.milestones[i];
+    milestoneCompletion[milestone] = false;
     
-    milestoneCompletion.Clear();
-    foreach (var milestone in currentChallenge.milestones)
+    if (i < milestoneTexts.Length)
     {
-        milestoneCompletion[milestone] = false;
+        milestoneTexts[i].text = $"Milestone {i + 1}: {milestone}";
+    }
+    if (i < milestoneCheckboxes.Length)
+    {
+        milestoneCheckboxes[i].IsChecked = false;
+    }
     }
 
-    challengeProgressUI.Initialize(currentHub.hubColor);
+        challengeProgressUI.Initialize(currentHub.hubColor);
 
-    if (challengeText != null)
-    {
-        challengeText.text = currentChallenge.title;
-    }
-    else
-    {
-        Debug.LogError("Challenge Text UI element is not assigned in GameManager.");
-    }
+        if (challengeText != null)
+        {
+            challengeText.text = currentChallenge.title;
+        }
+        else
+        {
+            Debug.LogError("Challenge Text UI element is not assigned in GameManager.");
+        }
 
-    SerializableChallengeData serializableChallenge = new SerializableChallengeData(currentChallenge);
-    string challengeJson = JsonUtility.ToJson(serializableChallenge);
-    photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, collectiveScore, playerScores);
+        SerializableChallengeData serializableChallenge = new SerializableChallengeData(currentChallenge);
+        string challengeJson = JsonUtility.ToJson(serializableChallenge);
+        photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, collectiveScore, playerScores);
     }
 
     private HubData GetSelectedHub()
@@ -250,10 +265,10 @@ public class GameManager : MonoBehaviourPunCallbacks
         return selectedChallenge;
     }
 
-    private void ToggleMilestonesPanel()
+   public void ToggleMilestonesDisplay()
     {
-        milestonesPanel.SetActive(!milestonesPanel.activeSelf);
-        if (milestonesPanel.activeSelf)
+        milestonesDisplay.SetActive(!milestonesDisplay.activeSelf);
+        if (milestonesDisplay.activeSelf)
         {
             UpdateMilestonesDisplay();
         }
@@ -261,13 +276,15 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void UpdateMilestonesDisplay()
     {
-        string milestonesStatus = "Challenge Milestones:\n\n";
-        foreach (var milestone in currentChallenge.milestones)
+    for (int i = 0; i < currentChallenge.milestones.Count; i++)
+    {
+        if (i < milestoneTexts.Length && i < milestoneCheckboxes.Length)
         {
-            string status = milestoneCompletion[milestone] ? "Completed" : "In Progress";
-            milestonesStatus += $"- {milestone}: {status}\n";
+            string milestone = currentChallenge.milestones[i];
+            milestoneTexts[i].text = $"Milestone {i + 1}: {milestone}";
+            milestoneCheckboxes[i].IsChecked = milestoneCompletion[milestone];
         }
-        milestonesText.text = milestonesStatus;
+    }
     }
 
     private void UpdateGameTime()
@@ -408,25 +425,25 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     public void HandleCollabCompletion(string actionName, List<UniversalCharacterController> collaborators)
-{
-    foreach (var collaborator in collaborators)
     {
-        // Update scores and generate insights
-        UpdatePlayerScore(collaborator.characterName, 10); // Base score for collaboration
-        
-        if (Random.value < 0.3f) // 30% chance to generate an insight
+        foreach (var collaborator in collaborators)
         {
-            int insightCount = collaborator.InsightCount + 1;
-            collaborator.UpdateInsights(insightCount);
+            // Update scores and generate insights
+            UpdatePlayerScore(collaborator.characterName, 10); // Base score for collaboration
+            
+            if (Random.value < 0.3f) // 30% chance to generate an insight
+            {
+                int insightCount = collaborator.InsightCount + 1;
+                collaborator.UpdateInsights(insightCount);
+            }
+        }
+
+        // End the collaboration
+        foreach (var collaborator in collaborators)
+        {
+            collaborator.EndCollab(actionName);
         }
     }
-
-    // End the collaboration
-    foreach (var collaborator in collaborators)
-    {
-        collaborator.EndCollab(actionName);
-    }
-}
 
     private int EvaluateActionImpact(string action)
     {
@@ -468,6 +485,10 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         milestoneCompletion[milestone] = true;
         UpdatePersonalProgress(characterName, milestoneIndex, 1f);
+        if (milestoneIndex < milestoneCheckboxes.Length)
+        {
+            milestoneCheckboxes[milestoneIndex].IsChecked = true;
+        }
         UpdateMilestonesDisplay();
     }
 
@@ -603,10 +624,10 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void UpdatePlayerProfileUI(string characterName)
     {
-    if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
-    {
-        PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, 0f, personalProgress);
-    }
+        if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
+        {
+            PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, 0f, personalProgress);
+        }
     }
 
     public void UpdatePlayerProgress(UniversalCharacterController character, float overallProgress, float[] personalProgress)
@@ -688,10 +709,10 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     public void ResetPlayerPositions()
     {
-    if (PhotonNetwork.IsMasterClient)
-    {
-        photonView.RPC("RPC_ResetPlayerPositions", RpcTarget.All);
-    }
+        if (PhotonNetwork.IsMasterClient)
+        {
+            photonView.RPC("RPC_ResetPlayerPositions", RpcTarget.All);
+        }
     }
 
     [PunRPC]

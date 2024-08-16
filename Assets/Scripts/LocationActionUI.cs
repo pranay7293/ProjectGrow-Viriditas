@@ -11,7 +11,6 @@ public class LocationActionUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI outcomeText;
     [SerializeField] private TextMeshProUGUI locationNameText;
     [SerializeField] private TextMeshProUGUI actionDescriptionText;
-    [SerializeField] private Button closeButton;
     [SerializeField] private ActionButton[] actionButtons;
 
     private UniversalCharacterController currentCharacter;
@@ -31,7 +30,6 @@ public class LocationActionUI : MonoBehaviour
 
     private void Start()
     {
-        closeButton.onClick.AddListener(HideActions);
         actionPanel.SetActive(false);
         outcomeText.gameObject.SetActive(false);
 
@@ -69,27 +67,57 @@ public class LocationActionUI : MonoBehaviour
 
     private void SetupActionButton(ActionButton button, LocationManager.LocationAction action)
     {
-        button.ActionName.text = action.actionName;
-        button.ActionIcon.sprite = action.actionIcon;
-        button.ActionIcon.color = Color.white;
-        button.ActionDuration.text = $"{action.duration}";
-        button.CircularProgressBar.fillAmount = 0;
-        button.CollabButton.gameObject.SetActive(false);
+        if (button == null || action == null)
+        {
+            Debug.LogError("Button or action is null in SetupActionButton");
+            return;
+        }
+
+        if (button.ActionName != null)
+            button.ActionName.text = action.actionName;
+        
+        if (button.ActionIcon != null)
+        {
+            button.ActionIcon.sprite = action.actionIcon;
+            button.ActionIcon.color = Color.white;
+        }
+        
+        if (button.ActionDuration != null)
+            button.ActionDuration.text = $"{action.duration}";
+        
+        if (button.CircularProgressBar != null)
+            button.CircularProgressBar.fillAmount = 0;
+        
+        if (button.CollabButton != null)
+            button.CollabButton.gameObject.SetActive(false);
     }
 
     private void OnActionButtonClicked(int index)
     {
-    LocationManager.LocationAction selectedAction = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole)[index];
-    currentCharacter.StartAction(selectedAction);
+        if (currentLocation == null)
+        {
+            Debug.LogError("CurrentLocation is null in OnActionButtonClicked");
+            return;
+        }
+
+        List<LocationManager.LocationAction> availableActions = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole);
+        if (index < 0 || index >= availableActions.Count)
+        {
+            Debug.LogError($"Invalid action index: {index}");
+            return;
+        }
+
+        LocationManager.LocationAction selectedAction = availableActions[index];
+        currentCharacter.StartAction(selectedAction);
     }
 
     public void UpdateActionProgress(string actionName, float progress)
     {
-    ActionButton button = System.Array.Find(actionButtons, b => b.ActionName.text == actionName);
-    if (button != null)
-    {
-        button.CircularProgressBar.fillAmount = progress;
-    }
+        ActionButton button = System.Array.Find(actionButtons, b => b.ActionName.text == actionName);
+        if (button != null && button.CircularProgressBar != null)
+        {
+            button.CircularProgressBar.fillAmount = progress;
+        }
     }
 
     public void ShowOutcome(string outcome)
@@ -118,14 +146,17 @@ public class LocationActionUI : MonoBehaviour
 
     private void UpdateCollabUI()
     {
-    List<UniversalCharacterController> eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(currentCharacter);
-    
-    foreach (var button in actionButtons)
-    {
-        button.CollabButton.gameObject.SetActive(eligibleCollaborators.Count > 0);
-        button.CollabButton.onClick.RemoveAllListeners();
-        button.CollabButton.onClick.AddListener(() => InitiateCollab(button.ActionName.text));
-    }
+        List<UniversalCharacterController> eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(currentCharacter);
+        
+        foreach (var button in actionButtons)
+        {
+            if (button.CollabButton != null)
+            {
+                button.CollabButton.gameObject.SetActive(eligibleCollaborators.Count > 0);
+                button.CollabButton.onClick.RemoveAllListeners();
+                button.CollabButton.onClick.AddListener(() => InitiateCollab(button.ActionName.text));
+            }
+        }
     }
 
     private void InitiateCollab(string actionName)
