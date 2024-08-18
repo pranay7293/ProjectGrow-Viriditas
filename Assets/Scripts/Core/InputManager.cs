@@ -21,6 +21,7 @@ public class InputManager : MonoBehaviourPunCallbacks
     [SerializeField] private KeyCode toggleMilestonesKey = KeyCode.F2;
     [SerializeField] private KeyCode togglePersonalGoalsKey = KeyCode.F3;
     [SerializeField] private KeyCode toggleGuideDisplayKey = KeyCode.F4;
+    [SerializeField] private KeyCode toggleEurekaLogKey = KeyCode.F5;
 
     private UniversalCharacterController localPlayer;
 
@@ -106,6 +107,11 @@ public class InputManager : MonoBehaviourPunCallbacks
             TogglePersonalGoals();
         }
 
+        if (Input.GetKeyDown(toggleEurekaLogKey))
+        {
+            ToggleEurekaLog();
+        }
+
         if (Input.GetKeyDown(toggleGuideDisplayKey))
         {
             ToggleGuideDisplay();
@@ -167,11 +173,16 @@ public class InputManager : MonoBehaviourPunCallbacks
     {
         GameManager.Instance.ToggleMilestonesDisplay();
     }
-
+    
     private void TogglePersonalGoals()
     {
         // Implement this when personal goals UI is created
         Debug.Log("Toggle Personal Goals - Not yet implemented");
+    }
+
+    private void ToggleEurekaLog()
+    {
+    EurekaLogUI.Instance.ToggleEurekaLog();
     }
 
     private void ToggleGuideDisplay()

@@ -127,7 +127,8 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         isGeneratingChoices = true;
         ShowLoadingIndicator(true);
 
-        currentOptions = await OpenAIService.Instance.GetGenerativeChoices(currentNPC.characterName, GetCurrentContext(), currentNPC.aiSettings);
+        string context = GetCurrentContext();
+        currentOptions = await OpenAIService.Instance.GetGenerativeChoices(currentNPC.characterName, context, currentNPC.aiSettings);
         UpdateDialogueOptions(currentOptions);
 
         ShowLoadingIndicator(false);
@@ -349,8 +350,11 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     private string GetCurrentContext()
     {
         GameState currentState = GameManager.Instance.GetCurrentGameState();
-        return $"Current challenge: {currentState.CurrentChallenge.title}. Milestones: {string.Join(", ", currentState.CurrentChallenge.milestones)}";
+        List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
+        string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join(", ", recentEurekas)}" : "";
+        return $"Current challenge: {currentState.CurrentChallenge.title}. Milestones: {string.Join(", ", currentState.CurrentChallenge.milestones)}. {eurekaContext}";
     }
+
 
     private string GetResponsePrompt(string playerInput)
     {

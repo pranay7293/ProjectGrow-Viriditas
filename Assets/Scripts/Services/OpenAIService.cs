@@ -65,10 +65,14 @@ public class OpenAIService : MonoBehaviour
             await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
         }
 
+        List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
+        string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join(", ", recentEurekas)}" : "";
+
         string prompt = $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n" +
-            $"Based on this context: {context}\n\n" +
+            $"Based on this context: {context}\n{eurekaContext}\n\n" +
             "Generate 3 short, distinct action choices (max 8 words each) that {characterName} might consider. " +
             "Each choice should fall into one of these categories: Ethical, Strategic, Emotional, Practical, Creative, Diplomatic, or Risk-Taking. " +
+            "If there are recent breakthroughs, consider incorporating them into the choices. " +
             "Format your response as follows:\n" +
             "1. [Category]: [Choice]\n" +
             "2. [Category]: [Choice]\n" +
@@ -122,8 +126,11 @@ public class OpenAIService : MonoBehaviour
             await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
         }
 
+        List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
+        string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join(", ", recentEurekas)}" : "";
+
         string fullPrompt = aiSettings != null
-            ? $"You are a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n{prompt}\n\nRespond in character, keeping your response concise (max 20 words) and natural:"
+            ? $"You are a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n{eurekaContext}\n\n{prompt}\n\nRespond in character, keeping your response concise (max 20 words) and natural. If relevant, reference recent breakthroughs:"
             : prompt;
 
         string response = await GetChatCompletionAsync(fullPrompt);

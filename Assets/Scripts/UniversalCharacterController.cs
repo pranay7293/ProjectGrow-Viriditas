@@ -457,11 +457,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void IncrementEurekaCount()
     {
-        EurekaCount++;
-        if (photonView.IsMine)
-        {
-            PlayerProfileManager.Instance.UpdatePlayerEurekas(characterName, EurekaCount);
-        }
+    EurekaCount++;
+    if (photonView.IsMine)
+    {
+        PlayerProfileManager.Instance.UpdatePlayerEurekas(characterName, EurekaCount);
+    }
     }
 
     public void EnterLocation(LocationManager location)

@@ -493,15 +493,19 @@ public class GameManager : MonoBehaviourPunCallbacks
         UpdateMilestonesDisplay();
     }
 
-    public void CompleteRandomMilestone(string eurekaDescription)
+    public string CompleteRandomMilestone(string eurekaDescription)
+{
+    ChallengeData currentChallenge = GetCurrentChallenge();
+    List<string> incompleteMilestones = currentChallenge.milestones.FindAll(m => !IsMilestoneCompleted(m));
+    
+    if (incompleteMilestones.Count > 0)
     {
-        List<string> incompleteMilestones = currentChallenge.milestones.FindAll(m => !milestoneCompletion[m]);
-        if (incompleteMilestones.Count > 0)
-        {
-            string milestone = incompleteMilestones[Random.Range(0, incompleteMilestones.Count)];
-            CompleteMilestone("Eureka", milestone, currentChallenge.milestones.IndexOf(milestone));
-            ActionLogManager.Instance.LogAction("Eureka", $"Milestone completed: {milestone} - {eurekaDescription}");
-        }
+        string milestone = incompleteMilestones[Random.Range(0, incompleteMilestones.Count)];
+        CompleteMilestone("Eureka", milestone, currentChallenge.milestones.IndexOf(milestone));
+        ActionLogManager.Instance.LogAction("Eureka", $"Milestone completed: {milestone} - {eurekaDescription}");
+        return milestone;
+    }
+    return "No milestone completed";
     }
 
     private void CheckAllMilestonesCompleted()

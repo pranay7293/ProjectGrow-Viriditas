@@ -94,10 +94,12 @@ public class CollabManager : MonoBehaviourPunCallbacks
     {
         if (EurekaManager.Instance.CheckForEureka(collaborators))
         {
-            await EurekaManager.Instance.TriggerEureka(collaborators);
+            EurekaManager.Instance.InitiateEureka(collaborators);
         }
-        
-        GameManager.Instance.HandleCollabCompletion(actionName, collaborators);
+        else
+        {
+            GameManager.Instance.HandleCollabCompletion(actionName, collaborators);
+        }
         activeCollabs.Remove(actionName);
     }
     }
