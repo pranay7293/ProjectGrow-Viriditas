@@ -11,15 +11,17 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
     public static EmergentScenarioUI Instance { get; private set; }
 
     [SerializeField] private GameObject scenarioPanel;
-    [SerializeField] private TextMeshProUGUI scenarioDescriptionText;
-    [SerializeField] private Button[] optionButtons;
-    [SerializeField] private TextMeshProUGUI[] optionTexts;
-    [SerializeField] private Image backgroundImage;
-    [SerializeField] private Image borderImage;
+    [SerializeField] private TextMeshProUGUI[] scenarioTexts;
+    [SerializeField] private Button[] scenarioButtons;
+    [SerializeField] private Transform[] profileContainers;
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI whatIfText;
+    [SerializeField] private GameObject characterProfilePrefab;
+    [SerializeField] private float profileDisplayDelay = 0.5f;
 
-    private Dictionary<int, int> votes = new Dictionary<int, int>();
+    private Dictionary<int, List<CharacterProfileSimple>> scenarioProfiles = new Dictionary<int, List<CharacterProfileSimple>>();
+    private Dictionary<string, int> playerVotes = new Dictionary<string, int>();
+    private List<string> pendingVotes = new List<string>();
     private float voteTimer = 30f;
     private bool isVoting = false;
 
@@ -39,6 +41,11 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
     private void Start()
     {
         scenarioPanel.SetActive(false);
+        for (int i = 0; i < scenarioButtons.Length; i++)
+        {
+            int index = i;
+            scenarioButtons[i].onClick.AddListener(() => SubmitVote(index));
+        }
     }
 
     private void Update()
@@ -48,104 +55,116 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
             voteTimer -= Time.deltaTime;
             timerText.text = $"{Mathf.CeilToInt(voteTimer)}";
 
-            if (voteTimer <= 0)
+            if (voteTimer <= 0 || (playerVotes.Count + pendingVotes.Count) >= 10)
             {
                 EndVoting();
             }
         }
     }
 
-    public void DisplayScenario(EmergentScenarioGenerator.ScenarioData scenario)
+    public void DisplayScenarios(List<string> scenarios)
     {
-        Debug.Log($"DisplayScenario called at {Time.time}");
-        
-        // Ensure the panel is active before we start modifying its contents
         scenarioPanel.SetActive(true);
-
-        // Set up the scenario content
-        scenarioDescriptionText.text = scenario.description;
-        SetupOptions(scenario.options);
-        
-        // Set background to white
-        backgroundImage.color = Color.white;
-        
-        // Ensure the border is visible
-        borderImage.color = Color.white;
-
-        // Start the voting process
-        StartVoting(scenario.options);
-
-        // No need for fade in animation for the prototype
-        // Just make sure the CanvasGroup alpha is set to 1
-        CanvasGroup canvasGroup = scenarioPanel.GetComponent<CanvasGroup>();
-        if (canvasGroup == null)
+        for (int i = 0; i < scenarioTexts.Length; i++)
         {
-            canvasGroup = scenarioPanel.AddComponent<CanvasGroup>();
+            scenarioTexts[i].text = i < scenarios.Count ? scenarios[i] : "";
+            scenarioButtons[i].gameObject.SetActive(i < scenarios.Count);
         }
-        canvasGroup.alpha = 1f;
+        StartVoting();
     }
 
-    private void SetupOptions(List<string> options)
+    private void StartVoting()
     {
-        for (int i = 0; i < optionButtons.Length; i++)
+        playerVotes.Clear();
+        pendingVotes.Clear();
+        scenarioProfiles.Clear();
+        for (int i = 0; i < profileContainers.Length; i++)
         {
-            if (i < options.Count)
-            {
-                optionButtons[i].gameObject.SetActive(true);
-                optionTexts[i].text = options[i];
-                int index = i;
-                optionButtons[i].onClick.RemoveAllListeners();
-                optionButtons[i].onClick.AddListener(() => SubmitVote(index));
-            }
-            else
-            {
-                optionButtons[i].gameObject.SetActive(false);
-            }
+            scenarioProfiles[i] = new List<CharacterProfileSimple>();
         }
-    }
-
-    private void StartVoting(List<string> options)
-    {
-        votes.Clear();
         voteTimer = 30f;
         isVoting = true;
+        if (PhotonNetwork.IsMasterClient)
+        {
+            StartCoroutine(SimulateAIVoting());
+        }
     }
 
-    private void SubmitVote(int optionIndex)
+    private void SubmitVote(int scenarioIndex)
     {
         if (!isVoting) return;
 
-        int playerID = PhotonNetwork.LocalPlayer.ActorNumber;
-        photonView.RPC("RPC_SubmitVote", RpcTarget.All, optionIndex, playerID);
+        string playerName = PhotonNetwork.LocalPlayer.NickName;
+        photonView.RPC("RPC_SubmitVote", RpcTarget.All, scenarioIndex, playerName);
     }
 
     [PunRPC]
-    private void RPC_SubmitVote(int optionIndex, int playerID)
+    private void RPC_SubmitVote(int scenarioIndex, string playerName)
     {
-        votes[playerID] = optionIndex;
-        
-        if (votes.Count == PhotonNetwork.CurrentRoom.PlayerCount)
+        if (!playerVotes.ContainsKey(playerName) && !pendingVotes.Contains(playerName))
         {
-            EndVoting();
+            pendingVotes.Add(playerName);
+            if (PhotonNetwork.IsMasterClient)
+            {
+                StartCoroutine(DisplayVoteWithDelay(playerName, scenarioIndex));
+            }
+        }
+    }
+
+    private IEnumerator DisplayVoteWithDelay(string playerName, int scenarioIndex)
+    {
+        yield return new WaitForSeconds(profileDisplayDelay);
+        photonView.RPC("RPC_DisplayVote", RpcTarget.All, playerName, scenarioIndex);
+    }
+
+    [PunRPC]
+    private void RPC_DisplayVote(string playerName, int scenarioIndex)
+    {
+        playerVotes[playerName] = scenarioIndex;
+        pendingVotes.Remove(playerName);
+        DisplayVote(playerName, scenarioIndex);
+    }
+
+    private void DisplayVote(string playerName, int scenarioIndex)
+    {
+        UniversalCharacterController character = GameManager.Instance.GetCharacterByName(playerName);
+        if (character != null)
+        {
+            CharacterProfileSimple profile = Instantiate(characterProfilePrefab, profileContainers[scenarioIndex]).GetComponent<CharacterProfileSimple>();
+            profile.SetProfileInfo(playerName, character.characterColor, !character.IsPlayerControlled, character.photonView.IsMine);
+            scenarioProfiles[scenarioIndex].Add(profile);
+        }
+    }
+
+    private IEnumerator SimulateAIVoting()
+    {
+        List<string> aiCharacters = GameManager.Instance.GetAICharacterNames();
+        foreach (string aiName in aiCharacters)
+        {
+            yield return new WaitForSeconds(Random.Range(1f, 25f));
+            if (isVoting && !playerVotes.ContainsKey(aiName) && !pendingVotes.Contains(aiName))
+            {
+                AIManager aiManager = GameManager.Instance.GetCharacterByName(aiName).GetComponent<AIManager>();
+                int chosenScenario = aiManager.DecideScenario(GetCurrentScenarios(), GameManager.Instance.GetCurrentGameState());
+                photonView.RPC("RPC_SubmitVote", RpcTarget.All, chosenScenario, aiName);
+            }
         }
     }
 
     private void EndVoting()
     {
         isVoting = false;
-        int winningOption = DetermineWinningOption();
-        EmergentScenarioGenerator.Instance.ResolveScenario(optionTexts[winningOption].text);
-        
+        int winningScenario = DetermineWinningScenario();
+        GameManager.Instance.UpdateGameState("SYSTEM", scenarioTexts[winningScenario].text, true);
         scenarioPanel.SetActive(false);
-        GameManager.Instance.ResetPlayerPositions();
     }
 
-    private int DetermineWinningOption()
+    private int DetermineWinningScenario()
     {
-        if (votes.Count == 0) return 0;
+        if (playerVotes.Count == 0) return 0;
 
         var voteCounts = new Dictionary<int, int>();
-        foreach (var vote in votes.Values)
+        foreach (var vote in playerVotes.Values)
         {
             if (!voteCounts.ContainsKey(vote))
                 voteCounts[vote] = 0;
@@ -153,10 +172,15 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
         }
 
         int maxVotes = voteCounts.Values.Max();
-        var winningOptions = voteCounts.Where(kv => kv.Value == maxVotes)
-                                       .Select(kv => kv.Key)
-                                       .ToList();
+        var winningScenarios = voteCounts.Where(kv => kv.Value == maxVotes)
+                                         .Select(kv => kv.Key)
+                                         .ToList();
 
-        return winningOptions[Random.Range(0, winningOptions.Count)];
+        return winningScenarios[Random.Range(0, winningScenarios.Count)];
+    }
+
+    private List<string> GetCurrentScenarios()
+    {
+        return scenarioTexts.Select(text => text.text).ToList();
     }
 }

@@ -352,21 +352,21 @@ public class GameManager : MonoBehaviourPunCallbacks
 
         Debug.Log($"TriggerEmergentScenario called at {Time.time}");
 
-        var scenario = await scenarioGenerator.GenerateScenario(currentChallenge.title, recentPlayerActions);
-        if (scenario != null)
+        var scenarios = await scenarioGenerator.GenerateScenarios(currentChallenge.title, GetRecentPlayerActions());
+        if (scenarios != null && scenarios.Count > 0)
         {
-            photonView.RPC("RPC_DisplayEmergentScenario", RpcTarget.All, scenario.description, scenario.options.ToArray());
+            photonView.RPC("RPC_DisplayEmergentScenarios", RpcTarget.All, scenarios.Select(s => s.description).ToArray());
         }
         else
         {
-            Debug.LogError("Failed to generate scenario.");
+            Debug.LogError("Failed to generate scenarios.");
         }
     }
 
     [PunRPC]
-    private void RPC_DisplayEmergentScenario(string description, string[] options)
+    private void RPC_DisplayEmergentScenarios(string[] scenarioDescriptions)
     {
-        Debug.Log($"RPC_DisplayEmergentScenario called at {Time.time}");
+        Debug.Log($"RPC_DisplayEmergentScenarios called at {Time.time}");
 
         if (scenarioUI == null)
         {
@@ -375,15 +375,11 @@ public class GameManager : MonoBehaviourPunCallbacks
 
         if (scenarioUI != null)
         {
-            scenarioUI.DisplayScenario(new EmergentScenarioGenerator.ScenarioData
-            {
-                description = description,
-                options = new List<string>(options)
-            });
+            scenarioUI.DisplayScenarios(scenarioDescriptions.ToList());
         }
         else
         {
-            Debug.LogError("EmergentScenarioUI not found. Cannot display scenario.");
+            Debug.LogError("EmergentScenarioUI not found. Cannot display scenarios.");
         }
     }
 
@@ -396,33 +392,62 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public void UpdateGameState(string characterName, string action)
+    public List<string> GetRecentPlayerActions()
     {
-        Debug.Log($"{characterName} performed action: {action}");
-        int scoreIncrease = EvaluateActionImpact(action);
-        UpdateCollectiveScore(scoreIncrease);
-        AddPlayerAction(action);
-        ActionLogManager.Instance.LogAction(characterName, action);
+        return new List<string>(recentPlayerActions);
+    }
 
-        if (ActionContributesToChallenge(action))
+    public void UpdateGameState(string characterName, string action, bool isEmergentScenario = false)
+    {
+        if (isEmergentScenario)
         {
-            UpdateCollectiveScore(10);
+            // Handle emergent scenario
+            Debug.Log($"Emergent Scenario: {action}");
+            photonView.RPC("RPC_ImplementEmergentScenario", RpcTarget.All, action);
         }
-
-        CheckMilestoneProgress(characterName, action);
-        UpdatePlayerScore(characterName, scoreIncrease);
-
-        // Check for collaboration
-        UniversalCharacterController character = GetCharacterByName(characterName);
-        if (character != null)
+        else
         {
-            AIManager aiManager = character.GetComponent<AIManager>();
-            if (aiManager != null)
+            // Existing logic for regular actions
+            Debug.Log($"{characterName} performed action: {action}");
+            int scoreIncrease = EvaluateActionImpact(action);
+            UpdateCollectiveScore(scoreIncrease);
+            AddPlayerAction(action);
+            ActionLogManager.Instance.LogAction(characterName, action);
+
+            if (ActionContributesToChallenge(action))
             {
-                LocationManager.LocationAction locationAction = new LocationManager.LocationAction { actionName = action };
-                aiManager.ConsiderCollaboration(locationAction);
+                UpdateCollectiveScore(10);
+            }
+
+            CheckMilestoneProgress(characterName, action);
+            UpdatePlayerScore(characterName, scoreIncrease);
+
+            // Check for collaboration
+            UniversalCharacterController character = GetCharacterByName(characterName);
+            if (character != null)
+            {
+                AIManager aiManager = character.GetComponent<AIManager>();
+                if (aiManager != null)
+                {
+                    LocationManager.LocationAction locationAction = new LocationManager.LocationAction { actionName = action };
+                    aiManager.ConsiderCollaboration(locationAction);
+                }
             }
         }
+    }
+
+    [PunRPC]
+    private void RPC_ImplementEmergentScenario(string scenario)
+    {
+        // Implement the effects of the emergent scenario
+        UpdateCollectiveScore(100);
+        ActionLogManager.Instance.LogAction("SYSTEM", $"Emergent Scenario: {scenario}");
+
+        // Display the notification to all players
+        EmergentScenarioNotification.Instance.DisplayNotification(scenario);
+
+        // Reset player positions
+        ResetPlayerPositions();
     }
 
     public void HandleCollabCompletion(string actionName, List<UniversalCharacterController> collaborators)

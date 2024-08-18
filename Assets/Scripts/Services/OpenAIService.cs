@@ -139,69 +139,52 @@ public class OpenAIService : MonoBehaviour
         return string.IsNullOrEmpty(response) ? "Not sure how to respond to that..." : response;
     }
 
-    public async Task<EmergentScenarioGenerator.ScenarioData> GenerateScenario(string currentChallenge, List<string> recentPlayerActions)
+    public async Task<List<EmergentScenarioGenerator.ScenarioData>> GenerateScenarios(string currentChallenge, List<string> recentPlayerActions)
     {
         if (Time.time - lastApiCallTime < apiCallCooldown)
         {
             await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
         }
 
-        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, create a brief emergent scenario. Provide a scenario description (max 15 words) and 3 possible response options (max 10 words for each response). Format the response as follows:\n" +
-            "Description: [Scenario Description]\n" +
-            "1. [Option 1]\n" +
-            "2. [Option 2]\n" +
-            "3. [Option 3]";
+        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, create three distinct, brief emergent scenarios. Each scenario should be no more than 10 words and present a unique future state or challenge. Format the response as follows:\n" +
+            "1. [Scenario 1]\n" +
+            "2. [Scenario 2]\n" +
+            "3. [Scenario 3]";
 
         string response = await GetChatCompletionAsync(prompt);
         lastApiCallTime = Time.time;
 
-        if (string.IsNullOrEmpty(response))
-        {
-            return new EmergentScenarioGenerator.ScenarioData
-            {
-                description = "An unexpected event occurs, challenging the team.",
-                options = new List<string>
-                {
-                    "Investigate the cause",
-                    "Focus on damage control",
-                    "Seek external assistance"
-                }
-            };
-        }
-
         return ParseScenarioResponse(response);
     }
 
-    private EmergentScenarioGenerator.ScenarioData ParseScenarioResponse(string response)
+    private List<EmergentScenarioGenerator.ScenarioData> ParseScenarioResponse(string response)
     {
+        var scenarios = new List<EmergentScenarioGenerator.ScenarioData>();
         var lines = response.Split('\n');
-        var scenarioData = new EmergentScenarioGenerator.ScenarioData();
-        scenarioData.options = new List<string>();
 
         foreach (var line in lines)
         {
-            if (line.StartsWith("Description:"))
+            if (line.StartsWith("1.") || line.StartsWith("2.") || line.StartsWith("3."))
             {
-                scenarioData.description = line.Substring("Description:".Length).Trim();
-            }
-            else if (line.StartsWith("1.") || line.StartsWith("2.") || line.StartsWith("3."))
-            {
-                scenarioData.options.Add(line.Substring(3).Trim());
+                scenarios.Add(new EmergentScenarioGenerator.ScenarioData
+                {
+                    description = line.Substring(3).Trim()
+                });
             }
         }
 
-        return scenarioData;
+        return scenarios;
     }
 
     public async Task<string> GenerateEurekaDescription(List<UniversalCharacterController> collaborators, GameState gameState)
-{
+    {
     string collaboratorRoles = string.Join(", ", collaborators.Select(c => c.aiSettings.characterRole));
     string prompt = $@"As {collaboratorRoles} collaborate on '{gameState.CurrentChallenge.title}', 
     describe an unexpected breakthrough. Consider their diverse backgrounds, current game progress (Milestones: {string.Join(", ", gameState.CurrentChallenge.milestones)}), 
     and potential real-world impact. Emphasize interdisciplinary insights. Be concise (20 words) and compelling:";
 
     return await GetResponse(prompt, null);
-}
+    }
 
     private async Task<string> GetChatCompletionAsync(string prompt)
     {
