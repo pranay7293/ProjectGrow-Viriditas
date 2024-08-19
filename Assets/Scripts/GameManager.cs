@@ -75,12 +75,18 @@ public class GameManager : MonoBehaviourPunCallbacks
         milestonesDisplay.SetActive(false);
     }
 
-    private void Update()
+   private void Update()
     {
         if (PhotonNetwork.IsMasterClient)
         {
             UpdateGameTime();
             CheckForEmergentScenario();
+
+            // Check for game end condition
+            if (remainingTime <= 0 || AllMilestonesCompleted())
+            {
+                EndChallenge();
+            }
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha2))
@@ -293,14 +299,12 @@ public class GameManager : MonoBehaviourPunCallbacks
         if (!PhotonNetwork.IsMasterClient) return;
 
         remainingTime -= Time.deltaTime;
-        if (remainingTime <= 0)
-        {
-            EndChallenge();
-        }
-        else
-        {
-            photonView.RPC("UpdateTimer", RpcTarget.All, remainingTime);
-        }
+        photonView.RPC("UpdateTimer", RpcTarget.All, remainingTime);
+    }
+
+    private bool AllMilestonesCompleted()
+    {
+        return milestoneCompletion.All(m => m.Value);
     }
 
     [PunRPC]
@@ -592,9 +596,18 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private void EndChallenge()
+    public void EndChallenge()
     {
-        photonView.RPC("ShowResults", RpcTarget.All);
+        if (PhotonNetwork.IsMasterClient)
+        {
+            // Save player scores to room properties
+            ExitGames.Client.Photon.Hashtable customProperties = new ExitGames.Client.Photon.Hashtable();
+            customProperties["PlayerScores"] = playerScores;
+            PhotonNetwork.CurrentRoom.SetCustomProperties(customProperties);
+
+            // Load the Results scene
+            PhotonNetwork.LoadLevel("ResultsScene");
+        }
     }
 
     [PunRPC]
@@ -678,13 +691,6 @@ public class GameManager : MonoBehaviourPunCallbacks
             return score;
         }
         return 0;
-    }
-
-    [PunRPC]
-    private void ShowResults()
-    {
-        Debug.Log("Challenge ended. Displaying results...");
-        // Implement results display logic
     }
 
     public GameState GetCurrentGameState()
