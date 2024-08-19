@@ -24,6 +24,8 @@ public class EmergentScenarioNotification : MonoBehaviour
         {
             Destroy(gameObject);
         }
+        
+        notificationPanel.SetActive(false);
     }
 
     public void DisplayNotification(string description)

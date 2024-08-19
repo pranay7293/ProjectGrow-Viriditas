@@ -96,6 +96,59 @@ public class CharacterMentalModel
         return scores.OrderByDescending(kvp => kvp.Value).First().Key;
     }
 
+    public float EvaluateScenario(string scenario, GameState gameState)
+{
+    float score = 0f;
+
+    // Check if the scenario aligns with beliefs
+    foreach (var belief in BeliefStrengths)
+    {
+        if (scenario.ToLower().Contains(belief.Key.ToLower()))
+        {
+            score += belief.Value;
+        }
+    }
+
+    // Check if the scenario aligns with goals
+    foreach (var goal in GoalImportance)
+    {
+        if (scenario.ToLower().Contains(goal.Key.ToLower()))
+        {
+            score += goal.Value;
+        }
+    }
+
+    // Consider the current emotional state
+    switch (CurrentEmotionalState)
+    {
+        case EmotionalState.Happy:
+        case EmotionalState.Excited:
+            score *= 1.2f; // More likely to choose positive or exciting scenarios
+            break;
+        case EmotionalState.Sad:
+        case EmotionalState.Anxious:
+            score *= 0.8f; // Less likely to choose risky or challenging scenarios
+            break;
+        case EmotionalState.Angry:
+            score *= 1.1f; // Slightly more likely to choose confrontational scenarios
+            break;
+        case EmotionalState.Confident:
+            score *= 1.3f; // More likely to choose ambitious scenarios
+            break;
+    }
+
+    // Consider the current challenge
+    if (scenario.ToLower().Contains(gameState.CurrentChallenge.title.ToLower()))
+    {
+        score += 1f;
+    }
+
+    // Add a small random factor for variety
+    score += Random.Range(0f, 0.5f);
+
+    return score;
+}
+
     private float EvaluateOption(string option, GameState currentState)
     {
         float score = 0f;

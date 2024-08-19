@@ -102,51 +102,23 @@ public class AIManager : MonoBehaviourPunCallbacks
         return Mathf.Clamp01(baseChance);
     }
 
-   public int DecideScenario(List<string> scenarios, GameState gameState)
+    public int DecideScenario(List<string> scenarios, GameState gameState)
     {
         Dictionary<int, float> scenarioScores = new Dictionary<int, float>();
 
         for (int i = 0; i < scenarios.Count; i++)
         {
-            float score = EvaluateScenario(scenarios[i], gameState);
+            float score = npcData.GetMentalModel().EvaluateScenario(scenarios[i], gameState);
             scenarioScores[i] = score;
         }
 
-        // Choose the scenario with the highest score
-        return scenarioScores.OrderByDescending(kvp => kvp.Value).First().Key;
+        // If there's a tie, randomly choose among the top-scoring scenarios
+        float maxScore = scenarioScores.Values.Max();
+        var topScenarios = scenarioScores.Where(kvp => Mathf.Approximately(kvp.Value, maxScore)).ToList();
+        
+        return topScenarios[Random.Range(0, topScenarios.Count)].Key;
     }
 
-    private float EvaluateScenario(string scenario, GameState gameState)
-    {
-        float score = 0f;
-
-        // Check if the scenario aligns with personal goals
-        foreach (var goal in characterController.GetPersonalGoals())
-        {
-            if (scenario.ToLower().Contains(goal.ToLower()))
-            {
-                score += 2f;
-            }
-        }
-
-        // Check if the scenario aligns with the current challenge
-        if (scenario.ToLower().Contains(gameState.CurrentChallenge.title.ToLower()))
-        {
-            score += 3f;
-        }
-
-        // Consider character role and personality
-        if (scenario.ToLower().Contains(characterController.aiSettings.characterRole.ToLower()))
-        {
-            score += 1.5f;
-        }
-
-        // Add a small random factor for variety
-        score += Random.Range(0f, 1f);
-
-        return score;
-    }
-    
     public bool DecideOnCollaboration(string actionName)
     {
         float collaborationChance = 0.5f; // Base 50% chance

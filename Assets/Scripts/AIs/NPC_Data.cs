@@ -74,4 +74,9 @@ public class NPC_Data : MonoBehaviour
     {
         mentalModel.UpdateEmotionalState(newState);
     }
+
+    public CharacterMentalModel GetMentalModel()
+{
+    return mentalModel;
+}
 }

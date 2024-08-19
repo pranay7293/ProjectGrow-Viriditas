@@ -20,6 +20,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     [SerializeField] private TextMeshProUGUI[] milestoneTexts;
     [SerializeField] private CustomCheckbox[] milestoneCheckboxes;
     [SerializeField] private ChallengeProgressUI challengeProgressUI;
+    [SerializeField] private EmergentScenarioNotification emergentScenarioNotification;
 
     [Header("Game Components")]
     [SerializeField] private EmergentScenarioGenerator scenarioGenerator;
@@ -439,14 +440,18 @@ public class GameManager : MonoBehaviourPunCallbacks
     [PunRPC]
     private void RPC_ImplementEmergentScenario(string scenario)
     {
-        // Implement the effects of the emergent scenario
         UpdateCollectiveScore(100);
         ActionLogManager.Instance.LogAction("SYSTEM", $"Emergent Scenario: {scenario}");
 
-        // Display the notification to all players
-        EmergentScenarioNotification.Instance.DisplayNotification(scenario);
+        if (emergentScenarioNotification != null)
+        {
+            emergentScenarioNotification.DisplayNotification(scenario);
+        }
+        else
+        {
+            Debug.LogWarning("EmergentScenarioNotification is not assigned in GameManager");
+        }
 
-        // Reset player positions
         ResetPlayerPositions();
     }
 
