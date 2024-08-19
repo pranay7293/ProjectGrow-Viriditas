@@ -13,6 +13,7 @@ public class PlayerProfileUI : MonoBehaviour
     [SerializeField] private GameObject localPlayerIcon;
     [SerializeField] private GameObject eurekaCounter;
     [SerializeField] private TextMeshProUGUI eurekaCountText;
+    [SerializeField] private TextMeshProUGUI scoreText;
 
     private Color unfilledColor = new Color(0x3A / 255f, 0x3A / 255f, 0x3A / 255f); // #3A3A3A
     private Color avatarRingColor = new Color(0x18 / 255f, 0x18 / 255f, 0x18 / 255f); // #181818
@@ -34,6 +35,7 @@ public class PlayerProfileUI : MonoBehaviour
         if (localPlayerIcon != null) localPlayerIcon.SetActive(isLocalPlayer && !isAI);
         if (eurekaCounter != null) eurekaCounter.SetActive(!isAI);
         UpdateEurekas(0); // Initialize eurekas to zero
+        UpdateScore(0); // Initialize score to zero
 
         SetPersonalGoalSliderColors(color);
     }
@@ -74,6 +76,14 @@ public class PlayerProfileUI : MonoBehaviour
         {
             eurekaCountText.text = count.ToString();
             if (eurekaCounter != null) eurekaCounter.SetActive(count > 0);
+        }
+    }
+
+    public void UpdateScore(int score)
+    {
+        if (scoreText != null)
+        {
+            scoreText.text = $"Score: {score}";
         }
     }
 }

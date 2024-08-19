@@ -47,7 +47,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private float lastDialogueAttemptTime = 0f;
     private const float DialogueCooldown = 0.5f;
 
-    public float OverallProgress { get; private set; }
     public float[] PersonalProgress { get; private set; } = new float[3];
     public int EurekaCount { get; private set; }
 
@@ -320,7 +319,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (photonView.IsMine)
         {
             personalScore += points;
-            GameManager.Instance.UpdatePlayerScore(photonView.Owner.NickName, personalScore);
+            GameManager.Instance.UpdatePlayerScore(characterName, points);
         }
     }
 
@@ -431,7 +430,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void CompletePersonalGoal(string goal)
     {
         personalGoalCompletion[goal] = true;
-        UpdatePersonalScore(50);
+        UpdatePersonalScore(ScoreConstants.PERSONAL_GOAL_COMPLETION_BONUS);
         GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goal}");
     }
 
@@ -445,23 +444,22 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return new Dictionary<string, bool>(personalGoalCompletion);
     }
 
-    public void UpdateProgress(float overallProgress, float[] personalProgress)
+    public void UpdateProgress(float[] personalProgress)
     {
-        OverallProgress = overallProgress;
         PersonalProgress = personalProgress;
         if (photonView.IsMine)
         {
-            PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, OverallProgress, PersonalProgress);
+            GameManager.Instance.UpdatePlayerProgress(this, PersonalProgress);
         }
     }
 
     public void IncrementEurekaCount()
     {
-    EurekaCount++;
-    if (photonView.IsMine)
-    {
-        PlayerProfileManager.Instance.UpdatePlayerEurekas(characterName, EurekaCount);
-    }
+        EurekaCount++;
+        if (photonView.IsMine)
+        {
+            GameManager.Instance.UpdatePlayerEurekas(this, EurekaCount);
+        }
     }
 
     public void EnterLocation(LocationManager location)
@@ -600,7 +598,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             stream.SendNext(currentObjective);
             stream.SendNext(actionIndicator.text);
             stream.SendNext(characterColor);
-            stream.SendNext(OverallProgress);
             stream.SendNext(PersonalProgress);
             stream.SendNext(EurekaCount);
             stream.SendNext(currentAction != null ? currentAction.actionName : "");
@@ -615,7 +612,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             currentObjective = (string)stream.ReceiveNext();
             actionIndicator.text = (string)stream.ReceiveNext();
             Color receivedColor = (Color)stream.ReceiveNext();
-            OverallProgress = (float)stream.ReceiveNext();
             PersonalProgress = (float[])stream.ReceiveNext();
             EurekaCount = (int)stream.ReceiveNext();
             string actionName = (string)stream.ReceiveNext();

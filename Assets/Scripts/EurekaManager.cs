@@ -67,7 +67,7 @@ public class EurekaManager : MonoBehaviourPunCallbacks
             collaborator.UpdatePersonalScore(50);
         }
 
-        GameManager.Instance.UpdateCollectiveScore(100, true);
+        GameManager.Instance.UpdateCollectiveScore(ScoreConstants.EUREKA_BONUS);
     }
 
     public void InitiateEureka(List<UniversalCharacterController> collaborators)

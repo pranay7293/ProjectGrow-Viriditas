@@ -61,15 +61,19 @@ public class LocationManager : MonoBehaviourPunCallbacks
     [PunRPC]
     public void StartAction(string actionName, int characterViewID)
     {
-    LocationAction action = availableActions.Find(a => a.actionName == actionName);
-    if (action == null) return;
+        LocationAction action = availableActions.Find(a => a.actionName == actionName);
+        if (action == null) return;
 
-    PhotonView characterView = PhotonView.Find(characterViewID);
-    if (characterView == null) return;
+        PhotonView characterView = PhotonView.Find(characterViewID);
+        if (characterView == null) return;
 
-    UniversalCharacterController character = characterView.GetComponent<UniversalCharacterController>();
-    if (character == null) return;
+        UniversalCharacterController character = characterView.GetComponent<UniversalCharacterController>();
+        if (character == null) return;
 
-    character.StartAction(action);
+        character.StartAction(action);
+        
+        // Award points for starting an action
+        int points = ScoreConstants.GetActionPoints(action.duration);
+        GameManager.Instance.UpdatePlayerScore(character.characterName, points);
     }
 }

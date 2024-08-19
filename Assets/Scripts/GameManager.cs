@@ -83,7 +83,6 @@ public class GameManager : MonoBehaviourPunCallbacks
             CheckForEmergentScenario();
         }
 
-        // Handle input for toggling milestones display
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
             ToggleMilestonesDisplay();
@@ -233,7 +232,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         else
         {
             Debug.LogError("Selected hub index out of range. Using default hub.");
-            return allHubs[0]; // Return the first hub as a default
+            return allHubs[0];
         }
     }
     
@@ -402,13 +401,11 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         if (isEmergentScenario)
         {
-            // Handle emergent scenario
             Debug.Log($"Emergent Scenario: {action}");
             photonView.RPC("RPC_ImplementEmergentScenario", RpcTarget.All, action);
         }
         else
         {
-            // Existing logic for regular actions
             Debug.Log($"{characterName} performed action: {action}");
             int scoreIncrease = EvaluateActionImpact(action);
             UpdateCollectiveScore(scoreIncrease);
@@ -417,13 +414,12 @@ public class GameManager : MonoBehaviourPunCallbacks
 
             if (ActionContributesToChallenge(action))
             {
-                UpdateCollectiveScore(10);
+                UpdateCollectiveScore(ScoreConstants.CHALLENGE_CONTRIBUTION_BONUS);
             }
 
             CheckMilestoneProgress(characterName, action);
             UpdatePlayerScore(characterName, scoreIncrease);
 
-            // Check for collaboration
             UniversalCharacterController character = GetCharacterByName(characterName);
             if (character != null)
             {
@@ -440,7 +436,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     [PunRPC]
     private void RPC_ImplementEmergentScenario(string scenario)
     {
-        UpdateCollectiveScore(100);
+        UpdateCollectiveScore(ScoreConstants.EMERGENT_SCENARIO_BONUS);
         ActionLogManager.Instance.LogAction("SYSTEM", $"Emergent Scenario: {scenario}");
 
         if (emergentScenarioNotification != null)
@@ -459,17 +455,15 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         foreach (var collaborator in collaborators)
         {
-            // Update scores and generate eurekas
-            UpdatePlayerScore(collaborator.characterName, 10); // Base score for collaboration
+            UpdatePlayerScore(collaborator.characterName, ScoreConstants.COLLABORATION_BONUS);
             
-            if (Random.value < 0.3f) // 30% chance to generate a eureka
+            if (Random.value < ScoreConstants.EUREKA_CHANCE)
             {
-                int eurekaCount = collaborator.EurekaCount + 1;
                 collaborator.IncrementEurekaCount();
+                UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS);
             }
         }
 
-        // End the collaboration
         foreach (var collaborator in collaborators)
         {
             collaborator.EndCollab(actionName);
@@ -478,7 +472,12 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private int EvaluateActionImpact(string action)
     {
-        return Random.Range(1, 10);
+        if (action.Length <= 15)
+            return ScoreConstants.SIMPLE_ACTION_POINTS;
+        else if (action.Length <= 30)
+            return ScoreConstants.MEDIUM_ACTION_POINTS;
+        else
+            return ScoreConstants.COMPLEX_ACTION_POINTS;
     }
 
     private bool ActionContributesToChallenge(string action)
@@ -504,7 +503,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         if (milestoneCompletion[milestone] == false)
         {
             milestoneCompletion[milestone] = true;
-            UpdateCollectiveScore(100);
+            UpdateCollectiveScore(ScoreConstants.MILESTONE_COMPLETION_BONUS);
             UpdatePersonalProgress(characterName, milestoneIndex, 1f);
             photonView.RPC("SyncMilestoneCompletion", RpcTarget.All, milestone, characterName, milestoneIndex);
             CheckAllMilestonesCompleted();
@@ -524,25 +523,25 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     public string CompleteRandomMilestone(string eurekaDescription)
-{
-    ChallengeData currentChallenge = GetCurrentChallenge();
-    List<string> incompleteMilestones = currentChallenge.milestones.FindAll(m => !IsMilestoneCompleted(m));
-    
-    if (incompleteMilestones.Count > 0)
     {
-        string milestone = incompleteMilestones[Random.Range(0, incompleteMilestones.Count)];
-        CompleteMilestone("Eureka", milestone, currentChallenge.milestones.IndexOf(milestone));
-        ActionLogManager.Instance.LogAction("Eureka", $"Milestone completed: {milestone} - {eurekaDescription}");
-        return milestone;
-    }
-    return "No milestone completed";
+        ChallengeData currentChallenge = GetCurrentChallenge();
+        List<string> incompleteMilestones = currentChallenge.milestones.FindAll(m => !IsMilestoneCompleted(m));
+        
+        if (incompleteMilestones.Count > 0)
+        {
+            string milestone = incompleteMilestones[Random.Range(0, incompleteMilestones.Count)];
+            CompleteMilestone("Eureka", milestone, currentChallenge.milestones.IndexOf(milestone));
+            ActionLogManager.Instance.LogAction("Eureka", $"Milestone completed: {milestone} - {eurekaDescription}");
+            return milestone;
+        }
+        return "No milestone completed";
     }
 
     private void CheckAllMilestonesCompleted()
     {
         if (milestoneCompletion.All(m => m.Value))
         {
-            UpdateCollectiveScore(500);
+            UpdateCollectiveScore(ScoreConstants.ALL_MILESTONES_BONUS);
             EndChallenge();
         }
     }
@@ -565,14 +564,10 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public void UpdateCollectiveScore(int points, bool isEureka = false)
+    public void UpdateCollectiveScore(int points)
     {
         if (PhotonNetwork.IsMasterClient)
         {
-            if (isEureka)
-            {
-                points *= 2; // Double points for Eureka achievements
-            }
             collectiveScore += points;
             photonView.RPC("SyncCollectiveScore", RpcTarget.All, collectiveScore);
         }
@@ -643,6 +638,7 @@ public class GameManager : MonoBehaviourPunCallbacks
             milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
         }
         challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
+        challengeProgressUI.UpdateCollectiveScore(collectiveScore);
 
         PlayerProfileManager playerProfileManager = PlayerProfileManager.Instance;
         if (playerProfileManager != null)
@@ -659,14 +655,14 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
         {
-            PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, 0f, personalProgress);
+            PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, playerScores[characterName], personalProgress);
         }
     }
 
-    public void UpdatePlayerProgress(UniversalCharacterController character, float overallProgress, float[] personalProgress)
+    public void UpdatePlayerProgress(UniversalCharacterController character, float[] personalProgress)
     {
-        character.UpdateProgress(overallProgress, personalProgress);
-        PlayerProfileManager.Instance.UpdatePlayerProgress(character.characterName, overallProgress, personalProgress);
+        character.UpdateProgress(personalProgress);
+        PlayerProfileManager.Instance.UpdatePlayerProgress(character.characterName, playerScores[character.characterName], personalProgress);
     }
 
     public void UpdatePlayerEurekas(UniversalCharacterController character, int eurekaCount)

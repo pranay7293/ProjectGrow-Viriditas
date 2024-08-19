@@ -68,6 +68,9 @@ public class CollabManager : MonoBehaviourPunCallbacks
         }
         activeCollabs[actionName].Add(initiator);
         SetCollabCooldown(initiator.characterName);
+        
+        // Award points for initiating a collaboration
+        GameManager.Instance.UpdatePlayerScore(initiator.characterName, ScoreConstants.COLLABORATION_INITIATION_BONUS);
     }
 
     [PunRPC]
@@ -85,37 +88,52 @@ public class CollabManager : MonoBehaviourPunCallbacks
         {
             activeCollabs[actionName].Add(joiner);
             SetCollabCooldown(joiner.characterName);
+            
+            // Award points for joining a collaboration
+            GameManager.Instance.UpdatePlayerScore(joiner.characterName, ScoreConstants.COLLABORATION_JOIN_BONUS);
         }
     }
 
-    public async void FinalizeCollaboration(string actionName)
+    public void FinalizeCollaboration(string actionName)
     {
-    if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
-    {
-        if (EurekaManager.Instance.CheckForEureka(collaborators))
+        if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
         {
-            EurekaManager.Instance.InitiateEureka(collaborators);
+            if (Random.value < ScoreConstants.EUREKA_CHANCE)
+            {
+                TriggerEureka(collaborators);
+            }
+            else
+            {
+                GameManager.Instance.HandleCollabCompletion(actionName, collaborators);
+            }
+            activeCollabs.Remove(actionName);
         }
-        else
-        {
-            GameManager.Instance.HandleCollabCompletion(actionName, collaborators);
-        }
-        activeCollabs.Remove(actionName);
     }
+
+    private void TriggerEureka(List<UniversalCharacterController> collaborators)
+    {
+        foreach (var collaborator in collaborators)
+        {
+            collaborator.IncrementEurekaCount();
+            GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS);
+        }
+        
+        // Trigger Eureka event in EurekaManager
+        EurekaManager.Instance.InitiateEureka(collaborators);
     }
 
     public float GetCollabSuccessBonus(string actionName)
     {
         if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
         {
-            return (collaborators.Count - 1) * 0.15f;
+            return (collaborators.Count - 1) * ScoreConstants.COLLAB_SUCCESS_BONUS_MULTIPLIER;
         }
         return 0f;
     }
 
     public float GetCollabCooldown()
     {
-    return collabCooldown;
+        return collabCooldown;
     }
 
     private void SetCollabCooldown(string characterName)
