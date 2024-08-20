@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 6.882173, g: 3.6903694, b: 2.3829348, a: 1}
+  m_IndirectSpecularColor: {r: 6.9453154, g: 3.711705, b: 2.359242, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -2147,11 +2147,6 @@ MonoBehaviour:
   m_PointlightHDType: 0
   m_SpotLightShape: 0
   m_AreaLightShape: 0
---- !u!224 &160222620 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-  m_PrefabInstance: {fileID: 715504604038839344}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &161083986
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3555,6 +3550,7 @@ MonoBehaviour:
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
   locationColor: {r: 1, g: 0.20392157, b: 0.85490197, a: 0}
+  eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!4 &280927794 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8898971650372228527, guid: 83b20a8f513964749998474b6c251422, type: 3}
@@ -5456,6 +5452,7 @@ MonoBehaviour:
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
   locationColor: {r: 0.06666667, g: 0.6901961, b: 0.12156863, a: 0}
+  eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &346536219
 GameObject:
   m_ObjectHideFlags: 0
@@ -7457,6 +7454,7 @@ MonoBehaviour:
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
   locationColor: {r: 0, g: 0, b: 0, a: 0}
+  eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &498126928
 GameObject:
   m_ObjectHideFlags: 0
@@ -9786,6 +9784,7 @@ MonoBehaviour:
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
   locationColor: {r: 1, g: 0.6666667, b: 0.9607843, a: 0}
+  eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &629679789
 GameObject:
   m_ObjectHideFlags: 0
@@ -11724,6 +11723,7 @@ MonoBehaviour:
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
   locationColor: {r: 0.43137255, g: 0.07058824, b: 0.69803923, a: 0}
+  eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!4 &711526837 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2656687253269163865, guid: 52e8cd2300843c44d89b2f83f5d0d617, type: 3}
@@ -15622,7 +15622,6 @@ RectTransform:
   - {fileID: 357820520}
   - {fileID: 880575829}
   - {fileID: 301774811}
-  - {fileID: 160222620}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -19044,6 +19043,7 @@ MonoBehaviour:
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
   locationColor: {r: 1, g: 1, b: 1, a: 1}
+  eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &1262407247
 GameObject:
   m_ObjectHideFlags: 0
@@ -21791,6 +21791,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseProbability: 0.1
   diversityMultiplier: 0.05
+  eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!114 &1460795287 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5862141321520138123, guid: 4842436c616e24788a8b701522686e5f, type: 3}
@@ -23113,6 +23114,7 @@ MonoBehaviour:
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
   locationColor: {r: 0.93333334, g: 0.6313726, b: 0.10980392, a: 0}
+  eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &1547602006
 GameObject:
   m_ObjectHideFlags: 0
@@ -26023,6 +26025,7 @@ MonoBehaviour:
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
   locationColor: {r: 0.6509804, g: 0.15686275, b: 0.0627451, a: 0}
+  eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &1712194766
 GameObject:
   m_ObjectHideFlags: 0
@@ -26382,6 +26385,7 @@ MonoBehaviour:
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
   locationColor: {r: 0.3882353, g: 0.3882353, b: 0.3882353, a: 0}
+  eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &1739473774
 GameObject:
   m_ObjectHideFlags: 0
@@ -32532,103 +32536,6 @@ RectTransform:
   m_AnchoredPosition: {x: 130, y: -100}
   m_SizeDelta: {x: 200, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1001 &715504604038839344
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 1052756576}
-    m_Modifications:
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_Pivot.x
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_Pivot.y
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_AnchorMin.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_SizeDelta.x
-      value: -3640
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_SizeDelta.y
-      value: -2110
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6184126555425800103, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8585849095639235170, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
-      propertyPath: m_Name
-      value: FloatingText
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 5d9ced2dc0cdf4802ac3c488fee88589, type: 3}
 --- !u!1001 &827818919474288706
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -34916,6 +34823,7 @@ MonoBehaviour:
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
   locationColor: {r: 0.050980393, g: 0.5254902, b: 0.972549, a: 0}
+  eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!224 &8906645219026930148
 RectTransform:
   m_ObjectHideFlags: 0

@@ -525,11 +525,14 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void InitiateCollab(string actionName)
     {
-        if (photonView.IsMine && !IsCollaborating && CollabManager.Instance.CanInitiateCollab(this))
+    if (photonView.IsMine && !IsCollaborating && !string.IsNullOrEmpty(actionName))
+    {
+        if (CollabManager.Instance.CanInitiateCollab(this))
         {
             IsCollaborating = true;
             photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID);
         }
+    }
     }
 
     [PunRPC]

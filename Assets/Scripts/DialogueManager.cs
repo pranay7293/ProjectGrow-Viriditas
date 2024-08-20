@@ -367,21 +367,26 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     }
 
     [PunRPC]
-    private async void RPC_TriggerNPCDialogue(int initiatorViewID, int targetViewID)
-    {
+private async void RPC_TriggerNPCDialogue(int initiatorViewID, int targetViewID)
+{
     PhotonView initiatorView = PhotonView.Find(initiatorViewID);
     PhotonView targetView = PhotonView.Find(targetViewID);
 
     if (initiatorView == null || targetView == null)
     {
-        Debug.LogWarning("One or both characters have been destroyed. Skipping NPC dialogue.");
+        Debug.LogWarning("Invalid views in RPC_TriggerNPCDialogue");
         return;
     }
 
     UniversalCharacterController initiator = initiatorView.GetComponent<UniversalCharacterController>();
     UniversalCharacterController target = targetView.GetComponent<UniversalCharacterController>();
 
-    if (initiator != null && target != null)
+    if (initiator == null || target == null)
+    {
+        Debug.LogWarning("Invalid characters in RPC_TriggerNPCDialogue");
+        return;
+    }
+    
     {
         string initiatorDialogue = await OpenAIService.Instance.GetResponse(GetNPCDialoguePrompt(initiator, target), initiator.aiSettings);
         string targetResponse = await OpenAIService.Instance.GetResponse(GetNPCDialoguePrompt(target, initiator), target.aiSettings);

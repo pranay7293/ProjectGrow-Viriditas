@@ -76,16 +76,22 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     public bool ConsiderCollaboration(LocationManager.LocationAction action)
     {
-        if (CollabManager.Instance.CanInitiateCollab(characterController))
-        {
-            float collaborationChance = CalculateCollaborationChance(action);
-            if (Random.value < collaborationChance)
-            {
-                characterController.InitiateCollab(action.actionName);
-                return true;
-            }
-        }
+    if (action == null || characterController == null)
+    {
+        Debug.LogWarning("Invalid action or character in ConsiderCollaboration");
         return false;
+    }
+
+    if (CollabManager.Instance.CanInitiateCollab(characterController))
+    {
+        float collaborationChance = CalculateCollaborationChance(action);
+        if (Random.value < collaborationChance)
+        {
+            characterController.InitiateCollab(action.actionName);
+            return true;
+        }
+    }
+    return false;
     }
 
     private float CalculateCollaborationChance(LocationManager.LocationAction action)

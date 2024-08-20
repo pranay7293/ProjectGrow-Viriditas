@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Photon.Pun;
+using System.Linq;
 
 public class CollabManager : MonoBehaviourPunCallbacks
 {
@@ -33,12 +34,19 @@ public class CollabManager : MonoBehaviourPunCallbacks
 
     public bool CanInitiateCollab(UniversalCharacterController initiator)
     {
+        if (initiator == null || string.IsNullOrEmpty(initiator.characterName))
+        {
+            Debug.LogWarning("Invalid initiator in CanInitiateCollab");
+            return false;
+        }
         return !collabCooldowns.ContainsKey(initiator.characterName);
     }
 
     public List<UniversalCharacterController> GetEligibleCollaborators(UniversalCharacterController initiator)
     {
         List<UniversalCharacterController> eligibleCollaborators = new List<UniversalCharacterController>();
+        if (initiator == null) return eligibleCollaborators;
+
         Collider[] colliders = Physics.OverlapSphere(initiator.transform.position, collabRadius);
 
         foreach (Collider collider in colliders)
@@ -69,7 +77,6 @@ public class CollabManager : MonoBehaviourPunCallbacks
         activeCollabs[actionName].Add(initiator);
         SetCollabCooldown(initiator.characterName);
         
-        // Award points for initiating a collaboration
         GameManager.Instance.UpdatePlayerScore(initiator.characterName, ScoreConstants.COLLABORATION_INITIATION_BONUS);
     }
 
@@ -89,7 +96,6 @@ public class CollabManager : MonoBehaviourPunCallbacks
             activeCollabs[actionName].Add(joiner);
             SetCollabCooldown(joiner.characterName);
             
-            // Award points for joining a collaboration
             GameManager.Instance.UpdatePlayerScore(joiner.characterName, ScoreConstants.COLLABORATION_JOIN_BONUS);
         }
     }
@@ -118,7 +124,6 @@ public class CollabManager : MonoBehaviourPunCallbacks
             GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS);
         }
         
-        // Trigger Eureka event in EurekaManager
         EurekaManager.Instance.InitiateEureka(collaborators);
     }
 
@@ -138,25 +143,29 @@ public class CollabManager : MonoBehaviourPunCallbacks
 
     private void SetCollabCooldown(string characterName)
     {
-        collabCooldowns[characterName] = collabCooldown;
+        if (!string.IsNullOrEmpty(characterName))
+        {
+            collabCooldowns[characterName] = collabCooldown;
+        }
     }
 
     private void UpdateCooldowns()
     {
-        List<string> expiredCooldowns = new List<string>();
+        var cooldownsCopy = new Dictionary<string, float>(collabCooldowns);
 
-        foreach (var cooldown in collabCooldowns)
+        foreach (var kvp in cooldownsCopy)
         {
-            collabCooldowns[cooldown.Key] -= Time.deltaTime;
-            if (collabCooldowns[cooldown.Key] <= 0)
+            string characterName = kvp.Key;
+            float remainingCooldown = kvp.Value - Time.deltaTime;
+
+            if (remainingCooldown <= 0)
             {
-                expiredCooldowns.Add(cooldown.Key);
+                collabCooldowns.Remove(characterName);
             }
-        }
-
-        foreach (string character in expiredCooldowns)
-        {
-            collabCooldowns.Remove(character);
+            else
+            {
+                collabCooldowns[characterName] = remainingCooldown;
+            }
         }
     }
 }
