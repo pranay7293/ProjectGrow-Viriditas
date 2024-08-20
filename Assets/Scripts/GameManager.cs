@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     [Header("Game Settings")]
     [SerializeField] private float challengeDuration = 900f; // 15 minutes
+    [SerializeField] private float minimumPlayTime = 60f; // 1 minute minimum play time
 
     [Header("UI References")]
     [SerializeField] private TextMeshProUGUI timerText;
@@ -81,7 +82,7 @@ public class GameManager : MonoBehaviourPunCallbacks
             UpdateGameTime();
             CheckForEmergentScenario();
 
-            if (remainingTime <= 0 || AllMilestonesCompleted())
+            if (ShouldEndGame())
             {
                 EndChallenge();
             }
@@ -304,9 +305,14 @@ public class GameManager : MonoBehaviourPunCallbacks
         return challengeDuration;
     }
 
-    private bool AllMilestonesCompleted()
+    private bool ShouldEndGame()
     {
-        return milestoneCompletion.All(m => m.Value);
+        float elapsedTime = Time.time - gameStartTime;
+        bool timeUp = remainingTime <= 0;
+        bool allMilestonesCompleted = milestoneCompletion.Count > 0 && milestoneCompletion.All(m => m.Value);
+        bool minimumTimeMet = elapsedTime >= minimumPlayTime;
+
+        return (timeUp || allMilestonesCompleted) && minimumTimeMet;
     }
 
     [PunRPC]
@@ -533,7 +539,7 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void CheckAllMilestonesCompleted()
     {
-        if (milestoneCompletion.All(m => m.Value))
+        if (milestoneCompletion.Count > 0 && milestoneCompletion.All(m => m.Value))
         {
             EndChallenge();
         }
@@ -670,25 +676,25 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     public GameState GetCurrentGameState()
-{
-    return new GameState(
-        currentChallenge,
-        CalculateCollectiveProgress(),
-        new Dictionary<string, int>(playerScores),
-        remainingTime,
-        new Dictionary<string, bool>(milestoneCompletion)
-    );
-}
+    {
+        return new GameState(
+            currentChallenge,
+            CalculateCollectiveProgress(),
+            new Dictionary<string, int>(playerScores),
+            remainingTime,
+            new Dictionary<string, bool>(milestoneCompletion)
+        );
+    }
 
     public int GetCollectiveProgress()
-{
-    return CalculateCollectiveProgress();
-}
+    {
+        return CalculateCollectiveProgress();
+    }
 
-private int CalculateCollectiveProgress()
-{
-    return (int)((float)milestoneCompletion.Count(m => m.Value) / milestoneCompletion.Count * 100);
-}
+    private int CalculateCollectiveProgress()
+    {
+        return (int)((float)milestoneCompletion.Count(m => m.Value) / milestoneCompletion.Count * 100);
+    }
 
     public float GetRemainingTime()
     {
