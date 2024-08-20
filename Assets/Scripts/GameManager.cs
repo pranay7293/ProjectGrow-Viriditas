@@ -503,28 +503,35 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     public void CompleteMilestone(string characterName, string milestone, int milestoneIndex)
-    {
-        if (milestoneCompletion[milestone] == false)
-        {
-            milestoneCompletion[milestone] = true;
-            UpdateCollectiveScore(ScoreConstants.MILESTONE_COMPLETION_BONUS);
-            UpdatePersonalProgress(characterName, milestoneIndex, 1f);
-            photonView.RPC("SyncMilestoneCompletion", RpcTarget.All, milestone, characterName, milestoneIndex);
-            CheckAllMilestonesCompleted();
-        }
-    }
-
-    [PunRPC]
-    private void SyncMilestoneCompletion(string milestone, string characterName, int milestoneIndex)
+{
+    if (milestoneCompletion[milestone] == false)
     {
         milestoneCompletion[milestone] = true;
+        UpdateCollectiveScore(ScoreConstants.MILESTONE_COMPLETION_BONUS);
         UpdatePersonalProgress(characterName, milestoneIndex, 1f);
-        if (milestoneIndex < milestoneCheckboxes.Length)
-        {
-            milestoneCheckboxes[milestoneIndex].IsChecked = true;
-        }
-        UpdateMilestonesDisplay();
+        photonView.RPC("SyncMilestoneCompletion", RpcTarget.All, milestone, characterName, milestoneIndex);
+        CheckAllMilestonesCompleted();
     }
+}
+
+    [PunRPC]
+private void SyncMilestoneCompletion(string milestone, string characterName, int milestoneIndex)
+{
+    milestoneCompletion[milestone] = true;
+    UpdatePersonalProgress(characterName, milestoneIndex, 1f);
+    if (milestoneIndex < milestoneCheckboxes.Length)
+    {
+        milestoneCheckboxes[milestoneIndex].IsChecked = true;
+    }
+    UpdateMilestonesDisplay();
+
+     UniversalCharacterController character = GetCharacterByName(characterName);
+    if (character != null)
+    {
+        Vector3 textPosition = character.transform.position + Vector3.up * 2.5f;
+        FloatingTextManager.Instance.ShowFloatingText("Milestone Completed!", textPosition, FloatingTextType.Milestone);
+    }
+}
 
     public string CompleteRandomMilestone(string eurekaDescription)
     {
@@ -556,17 +563,32 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     public void UpdatePlayerScore(string playerName, int score)
+{
+    if (PhotonNetwork.IsMasterClient)
     {
-        if (PhotonNetwork.IsMasterClient)
+        if (!playerScores.ContainsKey(playerName))
         {
-            if (!playerScores.ContainsKey(playerName))
-            {
-                playerScores[playerName] = 0;
-            }
-            playerScores[playerName] += score;
-            photonView.RPC("SyncPlayerScore", RpcTarget.All, playerName, playerScores[playerName]);
+            playerScores[playerName] = 0;
         }
+        playerScores[playerName] += score;
+        photonView.RPC("SyncPlayerScore", RpcTarget.All, playerName, playerScores[playerName], score);
     }
+}
+
+[PunRPC]
+private void SyncPlayerScore(string playerName, int totalScore, int scoreGain)
+{
+    playerScores[playerName] = totalScore;
+    UpdateScoreDisplay();
+
+    UniversalCharacterController character = GetCharacterByName(playerName);
+    if (character != null)
+    {
+        Vector3 textPosition = character.transform.position + Vector3.up * 2f;
+        string scoreText = (scoreGain >= 0 ? "+" : "") + scoreGain;
+        FloatingTextManager.Instance.ShowFloatingText(scoreText, textPosition, FloatingTextType.Points);
+    }
+}
 
     public void UpdateCollectiveScore(int points)
     {
@@ -627,13 +649,6 @@ public class GameManager : MonoBehaviourPunCallbacks
         UpdateTimer(time);
         UpdateScoreDisplay();
         UpdateMilestonesDisplay();
-    }
-
-    [PunRPC]
-    private void SyncPlayerScore(string playerName, int score)
-    {
-        playerScores[playerName] = score;
-        UpdateScoreDisplay();
     }
 
     [PunRPC]

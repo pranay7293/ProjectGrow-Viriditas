@@ -69,14 +69,17 @@ public class CharacterProgressBar : MonoBehaviour
                              mainCamera.transform.rotation * Vector3.up);
         }
 
-        UpdateProgressBars();
+        UpdatePersonalGoals();
     }
 
-    private void UpdateProgressBars()
+    public void UpdatePersonalGoals()
     {
         for (int i = 0; i < personalGoalSliders.Length; i++)
         {
-            personalGoalSliders[i].value = characterController.PersonalProgress[i] >= 1f ? 1f : 0f;
+            if (i < characterController.PersonalProgress.Length)
+            {
+                personalGoalSliders[i].value = characterController.PersonalProgress[i];
+            }
         }
     }
 

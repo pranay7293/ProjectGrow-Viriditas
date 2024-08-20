@@ -10,6 +10,7 @@ public class EurekaManager : MonoBehaviourPunCallbacks
 
     [SerializeField] private float baseProbability = 0.1f;
     [SerializeField] private float diversityMultiplier = 0.05f;
+    [SerializeField] private GameObject eurekaEffectPrefab;
 
     private List<string> recentEurekas = new List<string>();
     private const int maxRecentEurekas = 5;
@@ -64,10 +65,19 @@ public class EurekaManager : MonoBehaviourPunCallbacks
         foreach (var collaborator in collaborators)
         {
             collaborator.IncrementEurekaCount();
-            collaborator.UpdatePersonalScore(50);
+            GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS);
+            
+            Vector3 textPosition = collaborator.transform.position + Vector3.up * 2f;
+            FloatingTextManager.Instance.ShowFloatingText($"+{ScoreConstants.EUREKA_BONUS} Eureka!", textPosition, FloatingTextType.Eureka);
         }
 
         GameManager.Instance.UpdateCollectiveScore(ScoreConstants.EUREKA_BONUS);
+
+        // Trigger the Eureka effect at the location
+        if (collaborators.Count > 0 && collaborators[0].currentLocation != null)
+        {
+            collaborators[0].currentLocation.PlayEurekaEffect();
+        }
     }
 
     public void InitiateEureka(List<UniversalCharacterController> collaborators)

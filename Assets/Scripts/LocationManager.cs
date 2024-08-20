@@ -20,6 +20,9 @@ public class LocationManager : MonoBehaviourPunCallbacks
     public List<LocationAction> availableActions = new List<LocationAction>();
     public Color locationColor = Color.white;
 
+    [SerializeField] private GameObject eurekaEffectPrefab;
+    private GameObject activeEurekaEffect;
+
     private void Start()
     {
         ApplyColorToAllRenderers();
@@ -76,4 +79,24 @@ public class LocationManager : MonoBehaviourPunCallbacks
         int points = ScoreConstants.GetActionPoints(action.duration);
         GameManager.Instance.UpdatePlayerScore(character.characterName, points);
     }
+
+    public void PlayEurekaEffect()
+{
+    if (activeEurekaEffect != null)
+    {
+        Destroy(activeEurekaEffect);
+    }
+
+    // Find the center of the location
+    Renderer locationRenderer = GetComponent<Renderer>();
+    Vector3 center = locationRenderer != null 
+        ? locationRenderer.bounds.center 
+        : transform.position;
+
+    // Offset slightly upwards to be more visible
+    center += Vector3.up * 1f;
+
+    activeEurekaEffect = Instantiate(eurekaEffectPrefab, center, Quaternion.identity);
+    Destroy(activeEurekaEffect, 5f); // Destroy after 5 seconds
+}
 }

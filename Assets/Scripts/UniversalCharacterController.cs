@@ -18,7 +18,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public AISettings aiSettings;
 
     [Header("Gameplay")]
-    public int personalScore = 0;
     public string currentObjective;
 
     [HideInInspector] public LocationManager currentLocation;
@@ -314,15 +313,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         currentObjective = objective;
     }
 
-    public void UpdatePersonalScore(int points)
-    {
-        if (photonView.IsMine)
-        {
-            personalScore += points;
-            GameManager.Instance.UpdatePlayerScore(characterName, points);
-        }
-    }
-
     public void SetState(CharacterState newState)
     {
         currentState = newState;
@@ -430,7 +420,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void CompletePersonalGoal(string goal)
     {
         personalGoalCompletion[goal] = true;
-        UpdatePersonalScore(ScoreConstants.PERSONAL_GOAL_COMPLETION_BONUS);
+        GameManager.Instance.UpdatePlayerScore(characterName, ScoreConstants.PERSONAL_GOAL_COMPLETION_BONUS);
         GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goal}");
     }
 
@@ -447,6 +437,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public void UpdateProgress(float[] personalProgress)
     {
         PersonalProgress = personalProgress;
+        if (progressBar != null)
+        {
+            progressBar.UpdatePersonalGoals();
+        }
         if (photonView.IsMine)
         {
             GameManager.Instance.UpdatePlayerProgress(this, PersonalProgress);
@@ -594,7 +588,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             stream.SendNext(transform.position);
             stream.SendNext(transform.rotation);
             stream.SendNext((int)currentState);
-            stream.SendNext(personalScore);
             stream.SendNext(currentObjective);
             stream.SendNext(actionIndicator.text);
             stream.SendNext(characterColor);
@@ -608,7 +601,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             transform.position = (Vector3)stream.ReceiveNext();
             transform.rotation = (Quaternion)stream.ReceiveNext();
             currentState = (CharacterState)stream.ReceiveNext();
-            personalScore = (int)stream.ReceiveNext();
             currentObjective = (string)stream.ReceiveNext();
             actionIndicator.text = (string)stream.ReceiveNext();
             Color receivedColor = (Color)stream.ReceiveNext();
