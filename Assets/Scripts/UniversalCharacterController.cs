@@ -318,7 +318,18 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         currentState = newState;
         if (progressBar != null)
         {
-            progressBar.SetKeyState(newState.ToString());
+            switch (newState)
+            {
+                case CharacterState.PerformingAction:
+                    progressBar.SetKeyState(KeyState.PerformingAction);
+                    break;
+                case CharacterState.Interacting:
+                    progressBar.SetKeyState(KeyState.Chatting);
+                    break;
+                default:
+                    progressBar.SetKeyState(KeyState.None);
+                    break;
+            }
         }
     }
 
@@ -350,7 +361,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
         if (progressBar != null)
         {
-            progressBar.SetKeyState("Action: " + action.actionName);
+            progressBar.SetKeyState(KeyState.PerformingAction);
         }
 
         Debug.Log($"{characterName} started action: {action.actionName}");
@@ -426,20 +437,18 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     private void UpdateGoalProgress(string actionName)
-{
-    // Update personal goals
-    for (int i = 0; i < PersonalProgress.Length; i++)
     {
-        if (aiSettings.personalGoals[i].ToLower().Contains(actionName.ToLower()))
+        for (int i = 0; i < PersonalProgress.Length; i++)
         {
-            PersonalProgress[i] = Mathf.Min(PersonalProgress[i] + 0.25f, 1f);
-            GameManager.Instance.UpdatePlayerProgress(this, PersonalProgress);
+            if (aiSettings.personalGoals[i].ToLower().Contains(actionName.ToLower()))
+            {
+                PersonalProgress[i] = Mathf.Min(PersonalProgress[i] + 0.25f, 1f);
+                GameManager.Instance.UpdatePlayerProgress(this, PersonalProgress);
+            }
         }
-    }
 
-    // Update milestone progress
-    GameManager.Instance.UpdateMilestoneProgress(characterName, actionName);
-}
+        GameManager.Instance.UpdateMilestoneProgress(characterName, actionName);
+    }
 
     public List<string> GetPersonalGoals()
     {
@@ -542,14 +551,14 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void InitiateCollab(string actionName)
     {
-    if (photonView.IsMine && !IsCollaborating && !string.IsNullOrEmpty(actionName))
-    {
-        if (CollabManager.Instance.CanInitiateCollab(this))
+        if (photonView.IsMine && !IsCollaborating && !string.IsNullOrEmpty(actionName))
         {
-            IsCollaborating = true;
-            photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID);
+            if (CollabManager.Instance.CanInitiateCollab(this))
+            {
+                IsCollaborating = true;
+                photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID);
+            }
         }
-    }
     }
 
     [PunRPC]
@@ -558,7 +567,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         CollabManager.Instance.InitiateCollab(actionName, initiatorViewID);
         if (progressBar != null)
         {
-            progressBar.SetKeyState("Collab: " + actionName);
+            progressBar.SetKeyState(KeyState.Collaborating);
         }
     }
 
@@ -577,7 +586,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         CollabManager.Instance.JoinCollab(actionName, joinerViewID);
         if (progressBar != null)
         {
-            progressBar.SetKeyState("Collab: " + actionName);
+            progressBar.SetKeyState(KeyState.Collaborating);
         }
     }
 
@@ -596,7 +605,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         CollabManager.Instance.FinalizeCollaboration(actionName);
         if (progressBar != null)
         {
-            progressBar.SetKeyState("");
+            progressBar.SetKeyState(KeyState.None);
             progressBar.SetCooldown(CollabManager.Instance.GetCollabCooldown());
         }
     }

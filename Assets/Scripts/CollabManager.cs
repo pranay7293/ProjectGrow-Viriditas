@@ -142,7 +142,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
     }
 
     private void SetCollabCooldown(string characterName)
-    {
+{
     if (!string.IsNullOrEmpty(characterName))
     {
         collabCooldowns[characterName] = collabCooldown;
@@ -152,11 +152,12 @@ public class CollabManager : MonoBehaviourPunCallbacks
             CharacterProgressBar progressBar = character.GetComponentInChildren<CharacterProgressBar>();
             if (progressBar != null)
             {
+                progressBar.SetKeyState(KeyState.Cooldown);
                 progressBar.SetCooldown(collabCooldown);
             }
         }
     }
-    }
+}
 
     private void UpdateCooldowns()
     {

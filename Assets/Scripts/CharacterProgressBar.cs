@@ -2,6 +2,15 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+public enum KeyState
+{
+    None,
+    PerformingAction,
+    Collaborating,
+    Cooldown,
+    Chatting
+}
+
 public class CharacterProgressBar : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI characterNameText;
@@ -29,7 +38,6 @@ public class CharacterProgressBar : MonoBehaviour
             SetSliderColors(slider, characterColor);
             slider.maxValue = 1f;
             slider.value = 0f;
-            slider.wholeNumbers = true;
         }
 
         // Setup cooldown slider
@@ -42,7 +50,7 @@ public class CharacterProgressBar : MonoBehaviour
         keyStateText.color = Color.white;
 
         // Hide key state and cooldown initially
-        SetKeyState("");
+        SetKeyState(KeyState.None);
         cooldownSlider.gameObject.SetActive(false);
     }
 
@@ -83,34 +91,35 @@ public class CharacterProgressBar : MonoBehaviour
         }
     }
 
-    public void SetKeyState(string state)
+    public void SetKeyState(KeyState state)
     {
-        if (string.IsNullOrEmpty(state))
+        if (state == KeyState.None)
         {
             keyStateOverlay.gameObject.SetActive(false);
         }
         else
         {
             keyStateOverlay.gameObject.SetActive(true);
-            keyStateText.text = state;
+            keyStateText.text = state.ToString();
         }
     }
 
     public void SetCooldown(float duration)
-{
-    cooldownSlider.gameObject.SetActive(true);
-    cooldownSlider.maxValue = duration;
-    cooldownSlider.value = duration;
-    StartCoroutine(UpdateCooldown());
-}
-
-private System.Collections.IEnumerator UpdateCooldown()
-{
-    while (cooldownSlider.value > 0)
     {
-        cooldownSlider.value -= Time.deltaTime;
-        yield return null;
+        cooldownSlider.gameObject.SetActive(true);
+        cooldownSlider.maxValue = duration;
+        cooldownSlider.value = duration;
+        StartCoroutine(UpdateCooldown());
     }
-    cooldownSlider.gameObject.SetActive(false);
-}
+
+    private System.Collections.IEnumerator UpdateCooldown()
+    {
+        while (cooldownSlider.value > 0)
+        {
+            cooldownSlider.value -= Time.deltaTime;
+            yield return null;
+        }
+        cooldownSlider.gameObject.SetActive(false);
+        SetKeyState(KeyState.None);
+    }
 }
