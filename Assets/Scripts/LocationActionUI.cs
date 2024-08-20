@@ -12,6 +12,8 @@ public class LocationActionUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI locationNameText;
     [SerializeField] private TextMeshProUGUI actionDescriptionText;
     [SerializeField] private ActionButton[] actionButtons;
+    [SerializeField] private Image acclimationProgressBar;
+    [SerializeField] private TextMeshProUGUI acclimationText;
 
     private UniversalCharacterController currentCharacter;
     private LocationManager currentLocation;
@@ -32,6 +34,8 @@ public class LocationActionUI : MonoBehaviour
     {
         actionPanel.SetActive(false);
         outcomeText.gameObject.SetActive(false);
+        acclimationProgressBar.gameObject.SetActive(false);
+        acclimationText.gameObject.SetActive(false);
 
         for (int i = 0; i < actionButtons.Length; i++)
         {
@@ -184,6 +188,20 @@ public class LocationActionUI : MonoBehaviour
                 }
             }
         }
+    }
+
+    public void ShowAcclimationProgress(float progress)
+    {
+        acclimationProgressBar.gameObject.SetActive(true);
+        acclimationText.gameObject.SetActive(true);
+        acclimationProgressBar.fillAmount = progress;
+        acclimationText.text = $"Acclimating: {Mathf.RoundToInt(progress * 100)}%";
+    }
+
+    public void HideAcclimationProgress()
+    {
+        acclimationProgressBar.gameObject.SetActive(false);
+        acclimationText.gameObject.SetActive(false);
     }
 }
 

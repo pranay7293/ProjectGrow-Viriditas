@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
 public enum KeyState
 {
@@ -8,22 +9,27 @@ public enum KeyState
     PerformingAction,
     Collaborating,
     Cooldown,
-    Chatting
+    Chatting,
+    Acclimating
 }
 
 public class CharacterProgressBar : MonoBehaviour
 {
+    [Header("UI Elements")]
     [SerializeField] private TextMeshProUGUI characterNameText;
     [SerializeField] private Slider[] personalGoalSliders;
     [SerializeField] private Image keyStateOverlay;
     [SerializeField] private TextMeshProUGUI keyStateText;
     [SerializeField] private Slider cooldownSlider;
+    [SerializeField] private GameObject locationAcclimationTime;
+    [SerializeField] private Image locationAcclimationFill;
+
+    [Header("Settings")]
+    [SerializeField] private float collabCooldown = 45f;
+    [SerializeField] private Color unfilledColor = new Color(0x4A / 255f, 0x4A / 255f, 0x4A / 255f); // #4A4A4A
 
     private Camera mainCamera;
     private UniversalCharacterController characterController;
-
-    private const float COLLAB_COOLDOWN = 45f;
-    private Color unfilledColor = new Color(0x4A / 255f, 0x4A / 255f, 0x4A / 255f); // #4A4A4A
 
     public void Initialize(UniversalCharacterController controller)
     {
@@ -31,8 +37,12 @@ public class CharacterProgressBar : MonoBehaviour
         characterNameText.text = controller.characterName;
         mainCamera = Camera.main;
 
-        // Set colors based on character color
-        Color characterColor = controller.characterColor;
+        SetupUIElements(controller.characterColor);
+        ResetUIState();
+    }
+
+    private void SetupUIElements(Color characterColor)
+    {
         foreach (Slider slider in personalGoalSliders)
         {
             SetSliderColors(slider, characterColor);
@@ -40,30 +50,29 @@ public class CharacterProgressBar : MonoBehaviour
             slider.value = 0f;
         }
 
-        // Setup cooldown slider
         SetSliderColors(cooldownSlider, Color.white);
-        cooldownSlider.maxValue = COLLAB_COOLDOWN;
+        cooldownSlider.maxValue = collabCooldown;
         cooldownSlider.value = 0f;
 
-        // Setup key state overlay
         keyStateOverlay.color = characterColor;
         keyStateText.color = Color.white;
+    }
 
-        // Hide key state and cooldown initially
+    private void ResetUIState()
+    {
         SetKeyState(KeyState.None);
         cooldownSlider.gameObject.SetActive(false);
+        locationAcclimationTime.SetActive(false);
     }
 
     private void SetSliderColors(Slider slider, Color fillColor)
     {
-        Image backgroundImage = slider.transform.Find("Background")?.GetComponent<Image>();
-        if (backgroundImage != null)
+        if (slider.transform.Find("Background")?.GetComponent<Image>() is Image backgroundImage)
         {
             backgroundImage.color = unfilledColor;
         }
 
-        Image fillImage = slider.fillRect.GetComponent<Image>();
-        if (fillImage != null)
+        if (slider.fillRect.GetComponent<Image>() is Image fillImage)
         {
             fillImage.color = fillColor;
         }
@@ -93,13 +102,9 @@ public class CharacterProgressBar : MonoBehaviour
 
     public void SetKeyState(KeyState state)
     {
-        if (state == KeyState.None)
+        keyStateOverlay.gameObject.SetActive(state != KeyState.None);
+        if (state != KeyState.None)
         {
-            keyStateOverlay.gameObject.SetActive(false);
-        }
-        else
-        {
-            keyStateOverlay.gameObject.SetActive(true);
             keyStateText.text = state.ToString();
         }
     }
@@ -112,7 +117,7 @@ public class CharacterProgressBar : MonoBehaviour
         StartCoroutine(UpdateCooldown());
     }
 
-    private System.Collections.IEnumerator UpdateCooldown()
+    private IEnumerator UpdateCooldown()
     {
         while (cooldownSlider.value > 0)
         {
@@ -121,5 +126,23 @@ public class CharacterProgressBar : MonoBehaviour
         }
         cooldownSlider.gameObject.SetActive(false);
         SetKeyState(KeyState.None);
+    }
+
+    public void UpdateAcclimationProgress(float progress, Color locationColor)
+    {
+        if (!locationAcclimationTime.activeSelf)
+        {
+            locationAcclimationTime.SetActive(true);
+            SetKeyState(KeyState.Acclimating);
+        }
+
+        locationAcclimationFill.fillAmount = progress;
+        locationAcclimationFill.color = locationColor;
+
+        if (progress >= 1f)
+        {
+            locationAcclimationTime.SetActive(false);
+            SetKeyState(KeyState.None);
+        }
     }
 }

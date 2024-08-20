@@ -19,6 +19,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     [Header("Gameplay")]
     public string currentObjective;
+    public float acclimationTime = 10f;
 
     [HideInInspector] public LocationManager currentLocation;
 
@@ -50,13 +51,15 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public int EurekaCount { get; private set; }
 
     private CharacterProgressBar progressBar;
+    private float locationEntryTime;
 
     public enum CharacterState
     {
         Idle,
         Moving,
         Interacting,
-        PerformingAction
+        PerformingAction,
+        Acclimating
     }
 
     private CharacterState currentState = CharacterState.Idle;
@@ -107,6 +110,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             InitializeProgressBar();
         }
         InitializePersonalGoals();
+        StartAcclimation();
     }
 
     private void SetCharacterProperties(string name, bool isPlayerControlled, Color color)
@@ -215,6 +219,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             else if (currentState != CharacterState.Interacting)
             {
                 HandleAIMovement();
+            }
+
+            if (currentState == CharacterState.Acclimating)
+            {
+                UpdateAcclimation();
             }
         }
     }
@@ -325,6 +334,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                     break;
                 case CharacterState.Interacting:
                     progressBar.SetKeyState(KeyState.Chatting);
+                    break;
+                case CharacterState.Acclimating:
+                    progressBar.SetKeyState(KeyState.Acclimating);
                     break;
                 default:
                     progressBar.SetKeyState(KeyState.None);
@@ -485,6 +497,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public void EnterLocation(LocationManager location)
     {
         currentLocation = location;
+        locationEntryTime = Time.time;
+        SetState(CharacterState.Acclimating);
         if (IsPlayerControlled && photonView.IsMine)
         {
             StartCoroutine(DelayedShowActions(location));
@@ -501,14 +515,14 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private IEnumerator DelayedShowActions(LocationManager location)
     {
-        yield return new WaitForSeconds(0.5f);
-        if (LocationActionUI.Instance != null)
+        yield return new WaitForSeconds(acclimationTime);
+        if (LocationActionUI.Instance != null && currentLocation == location)
         {
             LocationActionUI.Instance.ShowActionsForLocation(this, location);
         }
         else
         {
-            Debug.LogWarning("LocationActionUI.Instance is null");
+            Debug.LogWarning("LocationActionUI.Instance is null or location has changed");
         }
     }
 
@@ -544,7 +558,31 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 navMeshAgent.Warp(spawnPosition);
             }
             SetState(CharacterState.Idle);
+            StartAcclimation();
         }
+    }
+
+    private void StartAcclimation()
+    {
+        locationEntryTime = Time.time;
+        SetState(CharacterState.Acclimating);
+    }
+
+    private void UpdateAcclimation()
+    {
+    float elapsedTime = Time.time - locationEntryTime;
+    if (elapsedTime >= acclimationTime)
+    {
+        SetState(CharacterState.Idle);
+        if (progressBar != null)
+        {
+            progressBar.UpdateAcclimationProgress(1f, currentLocation.locationColor);
+        }
+    }
+    else if (progressBar != null)
+    {
+        progressBar.UpdateAcclimationProgress(elapsedTime / acclimationTime, currentLocation.locationColor);
+    }
     }
 
     public bool IsCollaborating { get; private set; }

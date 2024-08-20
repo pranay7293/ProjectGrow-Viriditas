@@ -14,7 +14,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private float lastDecisionTime;
     private float interactionCooldown = 30f;
     private float lastInteractionTime;
-    private float interactionDistance = 5f; // Distance within which interactions can occur
+    private float interactionDistance = 5f;
 
     private LocationManager currentLocationManager;
 
@@ -58,6 +58,11 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     {
         lastDecisionTime = Time.time;
         
+        if (characterController.GetState() == UniversalCharacterController.CharacterState.Acclimating)
+        {
+            return;
+        }
+
         List<string> options = new List<string>
         {
             "Move to new location",
@@ -227,5 +232,19 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     public void SetCurrentLocation(LocationManager location)
     {
         currentLocationManager = location;
+        if (location != null)
+        {
+            characterController.SetState(UniversalCharacterController.CharacterState.Acclimating);
+            StartCoroutine(AcclimationCoroutine());
+        }
+    }
+
+    private System.Collections.IEnumerator AcclimationCoroutine()
+    {
+        yield return new WaitForSeconds(characterController.acclimationTime);
+        if (characterController.GetState() == UniversalCharacterController.CharacterState.Acclimating)
+        {
+            characterController.SetState(UniversalCharacterController.CharacterState.Idle);
+        }
     }
 }
