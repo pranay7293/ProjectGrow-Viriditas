@@ -337,6 +337,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         currentAction = action;
         actionStartTime = Time.time;
         SetState(CharacterState.PerformingAction);
+        UpdateGoalProgress(action.actionName);
 
         if (actionCoroutine != null)
         {
@@ -423,6 +424,22 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         GameManager.Instance.UpdatePlayerScore(characterName, ScoreConstants.PERSONAL_GOAL_COMPLETION_BONUS);
         GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goal}");
     }
+
+    private void UpdateGoalProgress(string actionName)
+{
+    // Update personal goals
+    for (int i = 0; i < PersonalProgress.Length; i++)
+    {
+        if (aiSettings.personalGoals[i].ToLower().Contains(actionName.ToLower()))
+        {
+            PersonalProgress[i] = Mathf.Min(PersonalProgress[i] + 0.25f, 1f);
+            GameManager.Instance.UpdatePlayerProgress(this, PersonalProgress);
+        }
+    }
+
+    // Update milestone progress
+    GameManager.Instance.UpdateMilestoneProgress(characterName, actionName);
+}
 
     public List<string> GetPersonalGoals()
     {

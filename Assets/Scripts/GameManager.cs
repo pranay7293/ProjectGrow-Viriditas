@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using Photon.Pun;
-using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using System.Linq;
@@ -21,6 +20,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     [SerializeField] private CustomCheckbox[] milestoneCheckboxes;
     [SerializeField] private ChallengeProgressUI challengeProgressUI;
     [SerializeField] private EmergentScenarioNotification emergentScenarioNotification;
+    [SerializeField] public DialogueRequestUI dialogueRequestUI;
 
     [Header("Game Components")]
     [SerializeField] private EmergentScenarioGenerator scenarioGenerator;
@@ -34,7 +34,6 @@ public class GameManager : MonoBehaviourPunCallbacks
     private Dictionary<string, bool> milestoneCompletion = new Dictionary<string, bool>();
     private Dictionary<string, int> playerScores = new Dictionary<string, int>();
     private Dictionary<string, float[]> playerPersonalProgress = new Dictionary<string, float[]>();
-    private int collectiveScore = 0;
     private List<string> recentPlayerActions = new List<string>();
     private Dictionary<string, UniversalCharacterController> spawnedCharacters = new Dictionary<string, UniversalCharacterController>();
     private Dictionary<string, int> playerEurekas = new Dictionary<string, int>();
@@ -75,14 +74,13 @@ public class GameManager : MonoBehaviourPunCallbacks
         milestonesDisplay.SetActive(false);
     }
 
-   private void Update()
+    private void Update()
     {
         if (PhotonNetwork.IsMasterClient)
         {
             UpdateGameTime();
             CheckForEmergentScenario();
 
-            // Check for game end condition
             if (remainingTime <= 0 || AllMilestonesCompleted())
             {
                 EndChallenge();
@@ -192,7 +190,6 @@ public class GameManager : MonoBehaviourPunCallbacks
 
         remainingTime = challengeDuration;
         recentPlayerActions.Clear();
-        collectiveScore = 0;
         
         milestoneCompletion.Clear();
         for (int i = 0; i < currentChallenge.milestones.Count; i++)
@@ -223,7 +220,7 @@ public class GameManager : MonoBehaviourPunCallbacks
 
         SerializableChallengeData serializableChallenge = new SerializableChallengeData(currentChallenge);
         string challengeJson = JsonUtility.ToJson(serializableChallenge);
-        photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, collectiveScore, playerScores);
+        photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, playerScores);
     }
 
     private HubData GetSelectedHub()
@@ -300,6 +297,11 @@ public class GameManager : MonoBehaviourPunCallbacks
 
         remainingTime -= Time.deltaTime;
         photonView.RPC("UpdateTimer", RpcTarget.All, remainingTime);
+    }
+
+    public float GetChallengeDuration()
+    {
+        return challengeDuration;
     }
 
     private bool AllMilestonesCompleted()
@@ -403,6 +405,12 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     public void UpdateGameState(string characterName, string action, bool isEmergentScenario = false)
     {
+        if (string.IsNullOrEmpty(characterName) || string.IsNullOrEmpty(action))
+        {
+            Debug.LogWarning("Invalid character name or action in UpdateGameState");
+            return;
+        }
+
         if (isEmergentScenario)
         {
             Debug.Log($"Emergent Scenario: {action}");
@@ -412,16 +420,10 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             Debug.Log($"{characterName} performed action: {action}");
             int scoreIncrease = EvaluateActionImpact(action);
-            UpdateCollectiveScore(scoreIncrease);
             AddPlayerAction(action);
             ActionLogManager.Instance.LogAction(characterName, action);
 
-            if (ActionContributesToChallenge(action))
-            {
-                UpdateCollectiveScore(ScoreConstants.CHALLENGE_CONTRIBUTION_BONUS);
-            }
-
-            CheckMilestoneProgress(characterName, action);
+            UpdateMilestoneProgress(characterName, action);
             UpdatePlayerScore(characterName, scoreIncrease);
 
             UniversalCharacterController character = GetCharacterByName(characterName);
@@ -440,7 +442,6 @@ public class GameManager : MonoBehaviourPunCallbacks
     [PunRPC]
     private void RPC_ImplementEmergentScenario(string scenario)
     {
-        UpdateCollectiveScore(ScoreConstants.EMERGENT_SCENARIO_BONUS);
         ActionLogManager.Instance.LogAction("SYSTEM", $"Emergent Scenario: {scenario}");
 
         if (emergentScenarioNotification != null)
@@ -484,54 +485,36 @@ public class GameManager : MonoBehaviourPunCallbacks
             return ScoreConstants.COMPLEX_ACTION_POINTS;
     }
 
-    private bool ActionContributesToChallenge(string action)
+    public void CompleteMilestone(string characterName, string milestone, int milestoneIndex)
     {
-        return action.ToLower().Contains(currentChallenge.title.ToLower());
-    }
-
-    private void CheckMilestoneProgress(string characterName, string action)
-    {
-        for (int i = 0; i < currentChallenge.milestones.Count; i++)
+        if (milestoneCompletion[milestone] == false)
         {
-            string milestone = currentChallenge.milestones[i];
-            if (!milestoneCompletion[milestone] && action.ToLower().Contains(milestone.ToLower()))
-            {
-                CompleteMilestone(characterName, milestone, i);
-                break;
-            }
+            milestoneCompletion[milestone] = true;
+            UpdatePlayerScore(characterName, ScoreConstants.MILESTONE_COMPLETION_BONUS);
+            UpdatePersonalProgress(characterName, milestoneIndex, 1f);
+            photonView.RPC("SyncMilestoneCompletion", RpcTarget.All, milestone, characterName, milestoneIndex);
+            CheckAllMilestonesCompleted();
         }
     }
 
-    public void CompleteMilestone(string characterName, string milestone, int milestoneIndex)
-{
-    if (milestoneCompletion[milestone] == false)
+    [PunRPC]
+    private void SyncMilestoneCompletion(string milestone, string characterName, int milestoneIndex)
     {
         milestoneCompletion[milestone] = true;
-        UpdateCollectiveScore(ScoreConstants.MILESTONE_COMPLETION_BONUS);
         UpdatePersonalProgress(characterName, milestoneIndex, 1f);
-        photonView.RPC("SyncMilestoneCompletion", RpcTarget.All, milestone, characterName, milestoneIndex);
-        CheckAllMilestonesCompleted();
-    }
-}
+        if (milestoneIndex < milestoneCheckboxes.Length)
+        {
+            milestoneCheckboxes[milestoneIndex].IsChecked = true;
+        }
+        UpdateMilestonesDisplay();
 
-    [PunRPC]
-private void SyncMilestoneCompletion(string milestone, string characterName, int milestoneIndex)
-{
-    milestoneCompletion[milestone] = true;
-    UpdatePersonalProgress(characterName, milestoneIndex, 1f);
-    if (milestoneIndex < milestoneCheckboxes.Length)
-    {
-        milestoneCheckboxes[milestoneIndex].IsChecked = true;
+        UniversalCharacterController character = GetCharacterByName(characterName);
+        if (character != null)
+        {
+            Vector3 textPosition = character.transform.position + Vector3.up * 2.5f;
+            FloatingTextManager.Instance.ShowFloatingText("Milestone Completed!", textPosition, FloatingTextType.Milestone);
+        }
     }
-    UpdateMilestonesDisplay();
-
-     UniversalCharacterController character = GetCharacterByName(characterName);
-    if (character != null)
-    {
-        Vector3 textPosition = character.transform.position + Vector3.up * 2.5f;
-        FloatingTextManager.Instance.ShowFloatingText("Milestone Completed!", textPosition, FloatingTextType.Milestone);
-    }
-}
 
     public string CompleteRandomMilestone(string eurekaDescription)
     {
@@ -552,7 +535,6 @@ private void SyncMilestoneCompletion(string milestone, string characterName, int
     {
         if (milestoneCompletion.All(m => m.Value))
         {
-            UpdateCollectiveScore(ScoreConstants.ALL_MILESTONES_BONUS);
             EndChallenge();
         }
     }
@@ -563,39 +545,30 @@ private void SyncMilestoneCompletion(string milestone, string characterName, int
     }
 
     public void UpdatePlayerScore(string playerName, int score)
-{
-    if (PhotonNetwork.IsMasterClient)
-    {
-        if (!playerScores.ContainsKey(playerName))
-        {
-            playerScores[playerName] = 0;
-        }
-        playerScores[playerName] += score;
-        photonView.RPC("SyncPlayerScore", RpcTarget.All, playerName, playerScores[playerName], score);
-    }
-}
-
-[PunRPC]
-private void SyncPlayerScore(string playerName, int totalScore, int scoreGain)
-{
-    playerScores[playerName] = totalScore;
-    UpdateScoreDisplay();
-
-    UniversalCharacterController character = GetCharacterByName(playerName);
-    if (character != null)
-    {
-        Vector3 textPosition = character.transform.position + Vector3.up * 2f;
-        string scoreText = (scoreGain >= 0 ? "+" : "") + scoreGain;
-        FloatingTextManager.Instance.ShowFloatingText(scoreText, textPosition, FloatingTextType.Points);
-    }
-}
-
-    public void UpdateCollectiveScore(int points)
     {
         if (PhotonNetwork.IsMasterClient)
         {
-            collectiveScore += points;
-            photonView.RPC("SyncCollectiveScore", RpcTarget.All, collectiveScore);
+            if (!playerScores.ContainsKey(playerName))
+            {
+                playerScores[playerName] = 0;
+            }
+            playerScores[playerName] += score;
+            photonView.RPC("SyncPlayerScore", RpcTarget.All, playerName, playerScores[playerName], score);
+        }
+    }
+
+    [PunRPC]
+    private void SyncPlayerScore(string playerName, int totalScore, int scoreGain)
+    {
+        playerScores[playerName] = totalScore;
+        UpdateScoreDisplay();
+
+        UniversalCharacterController character = GetCharacterByName(playerName);
+        if (character != null)
+        {
+            Vector3 textPosition = character.transform.position + Vector3.up * 2f;
+            string scoreText = (scoreGain >= 0 ? "+" : "") + scoreGain;
+            FloatingTextManager.Instance.ShowFloatingText(scoreText, textPosition, FloatingTextType.Points);
         }
     }
 
@@ -622,18 +595,15 @@ private void SyncPlayerScore(string playerName, int totalScore, int scoreGain)
     {
         if (PhotonNetwork.IsMasterClient)
         {
-            // Save player scores to room properties
             ExitGames.Client.Photon.Hashtable customProperties = new ExitGames.Client.Photon.Hashtable();
             customProperties["PlayerScores"] = playerScores;
             PhotonNetwork.CurrentRoom.SetCustomProperties(customProperties);
-
-            // Load the Results scene
             PhotonNetwork.LoadLevel("ResultsScene");
         }
     }
 
     [PunRPC]
-    private void SyncGameState(string challengeJson, float time, int collective, Dictionary<string, int> scores)
+    private void SyncGameState(string challengeJson, float time, Dictionary<string, int> scores)
     {
         SerializableChallengeData serializableChallenge = JsonUtility.FromJson<SerializableChallengeData>(challengeJson);
         currentChallenge = ScriptableObject.CreateInstance<ChallengeData>();
@@ -643,19 +613,11 @@ private void SyncPlayerScore(string playerName, int totalScore, int scoreGain)
         currentChallenge.goalScore = serializableChallenge.goalScore;
 
         remainingTime = time;
-        collectiveScore = collective;
         playerScores = new Dictionary<string, int>(scores);
         challengeText.text = currentChallenge.title;
         UpdateTimer(time);
         UpdateScoreDisplay();
         UpdateMilestonesDisplay();
-    }
-
-    [PunRPC]
-    private void SyncCollectiveScore(int score)
-    {
-        collectiveScore = score;
-        UpdateScoreDisplay();
     }
 
     private void UpdateScoreDisplay()
@@ -666,7 +628,6 @@ private void SyncPlayerScore(string playerName, int totalScore, int scoreGain)
             milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
         }
         challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
-        challengeProgressUI.UpdateCollectiveScore(collectiveScore);
 
         PlayerProfileManager playerProfileManager = PlayerProfileManager.Instance;
         if (playerProfileManager != null)
@@ -709,14 +670,25 @@ private void SyncPlayerScore(string playerName, int totalScore, int scoreGain)
     }
 
     public GameState GetCurrentGameState()
-    {
-        return new GameState(
-            currentChallenge,
-            collectiveScore,
-            new Dictionary<string, int>(playerScores),
-            remainingTime
-        );
-    }
+{
+    return new GameState(
+        currentChallenge,
+        CalculateCollectiveProgress(),
+        new Dictionary<string, int>(playerScores),
+        remainingTime,
+        new Dictionary<string, bool>(milestoneCompletion)
+    );
+}
+
+    public int GetCollectiveProgress()
+{
+    return CalculateCollectiveProgress();
+}
+
+private int CalculateCollectiveProgress()
+{
+    return (int)((float)milestoneCompletion.Count(m => m.Value) / milestoneCompletion.Count * 100);
+}
 
     public float GetRemainingTime()
     {
@@ -731,11 +703,6 @@ private void SyncPlayerScore(string playerName, int totalScore, int scoreGain)
     public Dictionary<string, int> GetPlayerScores()
     {
         return new Dictionary<string, int>(playerScores);
-    }
-
-    public int GetCollectiveScore()
-    {
-        return collectiveScore;
     }
 
     public UniversalCharacterController GetCharacterByName(string characterName)
@@ -784,5 +751,29 @@ private void SyncPlayerScore(string playerName, int totalScore, int scoreGain)
     public Color GetCurrentHubColor()
     {
         return currentHub.hubColor;
+    }
+
+    public void UpdateMilestoneProgress(string characterName, string actionName)
+    {
+        float progressIncrement = 0.2f; // 20% progress per relevant action
+        float[] milestoneProgress = new float[currentChallenge.milestones.Count];
+
+        for (int i = 0; i < currentChallenge.milestones.Count; i++)
+        {
+            if (currentChallenge.milestones[i].ToLower().Contains(actionName.ToLower()))
+            {
+                milestoneProgress[i] = Mathf.Min(milestoneCompletion[currentChallenge.milestones[i]] ? 1f : milestoneProgress[i] + progressIncrement, 1f);
+                if (milestoneProgress[i] >= 1f && !milestoneCompletion[currentChallenge.milestones[i]])
+                {
+                    CompleteMilestone(characterName, currentChallenge.milestones[i], i);
+                }
+            }
+            else
+            {
+                milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
+            }
+        }
+
+        challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
     }
 }

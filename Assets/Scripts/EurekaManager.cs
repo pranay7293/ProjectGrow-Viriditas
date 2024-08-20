@@ -71,7 +71,7 @@ public class EurekaManager : MonoBehaviourPunCallbacks
             FloatingTextManager.Instance.ShowFloatingText($"+{ScoreConstants.EUREKA_BONUS} Eureka!", textPosition, FloatingTextType.Eureka);
         }
 
-        GameManager.Instance.UpdateCollectiveScore(ScoreConstants.EUREKA_BONUS);
+        GameManager.Instance.UpdateMilestoneProgress("Eureka", "Eureka Moment");
 
         // Trigger the Eureka effect at the location
         if (collaborators.Count > 0 && collaborators[0].currentLocation != null)

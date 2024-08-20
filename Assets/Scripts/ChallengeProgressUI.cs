@@ -1,11 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class ChallengeProgressUI : MonoBehaviour
 {
     [SerializeField] private Slider[] milestoneProgressBars;
-    [SerializeField] private TextMeshProUGUI collectiveScoreText;
     private Color unfilledColor = new Color(0x3A / 255f, 0x3A / 255f, 0x3A / 255f); // #3A3A3A
 
     public void Initialize(Color hubColor)
@@ -28,10 +26,7 @@ public class ChallengeProgressUI : MonoBehaviour
 
             slider.value = 0;
             slider.maxValue = 1;
-            slider.wholeNumbers = true;
         }
-
-        UpdateCollectiveScore(0);
     }
 
     public void UpdateMilestoneProgress(float[] progress)
@@ -40,16 +35,8 @@ public class ChallengeProgressUI : MonoBehaviour
         {
             if (milestoneProgressBars[i] != null)
             {
-                milestoneProgressBars[i].value = progress[i] >= 1f ? 1f : 0f;
+                milestoneProgressBars[i].value = progress[i];
             }
-        }
-    }
-
-    public void UpdateCollectiveScore(int score)
-    {
-        if (collectiveScoreText != null)
-        {
-            collectiveScoreText.text = $"Collective Score: {score}";
         }
     }
 }

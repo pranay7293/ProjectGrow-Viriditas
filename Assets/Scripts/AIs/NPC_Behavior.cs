@@ -14,6 +14,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private float lastDecisionTime;
     private float interactionCooldown = 30f;
     private float lastInteractionTime;
+    private float interactionDistance = 5f; // Distance within which interactions can occur
 
     private LocationManager currentLocationManager;
 
@@ -49,7 +50,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
         if (Time.time - lastInteractionTime > interactionCooldown)
         {
-            AttemptNPCInteraction();
+            AttemptInteraction();
         }
     }
 
@@ -61,7 +62,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         {
             "Move to new location",
             "Perform location action",
-            "Interact with NPC",
+            "Interact with nearby character",
             "Work on current challenge",
             "Pursue personal goal"
         };
@@ -77,8 +78,8 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             case "Perform location action":
                 PerformLocationAction();
                 break;
-            case "Interact with NPC":
-                AttemptNPCInteraction();
+            case "Interact with nearby character":
+                AttemptInteraction();
                 break;
             case "Work on current challenge":
                 WorkOnChallenge();
@@ -159,33 +160,40 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         return score;
     }
 
-    private void AttemptNPCInteraction()
+    private void AttemptInteraction()
     {
-        List<UniversalCharacterController> nearbyNPCs = GetNearbyNPCs();
-        if (nearbyNPCs.Count > 0)
+        List<UniversalCharacterController> nearbyCharacters = GetNearbyCharacters();
+        if (nearbyCharacters.Count > 0)
         {
-            UniversalCharacterController target = ChooseInteractionTarget(nearbyNPCs);
-            InitiateNPCInteraction(target);
+            UniversalCharacterController target = ChooseInteractionTarget(nearbyCharacters);
+            InitiateInteraction(target);
         }
     }
 
-    private List<UniversalCharacterController> GetNearbyNPCs()
+    private List<UniversalCharacterController> GetNearbyCharacters()
     {
         return GameManager.Instance.GetAllCharacters()
-            .Where(npc => npc != characterController && 
-                   Vector3.Distance(transform.position, npc.transform.position) <= characterController.interactionDistance)
+            .Where(character => character != characterController && 
+                   Vector3.Distance(transform.position, character.transform.position) <= interactionDistance)
             .ToList();
     }
 
-    private UniversalCharacterController ChooseInteractionTarget(List<UniversalCharacterController> nearbyNPCs)
+    private UniversalCharacterController ChooseInteractionTarget(List<UniversalCharacterController> nearbyCharacters)
     {
-        return nearbyNPCs.OrderBy(npc => npcData.GetRelationship(npc.characterName)).First();
+        return nearbyCharacters.OrderBy(character => npcData.GetRelationship(character.characterName)).First();
     }
 
-    private void InitiateNPCInteraction(UniversalCharacterController target)
+    private void InitiateInteraction(UniversalCharacterController target)
     {
         lastInteractionTime = Time.time;
-        DialogueManager.Instance.TriggerNPCDialogue(characterController, target);
+        if (target.IsPlayerControlled)
+        {
+            aiManager.InitiateDialogueWithPlayer(target);
+        }
+        else
+        {
+            DialogueManager.Instance.TriggerNPCDialogue(characterController, target);
+        }
     }
 
     private void WorkOnChallenge()

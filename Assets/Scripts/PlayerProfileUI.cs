@@ -61,13 +61,13 @@ public class PlayerProfileUI : MonoBehaviour
 
     public void UpdatePersonalGoals(float[] progress)
     {
-        for (int i = 0; i < personalGoalSliders.Length && i < progress.Length; i++)
+    for (int i = 0; i < personalGoalSliders.Length && i < progress.Length; i++)
+    {
+        if (personalGoalSliders[i] != null)
         {
-            if (personalGoalSliders[i] != null)
-            {
-                personalGoalSliders[i].value = progress[i] >= 1f ? 1f : 0f;
-            }
+            personalGoalSliders[i].value = progress[i];
         }
+    }
     }
 
     public void UpdateEurekas(int count)

@@ -1299,7 +1299,6 @@ MonoBehaviour:
   rotationSpeed: 120
   interactionDistance: 3
   aiSettings: {fileID: 11400000, guid: b535d20ae57d04811a40e3ef009ba933, type: 2}
-  personalScore: 0
   currentObjective: 
   currentLocation: {fileID: 0}
 --- !u!114 &4096835321216489299

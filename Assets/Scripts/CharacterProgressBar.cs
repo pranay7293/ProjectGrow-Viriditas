@@ -97,19 +97,20 @@ public class CharacterProgressBar : MonoBehaviour
     }
 
     public void SetCooldown(float duration)
-    {
-        cooldownSlider.gameObject.SetActive(true);
-        cooldownSlider.value = duration;
-        StartCoroutine(UpdateCooldown());
-    }
+{
+    cooldownSlider.gameObject.SetActive(true);
+    cooldownSlider.maxValue = duration;
+    cooldownSlider.value = duration;
+    StartCoroutine(UpdateCooldown());
+}
 
-    private System.Collections.IEnumerator UpdateCooldown()
+private System.Collections.IEnumerator UpdateCooldown()
+{
+    while (cooldownSlider.value > 0)
     {
-        while (cooldownSlider.value > 0)
-        {
-            cooldownSlider.value -= Time.deltaTime;
-            yield return null;
-        }
-        cooldownSlider.gameObject.SetActive(false);
+        cooldownSlider.value -= Time.deltaTime;
+        yield return null;
     }
+    cooldownSlider.gameObject.SetActive(false);
+}
 }

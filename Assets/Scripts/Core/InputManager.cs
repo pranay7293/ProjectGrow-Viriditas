@@ -22,6 +22,8 @@ public class InputManager : MonoBehaviourPunCallbacks
     [SerializeField] private KeyCode togglePersonalGoalsKey = KeyCode.F3;
     [SerializeField] private KeyCode toggleGuideDisplayKey = KeyCode.F4;
     [SerializeField] private KeyCode toggleEurekaLogKey = KeyCode.F5;
+    [SerializeField] private KeyCode acceptDialogueRequestKey = KeyCode.Y;
+    [SerializeField] private KeyCode declineDialogueRequestKey = KeyCode.N;
 
     private UniversalCharacterController localPlayer;
 
@@ -120,6 +122,18 @@ public class InputManager : MonoBehaviourPunCallbacks
         if (IsInDialogue)
         {
             HandleDialogueInput();
+        }
+
+        if (DialogueRequestUI.Instance.IsRequestActive())
+        {
+            if (Input.GetKeyDown(acceptDialogueRequestKey))
+            {
+                DialogueRequestUI.Instance.AcceptRequest();
+            }
+            else if (Input.GetKeyDown(declineDialogueRequestKey))
+            {
+                DialogueRequestUI.Instance.DeclineRequest();
+            }
         }
     }
 

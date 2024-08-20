@@ -143,10 +143,19 @@ public class CollabManager : MonoBehaviourPunCallbacks
 
     private void SetCollabCooldown(string characterName)
     {
-        if (!string.IsNullOrEmpty(characterName))
+    if (!string.IsNullOrEmpty(characterName))
+    {
+        collabCooldowns[characterName] = collabCooldown;
+        UniversalCharacterController character = GameManager.Instance.GetCharacterByName(characterName);
+        if (character != null)
         {
-            collabCooldowns[characterName] = collabCooldown;
+            CharacterProgressBar progressBar = character.GetComponentInChildren<CharacterProgressBar>();
+            if (progressBar != null)
+            {
+                progressBar.SetCooldown(collabCooldown);
+            }
         }
+    }
     }
 
     private void UpdateCooldowns()

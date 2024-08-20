@@ -11,6 +11,9 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     private bool isInitialized = false;
 
+    [SerializeField] private float dialogueInitiationCooldown = 300f; // 5 minutes
+    private float lastDialogueInitiationTime = 0f;
+
     public void Initialize(UniversalCharacterController controller)
     {
         characterController = controller;
@@ -76,22 +79,22 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     public bool ConsiderCollaboration(LocationManager.LocationAction action)
     {
-    if (action == null || characterController == null)
-    {
-        Debug.LogWarning("Invalid action or character in ConsiderCollaboration");
-        return false;
-    }
-
-    if (CollabManager.Instance.CanInitiateCollab(characterController))
-    {
-        float collaborationChance = CalculateCollaborationChance(action);
-        if (Random.value < collaborationChance)
+        if (action == null || characterController == null)
         {
-            characterController.InitiateCollab(action.actionName);
-            return true;
+            Debug.LogWarning("Invalid action or character in ConsiderCollaboration");
+            return false;
         }
-    }
-    return false;
+
+        if (CollabManager.Instance.CanInitiateCollab(characterController))
+        {
+            float collaborationChance = CalculateCollaborationChance(action);
+            if (Random.value < collaborationChance)
+            {
+                characterController.InitiateCollab(action.actionName);
+                return true;
+            }
+        }
+        return false;
     }
 
     private float CalculateCollaborationChance(LocationManager.LocationAction action)
@@ -118,7 +121,6 @@ public class AIManager : MonoBehaviourPunCallbacks
             scenarioScores[i] = score;
         }
 
-        // If there's a tie, randomly choose among the top-scoring scenarios
         float maxScore = scenarioScores.Values.Max();
         var topScenarios = scenarioScores.Where(kvp => Mathf.Approximately(kvp.Value, maxScore)).ToList();
         
@@ -143,5 +145,23 @@ public class AIManager : MonoBehaviourPunCallbacks
         collaborationChance += averageRelationship * 0.1f;
 
         return Random.value < collaborationChance;
+    }
+
+    public void InitiateDialogueWithPlayer(UniversalCharacterController player)
+    {
+        if (Time.time - lastDialogueInitiationTime < dialogueInitiationCooldown) return;
+
+        lastDialogueInitiationTime = Time.time;
+        photonView.RPC("RPC_RequestDialogueWithPlayer", RpcTarget.All, player.photonView.ViewID);
+    }
+
+    [PunRPC]
+    private void RPC_RequestDialogueWithPlayer(int playerViewID)
+    {
+        PhotonView playerView = PhotonView.Find(playerViewID);
+        if (playerView != null && playerView.IsMine)
+        {
+            GameManager.Instance.dialogueRequestUI.ShowRequest(characterController);
+        }
     }
 }
