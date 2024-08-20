@@ -58,6 +58,6 @@ public class DialogueRequestUI : MonoBehaviour
 
     public bool IsRequestActive()
     {
-        return requestPanel.activeSelf;
+        return requestPanel != null && requestPanel.activeSelf;
     }
 }

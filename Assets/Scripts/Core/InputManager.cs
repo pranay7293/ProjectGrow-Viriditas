@@ -119,12 +119,7 @@ public class InputManager : MonoBehaviourPunCallbacks
             ToggleGuideDisplay();
         }
 
-        if (IsInDialogue)
-        {
-            HandleDialogueInput();
-        }
-
-        if (DialogueRequestUI.Instance.IsRequestActive())
+        if (DialogueRequestUI.Instance != null && DialogueRequestUI.Instance.IsRequestActive())
         {
             if (Input.GetKeyDown(acceptDialogueRequestKey))
             {
