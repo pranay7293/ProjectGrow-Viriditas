@@ -15,6 +15,7 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
     public PlayerProfileManager playerProfileManager;
     public TextMeshProUGUI mainTitleText;
     public Sprite lockedChallengeSprite;
+    public Button backButton;
 
     [Range(0f, 1f)]
     public float middleCardDarkenAmount = 0.1f;
@@ -25,9 +26,11 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
 
     private void Start()
     {
-        if (!PhotonNetwork.IsConnected)
+        if (!PhotonNetwork.IsConnected || !PhotonNetwork.InRoom)
         {
-            PhotonNetwork.ConnectUsingSettings();
+            Debug.LogError("Not connected to Photon or not in a room. Returning to ChallengeLobby.");
+            PhotonNetwork.LoadLevel("ChallengeLobby");
+            return;
         }
 
         expandedChallengeContainer.SetActive(false);
@@ -42,6 +45,15 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
         else
         {
             Debug.LogError("Selected hub not found!");
+        }
+
+        if (backButton != null)
+        {
+            backButton.onClick.AddListener(GoBackToChallengeLobby);
+        }
+        else
+        {
+            Debug.LogWarning("Back button is not assigned in the inspector!");
         }
     }
 
@@ -134,5 +146,13 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
         {
             PhotonNetwork.LoadLevel("CharacterSelection");
         }
+    }
+    
+private void GoBackToChallengeLobby()
+    {
+        PlayerPrefs.DeleteKey("SelectedHubIndex");
+        PlayerPrefs.Save();
+
+        PhotonNetwork.LoadLevel("ChallengeLobby");
     }
 }

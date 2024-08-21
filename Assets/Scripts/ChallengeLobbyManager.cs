@@ -15,7 +15,12 @@ public class ChallengeLobbyManager : MonoBehaviourPunCallbacks
 
         if (!PhotonNetwork.IsConnected)
         {
+            PhotonNetwork.AutomaticallySyncScene = true;
             PhotonNetwork.ConnectUsingSettings();
+        }
+        else
+        {
+            OnConnectedToMaster();
         }
 
         for (int i = 0; i < hubButtons.Length; i++)
@@ -28,14 +33,22 @@ public class ChallengeLobbyManager : MonoBehaviourPunCallbacks
     public override void OnConnectedToMaster()
     {
         Debug.Log("Connected to Photon server.");
-        RoomOptions roomOptions = new RoomOptions { MaxPlayers = MAX_PLAYERS };
-        PhotonNetwork.JoinOrCreateRoom("ChallengeLobby", roomOptions, TypedLobby.Default);
+        if (!PhotonNetwork.InRoom)
+        {
+            RoomOptions roomOptions = new RoomOptions { MaxPlayers = MAX_PLAYERS };
+            PhotonNetwork.JoinOrCreateRoom("ChallengeLobby", roomOptions, TypedLobby.Default);
+        }
+        else
+        {
+            OnJoinedRoom();
+        }
     }
 
     public override void OnJoinedRoom()
     {
         Debug.Log("Joined room: " + PhotonNetwork.CurrentRoom.Name);
         SetHubButtonsInteractable(true);
+        playerProfileManager.UpdatePlayerList();
     }
 
     public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
@@ -48,15 +61,13 @@ public class ChallengeLobbyManager : MonoBehaviourPunCallbacks
         playerProfileManager.UpdatePlayerList();
     }
 
-   private void SelectHub(int index)
-{
-    // Set the selected hub index in PlayerPrefs
-    PlayerPrefs.SetInt("SelectedHubIndex", index);
-    PlayerPrefs.Save();
+    private void SelectHub(int index)
+    {
+        PlayerPrefs.SetInt("SelectedHubIndex", index);
+        PlayerPrefs.Save();
 
-    // Load the Challenges scene
-    PhotonNetwork.LoadLevel("Challenges");
-}
+        PhotonNetwork.LoadLevel("Challenges");
+    }
 
     private void SetHubButtonsInteractable(bool interactable)
     {
