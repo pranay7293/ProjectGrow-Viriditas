@@ -14,6 +14,7 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
     public GameObject[] expandedChallenges;
     public PlayerProfileManager playerProfileManager;
     public TextMeshProUGUI mainTitleText;
+    public Sprite lockedChallengeSprite;
 
     [Range(0f, 1f)]
     public float middleCardDarkenAmount = 0.1f;
@@ -59,10 +60,13 @@ public class ChallengesManager : MonoBehaviourPunCallbacks
                     cardColor = DarkenColor(cardColor, middleCardDarkenAmount);
                 }
                 
-                card.SetUp(currentHub.challenges[i], this, i, cardColor);
+                bool isAvailable = (i == currentHub.availableChallengeIndex);
+                Sprite iconSprite = isAvailable ? currentHub.challenges[i].iconSprite : lockedChallengeSprite;
+                
+                card.SetUp(currentHub.challenges[i], this, i, cardColor, isAvailable, iconSprite);
 
                 ExpandedChallengeCard expandedCard = expandedChallenges[i].GetComponent<ExpandedChallengeCard>();
-                expandedCard.SetUp(currentHub.challenges[i], this, i, cardColor);
+                expandedCard.SetUp(currentHub.challenges[i], this, i, cardColor, isAvailable, currentHub.useInvertedColors);
             }
             else
             {

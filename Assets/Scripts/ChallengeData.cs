@@ -9,4 +9,6 @@ public class ChallengeData : ScriptableObject
     public string description;
     public List<string> milestones;
     public int goalScore;
+    public bool isAvailable;
+    public Sprite iconSprite;
 }

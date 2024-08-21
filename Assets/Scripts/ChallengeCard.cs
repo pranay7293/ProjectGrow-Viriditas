@@ -6,10 +6,12 @@ using TMPro;
 public class ChallengeCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     public TextMeshProUGUI challengeTitleText;
+    public Image iconImage;
     private ChallengesManager challengesManager;
     private int challengeIndex;
     private Button cardButton;
     private Image backgroundImage;
+    private bool isAvailable;
 
     [SerializeField]
     private float hoverDarkenAmount = 0.1f;
@@ -21,17 +23,22 @@ public class ChallengeCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         backgroundImage = GetComponent<Image>();
     }
 
-    public void SetUp(ChallengeData data, ChallengesManager manager, int index, Color hubColor)
+    public void SetUp(ChallengeData data, ChallengesManager manager, int index, Color hubColor, bool available, Sprite icon)
     {
         challengeTitleText.text = FormatTitle(data.title);
         challengesManager = manager;
         challengeIndex = index;
+        isAvailable = available;
 
         cardButton.onClick.AddListener(ExpandChallenge);
+        cardButton.interactable = isAvailable;
 
         // Apply hub color to the background
         originalColor = hubColor;
         backgroundImage.color = originalColor;
+
+        // Set the icon
+        iconImage.sprite = icon;
 
         // Adjust text color for better contrast
         challengeTitleText.color = GetContrastingTextColor(hubColor);
@@ -49,7 +56,10 @@ public class ChallengeCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     private void ExpandChallenge()
     {
-        challengesManager.ExpandChallenge(challengeIndex);
+        if (isAvailable)
+        {
+            challengesManager.ExpandChallenge(challengeIndex);
+        }
     }
 
     private string FormatTitle(string title)

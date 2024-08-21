@@ -8,4 +8,6 @@ public class HubData : ScriptableObject
     public string description;
     public List<ChallengeData> challenges;
     public Color hubColor;
+    public int availableChallengeIndex;
+    public bool useInvertedColors = false;
 }

@@ -8,39 +8,50 @@ public class ExpandedChallengeCard : MonoBehaviour
     public TextMeshProUGUI challengeTitleText;
     public Button voteButton;
     public Image borderImage;
-    private Image backgroundImage;
+    public Image backgroundImage;
     private Button cardButton;
     private ChallengesManager challengesManager;
     private int challengeIndex;
+    private bool isAvailable;
 
     private void Awake()
     {
         cardButton = GetComponent<Button>();
-        backgroundImage = GetComponent<Image>();
         if (borderImage == null)
             borderImage = transform.Find("Border")?.GetComponent<Image>();
     }
 
-    public void SetUp(ChallengeData data, ChallengesManager manager, int index, Color hubColor)
+    public void SetUp(ChallengeData data, ChallengesManager manager, int index, Color hubColor, bool available, bool useInvertedColors)
     {
         descriptionText.text = data.description;
         SetFormattedChallengeTitle(data.title);
         challengesManager = manager;
         challengeIndex = index;
+        isAvailable = available;
 
         cardButton.onClick.AddListener(CollapseChallenge);
         voteButton.onClick.AddListener(VoteForChallenge);
 
-        // Apply hub color to the background
+        // Apply colors based on useInvertedColors flag
+    if (useInvertedColors)
+    {
+        backgroundImage.color = Color.white;
+        descriptionText.color = Color.black;
+        challengeTitleText.color = Color.white;
+        if (borderImage != null)
+            borderImage.color = Color.black;
+    }
+    else
+    {
         backgroundImage.color = hubColor;
-
-        // Ensure border is visible
+        descriptionText.color = Color.white;  // Always set to white
+        challengeTitleText.color = Color.white;  // Always set to white
         if (borderImage != null)
             borderImage.color = Color.white;
+    }
 
-        // Adjust text color for better contrast
-        descriptionText.color = GetContrastingTextColor(hubColor);
-        challengeTitleText.color = GetContrastingTextColor(hubColor);
+        // Enable or disable the vote button based on availability
+        voteButton.interactable = isAvailable;
     }
 
     private void SetFormattedChallengeTitle(string title)
@@ -65,7 +76,10 @@ public class ExpandedChallengeCard : MonoBehaviour
 
     private void VoteForChallenge()
     {
-        challengesManager.OnChallengeSelected(challengeIndex);
+        if (isAvailable)
+        {
+            challengesManager.OnChallengeSelected(challengeIndex);
+        }
     }
 
     private void CollapseChallenge()
@@ -74,8 +88,13 @@ public class ExpandedChallengeCard : MonoBehaviour
     }
 
     private Color GetContrastingTextColor(Color backgroundColor)
-    {
-        float brightness = (backgroundColor.r * 299 + backgroundColor.g * 587 + backgroundColor.b * 114) / 1000;
-        return brightness > 0.5f ? Color.black : Color.white;
-    }
+{
+    // Calculate perceived brightness
+    float brightness = (backgroundColor.r * 0.299f + backgroundColor.g * 0.587f + backgroundColor.b * 0.114f);
+    
+    // Adjust the threshold for yellow and other bright colors
+    float threshold = 0.65f;  // Increased from the typical 0.5f
+
+    return brightness > threshold ? Color.black : Color.white;
+}
 }
