@@ -21,12 +21,13 @@ public class CharacterProgressBar : MonoBehaviour
     [SerializeField] private Image keyStateOverlay;
     [SerializeField] private TextMeshProUGUI keyStateText;
     [SerializeField] private Slider cooldownSlider;
-    [SerializeField] private GameObject locationAcclimationTime;
+    [SerializeField] private RectTransform locationAcclimationBackground;
     [SerializeField] private Image locationAcclimationFill;
 
     [Header("Settings")]
     [SerializeField] private float collabCooldown = 45f;
-    [SerializeField] private Color unfilledColor = new Color(0x4A / 255f, 0x4A / 255f, 0x4A / 255f); // #4A4A4A
+    [SerializeField] private Color unfilledColor = new Color(0x4A / 255f, 0x4A / 255f, 0x4A / 255f, 1f); // #4A4A4A with full alpha
+    [SerializeField] private Color acclimationBackgroundColor = new Color(0x18 / 255f, 0x18 / 255f, 0x18 / 255f, 1f); // #181818 with full alpha
 
     private Camera mainCamera;
     private UniversalCharacterController characterController;
@@ -43,6 +44,13 @@ public class CharacterProgressBar : MonoBehaviour
 
     private void SetupUIElements(Color characterColor)
     {
+        SetupSliders(characterColor);
+        SetupKeyStateUI(characterColor);
+        SetupLocationAcclimationUI();
+    }
+
+    private void SetupSliders(Color characterColor)
+    {
         foreach (Slider slider in personalGoalSliders)
         {
             SetSliderColors(slider, characterColor);
@@ -53,40 +61,78 @@ public class CharacterProgressBar : MonoBehaviour
         SetSliderColors(cooldownSlider, Color.white);
         cooldownSlider.maxValue = collabCooldown;
         cooldownSlider.value = 0f;
+    }
 
-        keyStateOverlay.color = characterColor;
+    private void SetupKeyStateUI(Color characterColor)
+    {
+        keyStateOverlay.color = new Color(characterColor.r, characterColor.g, characterColor.b, 1f);
         keyStateText.color = Color.white;
+    }
+
+    private void SetupLocationAcclimationUI()
+    {
+        if (locationAcclimationBackground != null)
+        {
+            Image backgroundImage = locationAcclimationBackground.GetComponent<Image>();
+            if (backgroundImage != null)
+            {
+                backgroundImage.color = acclimationBackgroundColor;
+                backgroundImage.type = Image.Type.Simple;
+            }
+        }
+
+        if (locationAcclimationFill != null)
+        {
+            locationAcclimationFill.type = Image.Type.Filled;
+            locationAcclimationFill.fillMethod = Image.FillMethod.Radial360;
+            locationAcclimationFill.fillOrigin = (int)Image.Origin360.Bottom;
+            locationAcclimationFill.fillAmount = 1f;
+            locationAcclimationFill.raycastTarget = false;
+
+            RectTransform fillRect = locationAcclimationFill.rectTransform;
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.sizeDelta = Vector2.zero;
+            fillRect.anchoredPosition = Vector2.zero;
+        }
     }
 
     private void ResetUIState()
     {
         SetKeyState(KeyState.None);
         cooldownSlider.gameObject.SetActive(false);
-        locationAcclimationTime.SetActive(false);
+        if (locationAcclimationBackground != null) locationAcclimationBackground.gameObject.SetActive(false);
+        if (locationAcclimationFill != null) locationAcclimationFill.gameObject.SetActive(false);
     }
 
     private void SetSliderColors(Slider slider, Color fillColor)
     {
-        if (slider.transform.Find("Background")?.GetComponent<Image>() is Image backgroundImage)
+        Image backgroundImage = slider.transform.Find("Background")?.GetComponent<Image>();
+        if (backgroundImage != null)
         {
             backgroundImage.color = unfilledColor;
         }
 
-        if (slider.fillRect.GetComponent<Image>() is Image fillImage)
+        Image fillImage = slider.fillRect.GetComponent<Image>();
+        if (fillImage != null)
         {
-            fillImage.color = fillColor;
+            fillImage.color = new Color(fillColor.r, fillColor.g, fillColor.b, 1f);
         }
     }
 
     private void LateUpdate()
+    {
+        UpdateProgressBarOrientation();
+        UpdatePersonalGoals();
+    }
+
+    private void UpdateProgressBarOrientation()
     {
         if (mainCamera != null)
         {
             transform.LookAt(transform.position + mainCamera.transform.rotation * Vector3.forward,
                              mainCamera.transform.rotation * Vector3.up);
         }
-
-        UpdatePersonalGoals();
     }
 
     public void UpdatePersonalGoals()
@@ -128,21 +174,30 @@ public class CharacterProgressBar : MonoBehaviour
         SetKeyState(KeyState.None);
     }
 
-    public void UpdateAcclimationProgress(float progress, Color locationColor)
+    public void StartAcclimation(Color locationColor)
     {
-        if (!locationAcclimationTime.activeSelf)
+        if (locationAcclimationBackground != null) locationAcclimationBackground.gameObject.SetActive(true);
+        if (locationAcclimationFill != null)
         {
-            locationAcclimationTime.SetActive(true);
-            SetKeyState(KeyState.Acclimating);
+            locationAcclimationFill.gameObject.SetActive(true);
+            locationAcclimationFill.color = new Color(locationColor.r, locationColor.g, locationColor.b, 1f);
+            locationAcclimationFill.fillAmount = 1f;
         }
+        SetKeyState(KeyState.Acclimating);
+    }
 
-        locationAcclimationFill.fillAmount = progress;
-        locationAcclimationFill.color = locationColor;
-
-        if (progress >= 1f)
+    public void UpdateAcclimationProgress(float progress)
+    {
+        if (locationAcclimationFill != null)
         {
-            locationAcclimationTime.SetActive(false);
-            SetKeyState(KeyState.None);
+            locationAcclimationFill.fillAmount = progress;
         }
+    }
+
+    public void EndAcclimation()
+    {
+        if (locationAcclimationBackground != null) locationAcclimationBackground.gameObject.SetActive(false);
+        if (locationAcclimationFill != null) locationAcclimationFill.gameObject.SetActive(false);
+        SetKeyState(KeyState.None);
     }
 }

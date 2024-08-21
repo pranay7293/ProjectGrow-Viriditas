@@ -18,7 +18,7 @@ public class LocationManager : MonoBehaviourPunCallbacks
 
     public string locationName;
     public List<LocationAction> availableActions = new List<LocationAction>();
-    public Color locationColor = Color.white;
+    public Color locationColor = new Color(1f, 1f, 1f, 1f);
 
     [SerializeField] private GameObject eurekaEffectPrefab;
     private GameObject activeEurekaEffect;

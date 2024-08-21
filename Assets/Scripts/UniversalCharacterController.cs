@@ -20,6 +20,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     [Header("Gameplay")]
     public string currentObjective;
     public float acclimationTime = 10f;
+    public float initialDelay = 10f;
 
     [HideInInspector] public LocationManager currentLocation;
 
@@ -52,6 +53,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private CharacterProgressBar progressBar;
     private float locationEntryTime;
+    private bool isAcclimating = false;
 
     public enum CharacterState
     {
@@ -110,6 +112,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             InitializeProgressBar();
         }
         InitializePersonalGoals();
+        StartCoroutine(DelayedAcclimation());
+    }
+
+    private IEnumerator DelayedAcclimation()
+    {
+        yield return new WaitForSeconds(initialDelay);
         StartAcclimation();
     }
 
@@ -221,12 +229,13 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 HandleAIMovement();
             }
 
-            if (currentState == CharacterState.Acclimating)
+            if (isAcclimating)
             {
                 UpdateAcclimation();
             }
         }
     }
+
 
     private void HandlePlayerInput()
     {
@@ -497,8 +506,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public void EnterLocation(LocationManager location)
     {
         currentLocation = location;
-        locationEntryTime = Time.time;
-        SetState(CharacterState.Acclimating);
+        StartAcclimation();
         if (IsPlayerControlled && photonView.IsMine)
         {
             StartCoroutine(DelayedShowActions(location));
@@ -527,11 +535,15 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     public void ExitLocation()
+{
+    if (currentLocation != null)
     {
-        currentLocation = null;
         if (IsPlayerControlled && photonView.IsMine)
         {
-            LocationActionUI.Instance.HideActions();
+            if (LocationActionUI.Instance != null)
+            {
+                LocationActionUI.Instance.HideActions();
+            }
         }
         else
         {
@@ -541,7 +553,15 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 npcBehavior.SetCurrentLocation(null);
             }
         }
+        
+        if (progressBar != null)
+        {
+            progressBar.EndAcclimation();
+        }
+        
+        currentLocation = null;
     }
+}
 
     public void ResetToSpawnPoint(Vector3 spawnPosition)
     {
@@ -562,28 +582,39 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
     }
 
-    private void StartAcclimation()
+  private void StartAcclimation()
+{
+    Debug.Log("Starting acclimation");
+    locationEntryTime = Time.time;
+    isAcclimating = true;
+    CharacterProgressBar progressBar = GetComponentInChildren<CharacterProgressBar>();
+    if (progressBar != null && currentLocation != null)
     {
-        locationEntryTime = Time.time;
-        SetState(CharacterState.Acclimating);
+        progressBar.StartAcclimation(currentLocation.locationColor);
     }
-
-    private void UpdateAcclimation()
+    else
     {
+        Debug.LogWarning("ProgressBar or CurrentLocation is null in StartAcclimation");
+    }
+}
+
+private void UpdateAcclimation()
+{
+    if (progressBar == null) return;
+
     float elapsedTime = Time.time - locationEntryTime;
     if (elapsedTime >= acclimationTime)
     {
+        isAcclimating = false;
         SetState(CharacterState.Idle);
-        if (progressBar != null)
-        {
-            progressBar.UpdateAcclimationProgress(1f, currentLocation.locationColor);
-        }
+        progressBar.EndAcclimation();
     }
-    else if (progressBar != null)
+    else
     {
-        progressBar.UpdateAcclimationProgress(elapsedTime / acclimationTime, currentLocation.locationColor);
+        float progress = 1 - (elapsedTime / acclimationTime);
+        progressBar.UpdateAcclimationProgress(progress);
     }
-    }
+}
 
     public bool IsCollaborating { get; private set; }
 

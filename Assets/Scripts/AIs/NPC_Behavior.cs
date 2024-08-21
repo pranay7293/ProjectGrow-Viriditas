@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Photon.Pun;
@@ -17,6 +18,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private float interactionDistance = 5f;
 
     private LocationManager currentLocationManager;
+    private bool isAcclimating = false;
 
     public void Initialize(UniversalCharacterController controller, NPC_Data data, AIManager manager)
     {
@@ -35,6 +37,8 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
     public void UpdateBehavior()
     {
+        if (isAcclimating) return;
+
         if (Time.time - lastDecisionTime > characterController.aiSettings.decisionInterval)
         {
             MakeDecision();
@@ -234,14 +238,16 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         currentLocationManager = location;
         if (location != null)
         {
+            isAcclimating = true;
             characterController.SetState(UniversalCharacterController.CharacterState.Acclimating);
             StartCoroutine(AcclimationCoroutine());
         }
     }
 
-    private System.Collections.IEnumerator AcclimationCoroutine()
+    private IEnumerator AcclimationCoroutine()
     {
         yield return new WaitForSeconds(characterController.acclimationTime);
+        isAcclimating = false;
         if (characterController.GetState() == UniversalCharacterController.CharacterState.Acclimating)
         {
             characterController.SetState(UniversalCharacterController.CharacterState.Idle);

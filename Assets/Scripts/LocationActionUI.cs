@@ -32,16 +32,17 @@ public class LocationActionUI : MonoBehaviour
 
     private void Start()
     {
+    if (actionPanel != null)
+    {
         actionPanel.SetActive(false);
-        outcomeText.gameObject.SetActive(false);
-        acclimationProgressBar.gameObject.SetActive(false);
-        acclimationText.gameObject.SetActive(false);
+    }
+    outcomeText.gameObject.SetActive(false);
 
-        for (int i = 0; i < actionButtons.Length; i++)
-        {
-            int index = i;
-            actionButtons[i].Button.onClick.AddListener(() => OnActionButtonClicked(index));
-        }
+    for (int i = 0; i < actionButtons.Length; i++)
+    {
+        int index = i;
+        actionButtons[i].Button.onClick.AddListener(() => OnActionButtonClicked(index));
+    }
     }
 
     public void ShowActionsForLocation(UniversalCharacterController character, LocationManager location)

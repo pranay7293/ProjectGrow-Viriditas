@@ -1129,6 +1129,8 @@ MonoBehaviour:
   interactionDistance: 3
   aiSettings: {fileID: 11400000, guid: 8a1be5af3820149bb8a17e1ff30472fd, type: 2}
   currentObjective: 
+  acclimationTime: 10
+  initialDelay: 10
   currentLocation: {fileID: 0}
 --- !u!114 &4096835321216489299
 MonoBehaviour:
@@ -1191,6 +1193,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ed10f2d34fdf4a568d5d2358cc55553, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dialogueInitiationCooldown: 300
 --- !u!114 &-8581686133794132729
 MonoBehaviour:
   m_ObjectHideFlags: 0
