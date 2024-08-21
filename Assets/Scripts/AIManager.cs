@@ -49,7 +49,14 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     public void AddMemory(string memory)
     {
-        npcData.AddMemory(memory);
+        if (npcData != null)
+        {
+            npcData.AddMemory(memory);
+        }
+        else
+        {
+            Debug.LogWarning("Attempted to add memory to a character without NPC_Data.");
+        }
     }
 
     public void UpdateRelationship(string characterName, float change)

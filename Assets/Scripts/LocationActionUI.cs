@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 using UnityEngine.EventSystems;
+using System.Collections;
 
 public class LocationActionUI : MonoBehaviour
 {
@@ -25,11 +26,10 @@ public class LocationActionUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI locationNameText;
     [SerializeField] private TextMeshProUGUI actionDescriptionText;
     [SerializeField] private ActionButton[] actionButtons;
+    [SerializeField] private float outcomeDisplayDuration = 2f;
 
     private UniversalCharacterController currentCharacter;
     private LocationManager currentLocation;
-
-    
 
     private void Awake()
     {
@@ -61,13 +61,11 @@ public class LocationActionUI : MonoBehaviour
             int index = i;
             ActionButton actionButton = actionButtons[i];
 
-            // Main action button setup
             if (actionButton.button != null)
             {
                 actionButton.button.onClick.RemoveAllListeners();
                 actionButton.button.onClick.AddListener(() => OnActionButtonClicked(index));
 
-                // Add hover listeners
                 EventTrigger trigger = actionButton.button.gameObject.GetComponent<EventTrigger>();
                 if (trigger == null)
                 {
@@ -83,7 +81,6 @@ public class LocationActionUI : MonoBehaviour
                 trigger.triggers.Add(entryExit);
             }
 
-            // Collab button setup
             if (actionButton.collabButton != null)
             {
                 actionButton.collabButton.onClick.RemoveAllListeners();
@@ -115,7 +112,7 @@ public class LocationActionUI : MonoBehaviour
 
         actionPanel.SetActive(true);
         UpdateCollabUI();
-        InputManager.Instance.SetUIActive(true);  // Add this line
+        InputManager.Instance.SetUIActive(true);
     }
 
     private void SetupActionButton(ActionButton button, LocationManager.LocationAction action)
@@ -182,12 +179,14 @@ public class LocationActionUI : MonoBehaviour
     {
         outcomeText.gameObject.SetActive(true);
         outcomeText.text = outcome;
-        Invoke(nameof(HideOutcome), 2f);
+        StartCoroutine(HideOutcomeAndCloseUI());
     }
 
-    private void HideOutcome()
+    private IEnumerator HideOutcomeAndCloseUI()
     {
+        yield return new WaitForSeconds(outcomeDisplayDuration);
         outcomeText.gameObject.SetActive(false);
+        HideActions();
     }
 
     public void HideActions()
@@ -195,7 +194,7 @@ public class LocationActionUI : MonoBehaviour
         actionPanel.SetActive(false);
         currentCharacter = null;
         currentLocation = null;
-        InputManager.Instance.SetUIActive(false);  // Add this line
+        InputManager.Instance.SetUIActive(false);
     }
 
     private void UpdateCollabUI()

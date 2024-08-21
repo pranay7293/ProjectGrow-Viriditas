@@ -5,6 +5,9 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
 {
     public static RiskRewardManager Instance { get; private set; }
 
+    [SerializeField] private float defaultBaseSuccessRate = 0.7f;
+    [SerializeField] private string playerRole = "Player";
+
     private void Awake()
     {
         if (Instance == null)
@@ -18,9 +21,15 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public void EvaluateActionOutcome(UniversalCharacterController character, LocationManager.LocationAction action)
+    public void EvaluateActionOutcome(UniversalCharacterController character, string actionName)
     {
-        float successRate = CalculateSuccessRate(character, action);
+        if (character == null)
+        {
+            Debug.LogWarning("EvaluateActionOutcome: Character is null");
+            return;
+        }
+
+        float successRate = CalculateSuccessRate(character, actionName);
         bool isSuccessful = Random.value < successRate;
 
         string outcome;
@@ -28,16 +37,8 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
 
         if (isSuccessful)
         {
-            if (Random.value < 0.3f) // 30% chance of partial success
-            {
-                outcome = "PARTIAL SUCCESS";
-                scoreChange = 5;
-            }
-            else
-            {
-                outcome = "SUCCESS";
-                scoreChange = 10;
-            }
+            outcome = Random.value < 0.3f ? "PARTIAL SUCCESS" : "SUCCESS";
+            scoreChange = outcome == "PARTIAL SUCCESS" ? 5 : 10;
         }
         else
         {
@@ -45,40 +46,72 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
             scoreChange = -5;
         }
 
-        photonView.RPC("RPC_ApplyActionOutcome", RpcTarget.All, character.photonView.ViewID, outcome, scoreChange, action.actionName);
+        ApplyActionOutcome(character, outcome, scoreChange, actionName);
     }
 
-    [PunRPC]
-    public void RPC_ApplyActionOutcome(int characterViewID, string outcome, int scoreChange, string actionName)
+    private void ApplyActionOutcome(UniversalCharacterController character, string outcome, int scoreChange, string actionName)
     {
-        PhotonView characterView = PhotonView.Find(characterViewID);
-        if (characterView == null) return;
-
-        UniversalCharacterController character = characterView.GetComponent<UniversalCharacterController>();
-        if (character == null) return;
+        if (GameManager.Instance == null)
+        {
+            Debug.LogWarning("ApplyActionOutcome: GameManager.Instance is null");
+            return;
+        }
 
         GameManager.Instance.UpdatePlayerScore(character.characterName, scoreChange);
         GameManager.Instance.UpdateGameState(character.characterName, $"{outcome}: {actionName}");
 
         if (character.photonView.IsMine)
         {
-            LocationActionUI.Instance.ShowOutcome(outcome);
+            if (LocationActionUI.Instance != null)
+            {
+                LocationActionUI.Instance.ShowOutcome(outcome);
+            }
+            else
+            {
+                Debug.LogWarning("ApplyActionOutcome: LocationActionUI.Instance is null");
+            }
         }
 
-        // Update character's mental model
-        AIManager aiManager = character.GetComponent<AIManager>();
-        if (aiManager != null)
+        // Update character's mental model only for AI characters
+        if (!character.IsPlayerControlled)
         {
-            aiManager.AddMemory($"{outcome} on {actionName} at {Time.time}");
-            aiManager.UpdateEmotionalState(outcome == "SUCCESS" ? EmotionalState.Happy : (outcome == "FAILURE" ? EmotionalState.Sad : EmotionalState.Neutral));
+            AIManager aiManager = character.GetComponent<AIManager>();
+            if (aiManager != null)
+            {
+                aiManager.AddMemory($"{outcome} on {actionName} at {Time.time}");
+                aiManager.UpdateEmotionalState(outcome == "SUCCESS" ? EmotionalState.Happy : (outcome == "FAILURE" ? EmotionalState.Sad : EmotionalState.Neutral));
+            }
         }
+
+        // Display floating text for all characters
+        Vector3 textPosition = character.transform.position + Vector3.up * 2f;
+        string floatingText = $"{outcome}: {scoreChange}";
+        FloatingTextManager.Instance.ShowFloatingText(floatingText, textPosition, outcome == "SUCCESS" ? FloatingTextType.Points : FloatingTextType.Milestone);
     }
 
-    private float CalculateSuccessRate(UniversalCharacterController character, LocationManager.LocationAction action)
+    private float CalculateSuccessRate(UniversalCharacterController character, string actionName)
     {
-        float baseRate = action.baseSuccessRate;
-        float roleBonus = (character.aiSettings.characterRole == action.requiredRole) ? 0.2f : 0f;
-        float collabBonus = CollabManager.Instance.GetCollabSuccessBonus(action.actionName);
+        float baseRate = defaultBaseSuccessRate;
+        float roleBonus = 0f;
+
+        if (character.aiSettings != null)
+        {
+            roleBonus = (character.aiSettings.characterRole == playerRole) ? 0.2f : 0f;
+        }
+        else
+        {
+            Debug.LogWarning($"CalculateSuccessRate: aiSettings is null for character {character.characterName}. Using default player role.");
+        }
+        
+        float collabBonus = 0f;
+        if (CollabManager.Instance != null)
+        {
+            collabBonus = CollabManager.Instance.GetCollabSuccessBonus(actionName);
+        }
+        else
+        {
+            Debug.LogWarning("CalculateSuccessRate: CollabManager.Instance is null");
+        }
         
         return Mathf.Clamp01(baseRate + roleBonus + collabBonus);
     }

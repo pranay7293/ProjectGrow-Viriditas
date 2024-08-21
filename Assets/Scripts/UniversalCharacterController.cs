@@ -96,24 +96,31 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     [PunRPC]
-    public void Initialize(string name, bool isPlayerControlled, float r, float g, float b)
+public void Initialize(string name, bool isPlayerControlled, float r, float g, float b)
+{
+    SetCharacterProperties(name, isPlayerControlled, new Color(r, g, b));
+    if (photonView.IsMine)
     {
-        SetCharacterProperties(name, isPlayerControlled, new Color(r, g, b));
-        if (photonView.IsMine)
+        if (isPlayerControlled)
         {
-            if (isPlayerControlled)
-            {
-                SetupPlayerControlled();
-            }
-            else
-            {
-                SetupAIControlled();
-            }
-            InitializeProgressBar();
+            SetupPlayerControlled();
         }
-        InitializePersonalGoals();
-        StartCoroutine(DelayedAcclimation());
+        else
+        {
+            SetupAIControlled();
+        }
+        InitializeProgressBar();
     }
+    InitializePersonalGoals();
+    StartCoroutine(DelayedAcclimation());
+
+    if (aiSettings == null)
+    {
+        aiSettings = ScriptableObject.CreateInstance<AISettings>();
+        aiSettings.characterRole = isPlayerControlled ? "Player" : "Default AI";
+        Debug.LogWarning($"Created default AISettings for {characterName}");
+    }
+}
 
     private IEnumerator DelayedAcclimation()
     {
@@ -411,10 +418,20 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         if (photonView.IsMine)
         {
-            RiskRewardManager.Instance.EvaluateActionOutcome(this, currentAction);
+            if (RiskRewardManager.Instance != null)
+            {
+                RiskRewardManager.Instance.EvaluateActionOutcome(this, currentAction?.actionName ?? "Unknown Action");
+            }
+            else
+            {
+                Debug.LogWarning("CompleteAction: RiskRewardManager.Instance is null");
+            }
         }
         
-        CheckPersonalGoalProgress(currentAction.actionName);
+        if (currentAction != null)
+        {
+            CheckPersonalGoalProgress(currentAction.actionName);
+        }
         currentAction = null;
         SetState(CharacterState.Idle);
     }
