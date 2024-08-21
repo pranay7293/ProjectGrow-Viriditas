@@ -1,6 +1,6 @@
-using UnityEngine;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 public class EurekaLogManager : MonoBehaviour
 {
@@ -9,14 +9,13 @@ public class EurekaLogManager : MonoBehaviour
     [Serializable]
     public class EurekaLogEntry
     {
-        public string title;
-        public List<string> involvedCharacters;
         public string description;
-        public string completedMilestone;
-        public float timestamp;
+        public List<string> involvedCharacters;
+        public string timestamp;
     }
 
     private List<EurekaLogEntry> eurekaLog = new List<EurekaLogEntry>();
+    private const int MaxLogEntries = 10;
 
     private void Awake()
     {
@@ -31,18 +30,21 @@ public class EurekaLogManager : MonoBehaviour
         }
     }
 
-    public void AddEurekaLogEntry(string title, List<string> involvedCharacters, string description, string completedMilestone)
+    public void AddEurekaLogEntry(string description, List<string> involvedCharacters)
     {
         EurekaLogEntry entry = new EurekaLogEntry
         {
-            title = title,
-            involvedCharacters = involvedCharacters,
             description = description,
-            completedMilestone = completedMilestone,
-            timestamp = Time.time
+            involvedCharacters = involvedCharacters,
+            timestamp = DateTime.Now.ToString("HH:mm:ss")
         };
 
-        eurekaLog.Add(entry);
+        eurekaLog.Insert(0, entry); // Add new entries at the beginning
+
+        if (eurekaLog.Count > MaxLogEntries)
+        {
+            eurekaLog.RemoveAt(eurekaLog.Count - 1);
+        }
     }
 
     public List<EurekaLogEntry> GetEurekaLog()

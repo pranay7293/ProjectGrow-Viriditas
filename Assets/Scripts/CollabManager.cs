@@ -114,20 +114,14 @@ public class CollabManager : MonoBehaviourPunCallbacks
     
 
     public void FinalizeCollaboration(string actionName)
+{
+    if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
     {
-        if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
-        {
-            if (Random.value < ScoreConstants.EUREKA_CHANCE)
-            {
-                TriggerEureka(collaborators);
-            }
-            else
-            {
-                GameManager.Instance.HandleCollabCompletion(actionName, collaborators);
-            }
-            activeCollabs.Remove(actionName);
-        }
+        EurekaManager.Instance.CheckForEureka(collaborators, actionName);
+        GameManager.Instance.HandleCollabCompletion(actionName, collaborators);
+        activeCollabs.Remove(actionName);
     }
+}
 
     private void TriggerEureka(List<UniversalCharacterController> collaborators)
     {

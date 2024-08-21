@@ -25,6 +25,7 @@ public class InputManager : MonoBehaviourPunCallbacks
     [SerializeField] private KeyCode toggleEurekaLogKey = KeyCode.F5;
     [SerializeField] private KeyCode acceptDialogueRequestKey = KeyCode.Y;
     [SerializeField] private KeyCode declineDialogueRequestKey = KeyCode.N;
+    [SerializeField] private EurekaLogUI eurekaLogUI;
 
     private UniversalCharacterController localPlayer;
     private bool wasUIActiveLastFrame;
@@ -200,9 +201,16 @@ public class InputManager : MonoBehaviourPunCallbacks
 
     private void ToggleEurekaLog()
     {
-        EurekaLogUI.Instance.ToggleEurekaLog();
-        IsUIActive = EurekaLogUI.Instance.IsLogVisible();
-        UpdateCursorState();
+        if (eurekaLogUI != null)
+        {
+            eurekaLogUI.ToggleEurekaLog();
+            IsUIActive = eurekaLogUI.IsLogVisible();
+            UpdateCursorState();
+        }
+        else
+        {
+            Debug.LogWarning("EurekaLogUI reference is missing in InputManager");
+        }
     }
 
     private void ToggleGuideDisplay()
