@@ -635,46 +635,48 @@ private void UpdateAcclimation()
 
     public bool IsCollaborating { get; private set; }
 
-    public void InitiateCollab(string actionName)
+    public Color GetCharacterColor()
     {
-        if (photonView.IsMine && !IsCollaborating && !string.IsNullOrEmpty(actionName))
+        return characterColor;
+    }
+
+    public void InitiateCollab(string actionName, UniversalCharacterController collaborator)
+    {
+        if (photonView.IsMine && !IsCollaborating)
         {
-            if (CollabManager.Instance.CanInitiateCollab(this))
-            {
-                IsCollaborating = true;
-                photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID);
-            }
+            photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID, collaborator.photonView.ViewID);
         }
     }
 
     [PunRPC]
-    private void RPC_InitiateCollab(string actionName, int initiatorViewID)
+    private void RPC_InitiateCollab(string actionName, int initiatorViewID, int collaboratorViewID)
     {
-        CollabManager.Instance.InitiateCollab(actionName, initiatorViewID);
+        CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, collaboratorViewID);
+        IsCollaborating = true;
         if (progressBar != null)
         {
             progressBar.SetKeyState(KeyState.Collaborating);
         }
     }
 
-    public void JoinCollab(string actionName)
+    public void JoinCollab(string actionName, UniversalCharacterController initiator)
+{
+    if (photonView.IsMine && !IsCollaborating)
     {
-        if (photonView.IsMine && !IsCollaborating && CollabManager.Instance.CanInitiateCollab(this))
-        {
-            IsCollaborating = true;
-            photonView.RPC("RPC_JoinCollab", RpcTarget.All, actionName, photonView.ViewID);
-        }
+        photonView.RPC("RPC_JoinCollab", RpcTarget.All, actionName, initiator.photonView.ViewID, photonView.ViewID);
     }
+}
 
-    [PunRPC]
-    private void RPC_JoinCollab(string actionName, int joinerViewID)
+[PunRPC]
+private void RPC_JoinCollab(string actionName, int initiatorViewID, int joinerViewID)
+{
+    CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, joinerViewID);
+    IsCollaborating = true;
+    if (progressBar != null)
     {
-        CollabManager.Instance.JoinCollab(actionName, joinerViewID);
-        if (progressBar != null)
-        {
-            progressBar.SetKeyState(KeyState.Collaborating);
-        }
+        progressBar.SetKeyState(KeyState.Collaborating);
     }
+}
 
     public void EndCollab(string actionName)
     {
@@ -749,4 +751,5 @@ private void UpdateAcclimation()
             Destroy(cameraRigInstance);
         }
     }
+    
 }

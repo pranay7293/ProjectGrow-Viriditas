@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using System.Collections.Generic;
-using UnityEngine.EventSystems;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 public class LocationActionUI : MonoBehaviour
 {
@@ -19,6 +19,9 @@ public class LocationActionUI : MonoBehaviour
         public TextMeshProUGUI actionNameText;
         public TextMeshProUGUI actionDurationText;
         public Button collabButton;
+        public GameObject collabOptionsPanel;
+        public Button[] collabOptionButtons;
+        public Image[] collabOptionIcons;
     }
 
     [SerializeField] private GameObject actionPanel;
@@ -27,9 +30,14 @@ public class LocationActionUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI actionDescriptionText;
     [SerializeField] private ActionButton[] actionButtons;
     [SerializeField] private float outcomeDisplayDuration = 2f;
+    [SerializeField] private GameObject guideTextBox;
+    [SerializeField] private TextMeshProUGUI guideText;
+    [SerializeField] private float guideDisplayDuration = 2f;
+    [SerializeField] private float guideFadeDuration = 0.5f;
 
     private UniversalCharacterController currentCharacter;
     private LocationManager currentLocation;
+    private Dictionary<string, List<UniversalCharacterController>> eligibleCollaborators = new Dictionary<string, List<UniversalCharacterController>>();
 
     private void Awake()
     {
@@ -50,6 +58,10 @@ public class LocationActionUI : MonoBehaviour
             actionPanel.SetActive(false);
         }
         outcomeText.gameObject.SetActive(false);
+        if (guideTextBox != null)
+        {
+            guideTextBox.SetActive(false);
+        }
 
         InitializeActionButtons();
     }
@@ -65,26 +77,27 @@ public class LocationActionUI : MonoBehaviour
             {
                 actionButton.button.onClick.RemoveAllListeners();
                 actionButton.button.onClick.AddListener(() => OnActionButtonClicked(index));
-
-                EventTrigger trigger = actionButton.button.gameObject.GetComponent<EventTrigger>();
-                if (trigger == null)
-                {
-                    trigger = actionButton.button.gameObject.AddComponent<EventTrigger>();
-                }
-
-                EventTrigger.Entry entryEnter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
-                entryEnter.callback.AddListener((data) => { OnActionButtonHover(index); });
-                trigger.triggers.Add(entryEnter);
-
-                EventTrigger.Entry entryExit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
-                entryExit.callback.AddListener((data) => { ClearActionDescription(); });
-                trigger.triggers.Add(entryExit);
             }
 
             if (actionButton.collabButton != null)
             {
                 actionButton.collabButton.onClick.RemoveAllListeners();
-                actionButton.collabButton.onClick.AddListener(() => InitiateCollab(actionButton.actionNameText.text));
+                actionButton.collabButton.onClick.AddListener(() => ToggleCollabOptions(index));
+            }
+
+            if (actionButton.collabOptionsPanel != null)
+            {
+                actionButton.collabOptionsPanel.SetActive(false);
+            }
+
+            for (int j = 0; j < actionButton.collabOptionButtons.Length; j++)
+            {
+                int optionIndex = j;
+                if (actionButton.collabOptionButtons[j] != null)
+                {
+                    actionButton.collabOptionButtons[j].onClick.RemoveAllListeners();
+                    actionButton.collabOptionButtons[j].onClick.AddListener(() => OnCollabOptionClicked(index, optionIndex));
+                }
             }
         }
     }
@@ -94,7 +107,10 @@ public class LocationActionUI : MonoBehaviour
         currentCharacter = character;
         currentLocation = location;
 
-        locationNameText.text = location.locationName;
+        if (locationNameText != null)
+        {
+            locationNameText.text = location.locationName;
+        }
         List<LocationManager.LocationAction> availableActions = location.GetAvailableActions(character.aiSettings.characterRole);
 
         for (int i = 0; i < actionButtons.Length; i++)
@@ -150,20 +166,72 @@ public class LocationActionUI : MonoBehaviour
         currentCharacter.StartAction(selectedAction);
     }
 
-    private void OnActionButtonHover(int index)
+    private void ToggleCollabOptions(int actionIndex)
     {
-        if (currentLocation == null) return;
+        ActionButton actionButton = actionButtons[actionIndex];
+        if (actionButton.collabOptionsPanel != null)
+        {
+            bool isActive = !actionButton.collabOptionsPanel.activeSelf;
+            actionButton.collabOptionsPanel.SetActive(isActive);
 
-        List<LocationManager.LocationAction> availableActions = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole);
-        if (index < 0 || index >= availableActions.Count) return;
-
-        LocationManager.LocationAction action = availableActions[index];
-        actionDescriptionText.text = action.description;
+            if (isActive)
+            {
+                UpdateCollabOptionButtons(actionIndex);
+            }
+        }
     }
 
-    private void ClearActionDescription()
+    private void UpdateCollabOptionButtons(int actionIndex)
     {
-        actionDescriptionText.text = "";
+        ActionButton actionButton = actionButtons[actionIndex];
+        List<LocationManager.LocationAction> availableActions = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole);
+        string actionName = availableActions[actionIndex].actionName;
+
+        if (eligibleCollaborators.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
+        {
+            for (int i = 0; i < actionButton.collabOptionButtons.Length; i++)
+            {
+                if (i < collaborators.Count)
+                {
+                    if (actionButton.collabOptionButtons[i] != null)
+                    {
+                        actionButton.collabOptionButtons[i].gameObject.SetActive(true);
+                        if (actionButton.collabOptionIcons[i] != null)
+                        {
+                            actionButton.collabOptionIcons[i].color = collaborators[i].GetCharacterColor();
+                            AnimateCollabIcon animator = actionButton.collabOptionIcons[i].GetComponent<AnimateCollabIcon>();
+                            if (animator != null)
+                            {
+                                animator.StartAnimation();
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (actionButton.collabOptionButtons[i] != null)
+                    {
+                        actionButton.collabOptionButtons[i].gameObject.SetActive(false);
+                    }
+                }
+            }
+        }
+    }
+
+    private void OnCollabOptionClicked(int actionIndex, int collaboratorIndex)
+    {
+        List<LocationManager.LocationAction> availableActions = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole);
+        string actionName = availableActions[actionIndex].actionName;
+
+        if (eligibleCollaborators.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
+        {
+            if (collaboratorIndex < collaborators.Count)
+            {
+                UniversalCharacterController collaborator = collaborators[collaboratorIndex];
+                currentCharacter.InitiateCollab(actionName, collaborator);
+                ToggleCollabOptions(actionIndex);
+            }
+        }
     }
 
     public void UpdateActionProgress(string actionName, float progress)
@@ -179,10 +247,10 @@ public class LocationActionUI : MonoBehaviour
     {
         outcomeText.gameObject.SetActive(true);
         outcomeText.text = outcome;
-        StartCoroutine(HideOutcomeAndCloseUI());
+        StartCoroutine(HideOutcomeAfterDelay());
     }
 
-    private IEnumerator HideOutcomeAndCloseUI()
+    private IEnumerator HideOutcomeAfterDelay()
     {
         yield return new WaitForSeconds(outcomeDisplayDuration);
         outcomeText.gameObject.SetActive(false);
@@ -199,41 +267,67 @@ public class LocationActionUI : MonoBehaviour
 
     private void UpdateCollabUI()
     {
-        List<UniversalCharacterController> eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(currentCharacter);
-        
-        foreach (var button in actionButtons)
-        {
-            if (button.collabButton != null)
-            {
-                button.collabButton.gameObject.SetActive(eligibleCollaborators.Count > 0);
-            }
-        }
-    }
+        eligibleCollaborators.Clear();
+        List<LocationManager.LocationAction> availableActions = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole);
 
-    private void InitiateCollab(string actionName)
-    {
-        currentCharacter.InitiateCollab(actionName);
-        ShowCollabPromptForNearbyCharacters(actionName);
-    }
+        bool showGuide = false;
 
-    private void ShowCollabPromptForNearbyCharacters(string actionName)
-    {
-        List<UniversalCharacterController> eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(currentCharacter);
-        
-        foreach (var collaborator in eligibleCollaborators)
+        for (int i = 0; i < availableActions.Count; i++)
         {
-            if (collaborator.IsPlayerControlled)
+            string actionName = availableActions[i].actionName;
+            List<UniversalCharacterController> collaborators = CollabManager.Instance.GetEligibleCollaborators(currentCharacter);
+            
+            if (collaborators.Count > 0)
             {
-                CollabPromptUI.Instance.ShowPrompt(collaborator, actionName);
+                eligibleCollaborators[actionName] = collaborators;
+                actionButtons[i].collabButton.gameObject.SetActive(true);
+                showGuide = true;
             }
             else
             {
-                AIManager aiManager = collaborator.GetComponent<AIManager>();
-                if (aiManager != null && aiManager.DecideOnCollaboration(actionName))
-                {
-                    collaborator.JoinCollab(actionName);
-                }
+                actionButtons[i].collabButton.gameObject.SetActive(false);
             }
+        }
+
+        if (showGuide)
+        {
+            ShowGuide();
+        }
+    }
+
+    private void ShowGuide()
+    {
+        if (guideTextBox != null && guideText != null)
+        {
+            guideTextBox.SetActive(true);
+            StartCoroutine(FadeGuide(true));
+        }
+    }
+
+    private IEnumerator FadeGuide(bool fadeIn)
+    {
+        float elapsedTime = 0f;
+        Color startColor = guideText.color;
+        Color targetColor = new Color(startColor.r, startColor.g, startColor.b, fadeIn ? 1f : 0f);
+
+        while (elapsedTime < guideFadeDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float alpha = Mathf.Lerp(startColor.a, targetColor.a, elapsedTime / guideFadeDuration);
+            guideText.color = new Color(startColor.r, startColor.g, startColor.b, alpha);
+            yield return null;
+        }
+
+        guideText.color = targetColor;
+
+        if (fadeIn)
+        {
+            yield return new WaitForSeconds(guideDisplayDuration);
+            StartCoroutine(FadeGuide(false));
+        }
+        else
+        {
+            guideTextBox.SetActive(false);
         }
     }
 }

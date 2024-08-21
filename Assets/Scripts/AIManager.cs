@@ -85,24 +85,29 @@ public class AIManager : MonoBehaviourPunCallbacks
     }
 
     public bool ConsiderCollaboration(LocationManager.LocationAction action)
+{
+    if (action == null || characterController == null)
     {
-        if (action == null || characterController == null)
-        {
-            Debug.LogWarning("Invalid action or character in ConsiderCollaboration");
-            return false;
-        }
+        Debug.LogWarning("Invalid action or character in ConsiderCollaboration");
+        return false;
+    }
 
-        if (CollabManager.Instance.CanInitiateCollab(characterController))
+    if (CollabManager.Instance.CanInitiateCollab(characterController))
+    {
+        float collaborationChance = CalculateCollaborationChance(action);
+        if (Random.value < collaborationChance)
         {
-            float collaborationChance = CalculateCollaborationChance(action);
-            if (Random.value < collaborationChance)
+            List<UniversalCharacterController> eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(characterController);
+            if (eligibleCollaborators.Count > 0)
             {
-                characterController.InitiateCollab(action.actionName);
+                UniversalCharacterController collaborator = eligibleCollaborators[Random.Range(0, eligibleCollaborators.Count)];
+                characterController.InitiateCollab(action.actionName, collaborator);
                 return true;
             }
         }
-        return false;
     }
+    return false;
+}
 
     private float CalculateCollaborationChance(LocationManager.LocationAction action)
     {

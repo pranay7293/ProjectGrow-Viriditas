@@ -9,7 +9,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
 
     [SerializeField] private float collabRadius = 5f;
     [SerializeField] private float collabCooldown = 45f;
-    [SerializeField] private int maxCollaborators = 2;
+    [SerializeField] private int maxCollaborators = 3;
 
     private Dictionary<string, List<UniversalCharacterController>> activeCollabs = new Dictionary<string, List<UniversalCharacterController>>();
     private Dictionary<string, float> collabCooldowns = new Dictionary<string, float>();
@@ -58,47 +58,60 @@ public class CollabManager : MonoBehaviourPunCallbacks
             }
         }
 
-        return eligibleCollaborators;
+        return eligibleCollaborators.Take(maxCollaborators).ToList();
     }
 
     [PunRPC]
-    public void InitiateCollab(string actionName, int initiatorViewID)
+    public void RequestCollaboration(int initiatorViewID, int targetViewID, string actionName)
     {
         PhotonView initiatorView = PhotonView.Find(initiatorViewID);
-        if (initiatorView == null) return;
+        PhotonView targetView = PhotonView.Find(targetViewID);
+        if (initiatorView == null || targetView == null) return;
 
         UniversalCharacterController initiator = initiatorView.GetComponent<UniversalCharacterController>();
-        if (initiator == null) return;
+        UniversalCharacterController target = targetView.GetComponent<UniversalCharacterController>();
+        if (initiator == null || target == null) return;
+
+        if (target.IsPlayerControlled && target.photonView.IsMine)
+        {
+            // Show prompt for local player
+            CollabPromptUI.Instance.ShowPrompt(initiator, target, actionName);
+        }
+        else if (!target.IsPlayerControlled)
+        {
+            // Automatic decision for AI
+            AIManager aiManager = target.GetComponent<AIManager>();
+            if (aiManager != null && aiManager.DecideOnCollaboration(actionName))
+            {
+                InitiateCollab(actionName, initiatorViewID, targetViewID);
+            }
+        }
+    }
+
+    [PunRPC]
+    public void InitiateCollab(string actionName, int initiatorViewID, int collaboratorViewID)
+    {
+        PhotonView initiatorView = PhotonView.Find(initiatorViewID);
+        PhotonView collaboratorView = PhotonView.Find(collaboratorViewID);
+        if (initiatorView == null || collaboratorView == null) return;
+
+        UniversalCharacterController initiator = initiatorView.GetComponent<UniversalCharacterController>();
+        UniversalCharacterController collaborator = collaboratorView.GetComponent<UniversalCharacterController>();
+        if (initiator == null || collaborator == null) return;
 
         if (!activeCollabs.ContainsKey(actionName))
         {
             activeCollabs[actionName] = new List<UniversalCharacterController>();
         }
         activeCollabs[actionName].Add(initiator);
+        activeCollabs[actionName].Add(collaborator);
         SetCollabCooldown(initiator.characterName);
+        SetCollabCooldown(collaborator.characterName);
         
         GameManager.Instance.UpdatePlayerScore(initiator.characterName, ScoreConstants.COLLABORATION_INITIATION_BONUS);
+        GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.COLLABORATION_JOIN_BONUS);
     }
-
-    [PunRPC]
-    public void JoinCollab(string actionName, int joinerViewID)
-    {
-        if (!activeCollabs.ContainsKey(actionName)) return;
-
-        PhotonView joinerView = PhotonView.Find(joinerViewID);
-        if (joinerView == null) return;
-
-        UniversalCharacterController joiner = joinerView.GetComponent<UniversalCharacterController>();
-        if (joiner == null) return;
-
-        if (activeCollabs[actionName].Count < maxCollaborators)
-        {
-            activeCollabs[actionName].Add(joiner);
-            SetCollabCooldown(joiner.characterName);
-            
-            GameManager.Instance.UpdatePlayerScore(joiner.characterName, ScoreConstants.COLLABORATION_JOIN_BONUS);
-        }
-    }
+    
 
     public void FinalizeCollaboration(string actionName)
     {
@@ -142,22 +155,22 @@ public class CollabManager : MonoBehaviourPunCallbacks
     }
 
     private void SetCollabCooldown(string characterName)
-{
-    if (!string.IsNullOrEmpty(characterName))
     {
-        collabCooldowns[characterName] = collabCooldown;
-        UniversalCharacterController character = GameManager.Instance.GetCharacterByName(characterName);
-        if (character != null)
+        if (!string.IsNullOrEmpty(characterName))
         {
-            CharacterProgressBar progressBar = character.GetComponentInChildren<CharacterProgressBar>();
-            if (progressBar != null)
+            collabCooldowns[characterName] = collabCooldown;
+            UniversalCharacterController character = GameManager.Instance.GetCharacterByName(characterName);
+            if (character != null)
             {
-                progressBar.SetKeyState(KeyState.Cooldown);
-                progressBar.SetCooldown(collabCooldown);
+                CharacterProgressBar progressBar = character.GetComponentInChildren<CharacterProgressBar>();
+                if (progressBar != null)
+                {
+                    progressBar.SetKeyState(KeyState.Cooldown);
+                    progressBar.SetCooldown(collabCooldown);
+                }
             }
         }
     }
-}
 
     private void UpdateCooldowns()
     {

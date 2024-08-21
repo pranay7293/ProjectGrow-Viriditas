@@ -11,7 +11,8 @@ public class CollabPromptUI : MonoBehaviour
     [SerializeField] private Button acceptButton;
     [SerializeField] private Button declineButton;
 
-    private UniversalCharacterController targetCharacter;
+    private UniversalCharacterController initiatorCharacter;
+    private UniversalCharacterController localCharacter;
     private string currentActionName;
 
     private void Awake()
@@ -34,9 +35,10 @@ public class CollabPromptUI : MonoBehaviour
         declineButton.onClick.AddListener(DeclineCollab);
     }
 
-    public void ShowPrompt(UniversalCharacterController initiator, string actionName)
+    public void ShowPrompt(UniversalCharacterController initiator, UniversalCharacterController localPlayer, string actionName)
     {
-        targetCharacter = initiator;
+        initiatorCharacter = initiator;
+        localCharacter = localPlayer;
         currentActionName = actionName;
         promptText.text = $"{initiator.characterName} wants to collab on {actionName}";
         promptPanel.SetActive(true);
@@ -44,7 +46,7 @@ public class CollabPromptUI : MonoBehaviour
 
     private void AcceptCollab()
     {
-        targetCharacter.JoinCollab(currentActionName);
+        localCharacter.JoinCollab(currentActionName, initiatorCharacter);
         HidePrompt();
     }
 
@@ -56,7 +58,8 @@ public class CollabPromptUI : MonoBehaviour
     private void HidePrompt()
     {
         promptPanel.SetActive(false);
-        targetCharacter = null;
+        initiatorCharacter = null;
+        localCharacter = null;
         currentActionName = null;
     }
 }
