@@ -10,6 +10,7 @@ public class InputManager : MonoBehaviourPunCallbacks
     public bool PlayerRunModifier => Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
     public bool IsInDialogue { get; private set; }
     public bool IsChatLogOpen { get; private set; }
+    public bool IsUIActive { get; private set; }
 
     [SerializeField] private KeyCode toggleChatLogKey = KeyCode.Tab;
     [SerializeField] private KeyCode endDialogueKey = KeyCode.Escape;
@@ -26,6 +27,7 @@ public class InputManager : MonoBehaviourPunCallbacks
     [SerializeField] private KeyCode declineDialogueRequestKey = KeyCode.N;
 
     private UniversalCharacterController localPlayer;
+    private bool wasUIActiveLastFrame;
 
     private void Awake()
     {
@@ -151,12 +153,14 @@ public class InputManager : MonoBehaviourPunCallbacks
     public void StartDialogue()
     {
         IsInDialogue = true;
+        IsUIActive = true;
         UpdateCursorState();
     }
 
     public void EndDialogue()
     {
         IsInDialogue = false;
+        IsUIActive = false;
         DialogueManager.Instance.EndConversation();
         UpdateCursorState();
     }
@@ -164,6 +168,7 @@ public class InputManager : MonoBehaviourPunCallbacks
     private void ToggleChatLog()
     {
         IsChatLogOpen = !IsChatLogOpen;
+        IsUIActive = IsChatLogOpen;
         DialogueManager.Instance.ToggleChatLog();
         UpdateCursorState();
     }
@@ -176,11 +181,15 @@ public class InputManager : MonoBehaviourPunCallbacks
     private void ToggleActionLog()
     {
         ActionLogManager.Instance.ToggleActionLog();
+        IsUIActive = ActionLogManager.Instance.IsLogVisible();
+        UpdateCursorState();
     }
 
     private void ToggleMilestones()
     {
         GameManager.Instance.ToggleMilestonesDisplay();
+        IsUIActive = GameManager.Instance.IsMilestonesDisplayVisible();
+        UpdateCursorState();
     }
     
     private void TogglePersonalGoals()
@@ -191,12 +200,16 @@ public class InputManager : MonoBehaviourPunCallbacks
 
     private void ToggleEurekaLog()
     {
-    EurekaLogUI.Instance.ToggleEurekaLog();
+        EurekaLogUI.Instance.ToggleEurekaLog();
+        IsUIActive = EurekaLogUI.Instance.IsLogVisible();
+        UpdateCursorState();
     }
 
     private void ToggleGuideDisplay()
     {
         GuideBoxManager.Instance.ToggleGuideDisplay();
+        IsUIActive = GuideBoxManager.Instance.IsGuideDisplayVisible();
+        UpdateCursorState();
     }
 
     private UniversalCharacterController FindLocalPlayer()
@@ -214,9 +227,20 @@ public class InputManager : MonoBehaviourPunCallbacks
 
     private void UpdateCursorState()
     {
-        bool shouldShowCursor = IsInDialogue || IsChatLogOpen || IsPointerOverUIElement();
-        Cursor.visible = shouldShowCursor;
-        Cursor.lockState = shouldShowCursor ? CursorLockMode.None : CursorLockMode.Locked;
+        bool shouldShowCursor = IsUIActive || IsInDialogue || IsPointerOverUIElement();
+
+        if (shouldShowCursor != wasUIActiveLastFrame)
+        {
+            Cursor.visible = shouldShowCursor;
+            Cursor.lockState = shouldShowCursor ? CursorLockMode.None : CursorLockMode.Locked;
+            wasUIActiveLastFrame = shouldShowCursor;
+        }
+    }
+
+    public void SetUIActive(bool active)
+    {
+        IsUIActive = active;
+        UpdateCursorState();
     }
 
     private bool IsPointerOverUIElement()

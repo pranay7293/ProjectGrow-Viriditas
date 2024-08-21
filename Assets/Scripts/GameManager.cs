@@ -279,6 +279,11 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
+    public bool IsMilestonesDisplayVisible()
+{
+    return milestonesDisplay != null && milestonesDisplay.activeSelf;
+}
+
     private void UpdateMilestonesDisplay()
     {
         for (int i = 0; i < currentChallenge.milestones.Count; i++)

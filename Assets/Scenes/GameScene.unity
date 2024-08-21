@@ -31566,7 +31566,7 @@ MonoBehaviour:
   - {fileID: 255403842}
   challengeProgressUI: {fileID: 1492279664317535758}
   emergentScenarioNotification: {fileID: 403210151}
-  dialogueRequestUI: {fileID: 0}
+  dialogueRequestUI: {fileID: 815499551}
   scenarioGenerator: {fileID: 234838483}
   scenarioUI: {fileID: 694188497}
   spawnPoints:
@@ -35031,9 +35031,21 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -150
       objectReference: {fileID: 0}
-    - target: {fileID: 3061477544383670169, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
-      propertyPath: m_FillAmount
+    - target: {fileID: 2243889430009641347, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2243889430009641347, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2243889430009641347, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 6288249905870176233}
+    - target: {fileID: 2243889430009641347, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3287645947969192414, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
@@ -35131,14 +35143,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7949179081073871674, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
-      propertyPath: closeButton
-      value: 
-      objectReference: {fileID: 6288249905870176233}
-    - target: {fileID: 7949179081073871674, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
-      propertyPath: actionButtons.Array.data[0].CollabButton
-      value: 
-      objectReference: {fileID: 6288249905870176234}
     - target: {fileID: 8065790662219798683, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_Name
       value: LocationActionUI
@@ -35168,28 +35172,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
---- !u!114 &6288249905870176233 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4560843270015243890, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
+--- !u!1 &6288249905870176233 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8065790662219798683, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
   m_PrefabInstance: {fileID: 6288249905870176232}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &6288249905870176234 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 272135655916548231, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
-  m_PrefabInstance: {fileID: 6288249905870176232}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!224 &6378456183682278042
 RectTransform:
   m_ObjectHideFlags: 0

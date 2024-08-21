@@ -12,6 +12,11 @@ public class ActionLogManager : MonoBehaviour
 
     private Queue<string> actionLog = new Queue<string>();
 
+    public bool IsLogVisible()
+{
+    return actionLogPanel != null && actionLogPanel.activeSelf;
+}
+
     private void Awake()
     {
         if (Instance == null)
@@ -51,6 +56,7 @@ public class ActionLogManager : MonoBehaviour
     public void ToggleActionLog()
     {
         actionLogPanel.SetActive(!actionLogPanel.activeSelf);
+        InputManager.Instance.SetUIActive(actionLogPanel.activeSelf);  // Add this line
         if (actionLogPanel.activeSelf)
         {
             UpdateActionLogDisplay();

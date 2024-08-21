@@ -2,21 +2,34 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using UnityEngine.EventSystems;
 
 public class LocationActionUI : MonoBehaviour
 {
     public static LocationActionUI Instance { get; private set; }
+
+    [System.Serializable]
+    public class ActionButton
+    {
+        public Button button;
+        public Image circularBackground;
+        public Image circularProgressBar;
+        public Image actionIcon;
+        public TextMeshProUGUI actionNameText;
+        public TextMeshProUGUI actionDurationText;
+        public Button collabButton;
+    }
 
     [SerializeField] private GameObject actionPanel;
     [SerializeField] private TextMeshProUGUI outcomeText;
     [SerializeField] private TextMeshProUGUI locationNameText;
     [SerializeField] private TextMeshProUGUI actionDescriptionText;
     [SerializeField] private ActionButton[] actionButtons;
-    [SerializeField] private Image acclimationProgressBar;
-    [SerializeField] private TextMeshProUGUI acclimationText;
 
     private UniversalCharacterController currentCharacter;
     private LocationManager currentLocation;
+
+    
 
     private void Awake()
     {
@@ -32,17 +45,51 @@ public class LocationActionUI : MonoBehaviour
 
     private void Start()
     {
-    if (actionPanel != null)
-    {
-        actionPanel.SetActive(false);
-    }
-    outcomeText.gameObject.SetActive(false);
+        if (actionPanel != null)
+        {
+            actionPanel.SetActive(false);
+        }
+        outcomeText.gameObject.SetActive(false);
 
-    for (int i = 0; i < actionButtons.Length; i++)
-    {
-        int index = i;
-        actionButtons[i].Button.onClick.AddListener(() => OnActionButtonClicked(index));
+        InitializeActionButtons();
     }
+
+    private void InitializeActionButtons()
+    {
+        for (int i = 0; i < actionButtons.Length; i++)
+        {
+            int index = i;
+            ActionButton actionButton = actionButtons[i];
+
+            // Main action button setup
+            if (actionButton.button != null)
+            {
+                actionButton.button.onClick.RemoveAllListeners();
+                actionButton.button.onClick.AddListener(() => OnActionButtonClicked(index));
+
+                // Add hover listeners
+                EventTrigger trigger = actionButton.button.gameObject.GetComponent<EventTrigger>();
+                if (trigger == null)
+                {
+                    trigger = actionButton.button.gameObject.AddComponent<EventTrigger>();
+                }
+
+                EventTrigger.Entry entryEnter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+                entryEnter.callback.AddListener((data) => { OnActionButtonHover(index); });
+                trigger.triggers.Add(entryEnter);
+
+                EventTrigger.Entry entryExit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+                entryExit.callback.AddListener((data) => { ClearActionDescription(); });
+                trigger.triggers.Add(entryExit);
+            }
+
+            // Collab button setup
+            if (actionButton.collabButton != null)
+            {
+                actionButton.collabButton.onClick.RemoveAllListeners();
+                actionButton.collabButton.onClick.AddListener(() => InitiateCollab(actionButton.actionNameText.text));
+            }
+        }
     }
 
     public void ShowActionsForLocation(UniversalCharacterController character, LocationManager location)
@@ -57,17 +104,18 @@ public class LocationActionUI : MonoBehaviour
         {
             if (i < availableActions.Count)
             {
-                actionButtons[i].gameObject.SetActive(true);
+                actionButtons[i].button.gameObject.SetActive(true);
                 SetupActionButton(actionButtons[i], availableActions[i]);
             }
             else
             {
-                actionButtons[i].gameObject.SetActive(false);
+                actionButtons[i].button.gameObject.SetActive(false);
             }
         }
 
         actionPanel.SetActive(true);
         UpdateCollabUI();
+        InputManager.Instance.SetUIActive(true);  // Add this line
     }
 
     private void SetupActionButton(ActionButton button, LocationManager.LocationAction action)
@@ -78,23 +126,12 @@ public class LocationActionUI : MonoBehaviour
             return;
         }
 
-        if (button.ActionName != null)
-            button.ActionName.text = action.actionName;
-        
-        if (button.ActionIcon != null)
-        {
-            button.ActionIcon.sprite = action.actionIcon;
-            button.ActionIcon.color = Color.white;
-        }
-        
-        if (button.ActionDuration != null)
-            button.ActionDuration.text = $"{action.duration}";
-        
-        if (button.CircularProgressBar != null)
-            button.CircularProgressBar.fillAmount = 0;
-        
-        if (button.CollabButton != null)
-            button.CollabButton.gameObject.SetActive(false);
+        button.actionNameText.text = action.actionName;
+        button.actionIcon.sprite = action.actionIcon;
+        button.actionIcon.color = Color.white;
+        button.actionDurationText.text = $"{action.duration}";
+        button.circularProgressBar.fillAmount = 0;
+        button.collabButton.gameObject.SetActive(false);
     }
 
     private void OnActionButtonClicked(int index)
@@ -116,12 +153,28 @@ public class LocationActionUI : MonoBehaviour
         currentCharacter.StartAction(selectedAction);
     }
 
+    private void OnActionButtonHover(int index)
+    {
+        if (currentLocation == null) return;
+
+        List<LocationManager.LocationAction> availableActions = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole);
+        if (index < 0 || index >= availableActions.Count) return;
+
+        LocationManager.LocationAction action = availableActions[index];
+        actionDescriptionText.text = action.description;
+    }
+
+    private void ClearActionDescription()
+    {
+        actionDescriptionText.text = "";
+    }
+
     public void UpdateActionProgress(string actionName, float progress)
     {
-        ActionButton button = System.Array.Find(actionButtons, b => b.ActionName.text == actionName);
-        if (button != null && button.CircularProgressBar != null)
+        ActionButton button = System.Array.Find(actionButtons, b => b.actionNameText.text == actionName);
+        if (button != null && button.circularProgressBar != null)
         {
-            button.CircularProgressBar.fillAmount = progress;
+            button.circularProgressBar.fillAmount = progress;
         }
     }
 
@@ -142,11 +195,7 @@ public class LocationActionUI : MonoBehaviour
         actionPanel.SetActive(false);
         currentCharacter = null;
         currentLocation = null;
-    }
-
-    public void UpdateActionDescription(string description)
-    {
-        actionDescriptionText.text = description;
+        InputManager.Instance.SetUIActive(false);  // Add this line
     }
 
     private void UpdateCollabUI()
@@ -155,11 +204,9 @@ public class LocationActionUI : MonoBehaviour
         
         foreach (var button in actionButtons)
         {
-            if (button.CollabButton != null)
+            if (button.collabButton != null)
             {
-                button.CollabButton.gameObject.SetActive(eligibleCollaborators.Count > 0);
-                button.CollabButton.onClick.RemoveAllListeners();
-                button.CollabButton.onClick.AddListener(() => InitiateCollab(button.ActionName.text));
+                button.collabButton.gameObject.SetActive(eligibleCollaborators.Count > 0);
             }
         }
     }
@@ -190,31 +237,4 @@ public class LocationActionUI : MonoBehaviour
             }
         }
     }
-
-    public void ShowAcclimationProgress(float progress)
-    {
-        acclimationProgressBar.gameObject.SetActive(true);
-        acclimationText.gameObject.SetActive(true);
-        acclimationProgressBar.fillAmount = progress;
-        acclimationText.text = $"Acclimating: {Mathf.RoundToInt(progress * 100)}%";
-    }
-
-    public void HideAcclimationProgress()
-    {
-        acclimationProgressBar.gameObject.SetActive(false);
-        acclimationText.gameObject.SetActive(false);
-    }
-}
-
-[System.Serializable]
-public class ActionButton
-{
-    public GameObject gameObject;
-    public Image CircularBackground;
-    public Image CircularProgressBar;
-    public Image ActionIcon;
-    public TextMeshProUGUI ActionName;
-    public TextMeshProUGUI ActionDuration;
-    public Button Button;
-    public Button CollabButton;
 }

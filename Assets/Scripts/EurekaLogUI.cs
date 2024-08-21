@@ -17,6 +17,11 @@ public class EurekaLogUI : MonoBehaviour
 
     private List<EurekaLogManager.EurekaLogEntry> entries = new List<EurekaLogManager.EurekaLogEntry>();
 
+    public bool IsLogVisible()
+{
+    return eurekaLogPanel != null && eurekaLogPanel.activeSelf;
+}
+
     private void Awake()
     {
         if (Instance == null)
@@ -66,6 +71,7 @@ public class EurekaLogUI : MonoBehaviour
         {
             OpenEurekaLog();
         }
+        InputManager.Instance.SetUIActive(eurekaLogPanel.activeSelf);  // Add this line
     }
 
     private void OpenEurekaLog()

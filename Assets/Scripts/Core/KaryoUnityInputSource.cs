@@ -3,19 +3,11 @@ using com.ootii.Input;
 
 public class KaryoUnityInputSource : UnityInputSource
 {
-    public override bool IsViewingActivated => !InputManager.Instance.IsInDialogue;
+    public override bool IsViewingActivated => !InputManager.Instance.IsUIActive;
 
     private void Update()
     {
-        if (InputManager.Instance.IsInDialogue || InputManager.Instance.IsChatLogOpen)
-        {
-            Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.None;
-        }
-        else
-        {
-            Cursor.visible = false;
-            Cursor.lockState = CursorLockMode.Locked;
-        }
+        // We'll let InputManager handle the cursor state
+        // This Update method can be empty or removed entirely
     }
 }

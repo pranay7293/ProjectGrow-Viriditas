@@ -333,6 +333,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     public void ToggleChatLog()
     {
         chatLogPanel.SetActive(!chatLogPanel.activeSelf);
+        InputManager.Instance.SetUIActive(chatLogPanel.activeSelf);  // Add this line
         if (chatLogPanel.activeSelf)
         {
             UpdateChatLogDisplay();

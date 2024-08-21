@@ -535,33 +535,33 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     public void ExitLocation()
-{
-    if (currentLocation != null)
     {
-        if (IsPlayerControlled && photonView.IsMine)
+        if (currentLocation != null)
         {
-            if (LocationActionUI.Instance != null)
+            if (IsPlayerControlled && photonView.IsMine)
             {
-                LocationActionUI.Instance.HideActions();
+                if (LocationActionUI.Instance != null)
+                {
+                    LocationActionUI.Instance.HideActions();
+                }
             }
-        }
-        else
-        {
-            NPC_Behavior npcBehavior = GetComponent<NPC_Behavior>();
-            if (npcBehavior != null)
+            else
             {
-                npcBehavior.SetCurrentLocation(null);
+                NPC_Behavior npcBehavior = GetComponent<NPC_Behavior>();
+                if (npcBehavior != null)
+                {
+                    npcBehavior.SetCurrentLocation(null);
+                }
             }
+            
+            if (progressBar != null)
+            {
+                progressBar.EndAcclimation();
+            }
+            
+            currentLocation = null;
         }
-        
-        if (progressBar != null)
-        {
-            progressBar.EndAcclimation();
-        }
-        
-        currentLocation = null;
     }
-}
 
     public void ResetToSpawnPoint(Vector3 spawnPosition)
     {
