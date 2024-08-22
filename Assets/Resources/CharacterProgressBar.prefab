@@ -1023,7 +1023,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!114 &7458703921967698368
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1044,11 +1044,10 @@ MonoBehaviour:
   keyStateOverlay: {fileID: 8851563765948243348}
   keyStateText: {fileID: 1833414641653969601}
   cooldownSlider: {fileID: 2361886666394887692}
-  locationAcclimationBackground: {fileID: 4946265848223435238}
   locationAcclimationFill: {fileID: 6491209784774445770}
   collabCooldown: 45
   unfilledColor: {r: 0.2901961, g: 0.2901961, b: 0.2901961, a: 1}
-  acclimationBackgroundColor: {r: 0.09411765, g: 0.09411765, b: 0.09411765, a: 1}
+  acclimationColor: {r: 0.09411765, g: 0.09411765, b: 0.09411765, a: 1}
   personalGoalMaxScore: 100
 --- !u!1 &5711759183997703402
 GameObject:

@@ -64,9 +64,33 @@ public class CharacterProgressBar : MonoBehaviour
         cooldownSlider.value = 0f;
     }
 
+    public void SetCooldown(float duration)
+    {
+        cooldownSlider.gameObject.SetActive(true);
+        cooldownSlider.maxValue = duration;
+        cooldownSlider.value = duration;
+        StartCoroutine(UpdateCooldown());
+    }
+
+    private void StartCooldown()
+    {
+        SetCooldown(collabCooldown);
+    }
+
+    private IEnumerator UpdateCooldown()
+    {
+        while (cooldownSlider.value > 0)
+        {
+            cooldownSlider.value -= Time.deltaTime;
+            yield return null;
+        }
+        cooldownSlider.gameObject.SetActive(false);
+        SetKeyState(KeyState.None);
+    }
+
     private void SetupKeyStateUI(Color characterColor)
     {
-        keyStateOverlay.color = new Color(characterColor.r, characterColor.g, characterColor.b, 0.5f);
+        keyStateOverlay.color = new Color(characterColor.r, characterColor.g, characterColor.b, 1f);
         keyStateText.color = Color.white;
     }
 
@@ -151,24 +175,6 @@ public class CharacterProgressBar : MonoBehaviour
                 ResetUIState();
                 break;
         }
-    }
-
-    private void StartCooldown()
-    {
-        cooldownSlider.gameObject.SetActive(true);
-        cooldownSlider.value = collabCooldown;
-        StartCoroutine(UpdateCooldown());
-    }
-
-    private IEnumerator UpdateCooldown()
-    {
-        while (cooldownSlider.value > 0)
-        {
-            cooldownSlider.value -= Time.deltaTime;
-            yield return null;
-        }
-        cooldownSlider.gameObject.SetActive(false);
-        SetKeyState(KeyState.None);
     }
 
     public void StartAcclimation()

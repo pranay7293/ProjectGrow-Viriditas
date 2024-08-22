@@ -52,17 +52,6 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
 
     private void Update()
     {
-<<<<<<< Updated upstream
-        if (isVoting)
-        {
-            voteTimer -= Time.deltaTime;
-            timerText.text = $"{Mathf.CeilToInt(voteTimer)}";
-
-            if (voteTimer <= 0 || totalVotes >= 10)
-            {
-                EndVoting();
-            }
-=======
     if (IsVoting)
     {
         voteTimer -= Time.deltaTime;
@@ -71,10 +60,11 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
         if (voteTimer <= 0)
         {
             EndVoting();
->>>>>>> Stashed changes
         }
     }
     }
+
+    public bool IsVoting { get; private set; }
 
     public void DisplayScenarios(List<string> scenarios)
     {
