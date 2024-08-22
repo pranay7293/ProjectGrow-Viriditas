@@ -21,16 +21,17 @@ public class CharacterProgressBar : MonoBehaviour
     [SerializeField] private Image keyStateOverlay;
     [SerializeField] private TextMeshProUGUI keyStateText;
     [SerializeField] private Slider cooldownSlider;
-    [SerializeField] private RectTransform locationAcclimationBackground;
     [SerializeField] private Image locationAcclimationFill;
 
     [Header("Settings")]
     [SerializeField] private float collabCooldown = 45f;
-    [SerializeField] private Color unfilledColor = new Color(0x4A / 255f, 0x4A / 255f, 0x4A / 255f, 1f); // #4A4A4A with full alpha
-    [SerializeField] private Color acclimationBackgroundColor = new Color(0x18 / 255f, 0x18 / 255f, 0x18 / 255f, 1f); // #181818 with full alpha
+    [SerializeField] private Color unfilledColor = new Color(0x4A / 255f, 0x4A / 255f, 0x4A / 255f, 1f);
+    [SerializeField] private Color acclimationColor = new Color(0x18 / 255f, 0x18 / 255f, 0x18 / 255f, 1f);
+    [SerializeField] private int personalGoalMaxScore = 100;
 
     private Camera mainCamera;
     private UniversalCharacterController characterController;
+    private KeyState currentKeyState = KeyState.None;
 
     public void Initialize(UniversalCharacterController controller)
     {
@@ -46,7 +47,7 @@ public class CharacterProgressBar : MonoBehaviour
     {
         SetupSliders(characterColor);
         SetupKeyStateUI(characterColor);
-        SetupLocationAcclimationUI();
+        SetupLocationAcclimationUI(characterColor);
     }
 
     private void SetupSliders(Color characterColor)
@@ -65,35 +66,19 @@ public class CharacterProgressBar : MonoBehaviour
 
     private void SetupKeyStateUI(Color characterColor)
     {
-        keyStateOverlay.color = new Color(characterColor.r, characterColor.g, characterColor.b, 1f);
+        keyStateOverlay.color = new Color(characterColor.r, characterColor.g, characterColor.b, 0.5f);
         keyStateText.color = Color.white;
     }
 
-    private void SetupLocationAcclimationUI()
+    private void SetupLocationAcclimationUI(Color characterColor)
     {
-        if (locationAcclimationBackground != null)
-        {
-            Image backgroundImage = locationAcclimationBackground.GetComponent<Image>();
-            if (backgroundImage != null)
-            {
-                backgroundImage.color = acclimationBackgroundColor;
-                backgroundImage.type = Image.Type.Simple;
-            }
-        }
-
         if (locationAcclimationFill != null)
         {
             locationAcclimationFill.type = Image.Type.Filled;
             locationAcclimationFill.fillMethod = Image.FillMethod.Radial360;
             locationAcclimationFill.fillOrigin = (int)Image.Origin360.Bottom;
-            locationAcclimationFill.fillAmount = 1f;
-            locationAcclimationFill.raycastTarget = false;
-
-            RectTransform fillRect = locationAcclimationFill.rectTransform;
-            fillRect.anchorMin = Vector2.zero;
-            fillRect.anchorMax = Vector2.one;
-            fillRect.sizeDelta = Vector2.zero;
-            fillRect.anchoredPosition = Vector2.zero;
+            locationAcclimationFill.fillAmount = 0f;
+            locationAcclimationFill.color = characterColor;
         }
     }
 
@@ -101,7 +86,6 @@ public class CharacterProgressBar : MonoBehaviour
     {
         SetKeyState(KeyState.None);
         cooldownSlider.gameObject.SetActive(false);
-        if (locationAcclimationBackground != null) locationAcclimationBackground.gameObject.SetActive(false);
         if (locationAcclimationFill != null) locationAcclimationFill.gameObject.SetActive(false);
     }
 
@@ -141,25 +125,38 @@ public class CharacterProgressBar : MonoBehaviour
         {
             if (i < characterController.PersonalProgress.Length)
             {
-                personalGoalSliders[i].value = characterController.PersonalProgress[i];
+                float normalizedProgress = characterController.PersonalProgress[i] / personalGoalMaxScore;
+                personalGoalSliders[i].value = normalizedProgress;
             }
         }
     }
 
     public void SetKeyState(KeyState state)
     {
+        if (state == currentKeyState) return;
+
+        currentKeyState = state;
         keyStateOverlay.gameObject.SetActive(state != KeyState.None);
-        if (state != KeyState.None)
+        keyStateText.text = state.ToString();
+
+        switch (state)
         {
-            keyStateText.text = state.ToString();
+            case KeyState.Cooldown:
+                StartCooldown();
+                break;
+            case KeyState.Acclimating:
+                StartAcclimation();
+                break;
+            case KeyState.None:
+                ResetUIState();
+                break;
         }
     }
 
-    public void SetCooldown(float duration)
+    private void StartCooldown()
     {
         cooldownSlider.gameObject.SetActive(true);
-        cooldownSlider.maxValue = duration;
-        cooldownSlider.value = duration;
+        cooldownSlider.value = collabCooldown;
         StartCoroutine(UpdateCooldown());
     }
 
@@ -174,16 +171,13 @@ public class CharacterProgressBar : MonoBehaviour
         SetKeyState(KeyState.None);
     }
 
-    public void StartAcclimation(Color locationColor)
+    public void StartAcclimation()
     {
-        if (locationAcclimationBackground != null) locationAcclimationBackground.gameObject.SetActive(true);
         if (locationAcclimationFill != null)
         {
             locationAcclimationFill.gameObject.SetActive(true);
-            locationAcclimationFill.color = new Color(locationColor.r, locationColor.g, locationColor.b, 1f);
             locationAcclimationFill.fillAmount = 1f;
         }
-        SetKeyState(KeyState.Acclimating);
     }
 
     public void UpdateAcclimationProgress(float progress)
@@ -196,8 +190,10 @@ public class CharacterProgressBar : MonoBehaviour
 
     public void EndAcclimation()
     {
-        if (locationAcclimationBackground != null) locationAcclimationBackground.gameObject.SetActive(false);
-        if (locationAcclimationFill != null) locationAcclimationFill.gameObject.SetActive(false);
+        if (locationAcclimationFill != null)
+        {
+            locationAcclimationFill.gameObject.SetActive(false);
+        }
         SetKeyState(KeyState.None);
     }
 }

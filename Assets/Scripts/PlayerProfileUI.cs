@@ -14,6 +14,7 @@ public class PlayerProfileUI : MonoBehaviour
     [SerializeField] private GameObject eurekaCounter;
     [SerializeField] private TextMeshProUGUI eurekaCountText;
     [SerializeField] private TextMeshProUGUI scoreText;
+    [SerializeField] private int personalGoalMaxScore = 100;
 
     private Color unfilledColor = new Color(0x3A / 255f, 0x3A / 255f, 0x3A / 255f); // #3A3A3A
     private Color avatarRingColor = new Color(0x18 / 255f, 0x18 / 255f, 0x18 / 255f); // #181818
@@ -40,7 +41,7 @@ public class PlayerProfileUI : MonoBehaviour
         SetPersonalGoalSliderColors(color);
     }
 
-    private void SetPersonalGoalSliderColors(Color fillColor)
+     private void SetPersonalGoalSliderColors(Color fillColor)
     {
         foreach (var slider in personalGoalSliders)
         {
@@ -54,20 +55,21 @@ public class PlayerProfileUI : MonoBehaviour
 
                 slider.value = 0;
                 slider.maxValue = 1;
-                slider.wholeNumbers = true;
+                slider.wholeNumbers = false; // Changed to false for smooth progression
             }
         }
     }
 
-    public void UpdatePersonalGoals(float[] progress)
+   public void UpdatePersonalGoals(float[] progress)
     {
-    for (int i = 0; i < personalGoalSliders.Length && i < progress.Length; i++)
-    {
-        if (personalGoalSliders[i] != null)
+        for (int i = 0; i < personalGoalSliders.Length && i < progress.Length; i++)
         {
-            personalGoalSliders[i].value = progress[i];
+            if (personalGoalSliders[i] != null)
+            {
+                float normalizedProgress = progress[i] / personalGoalMaxScore;
+                personalGoalSliders[i].value = normalizedProgress;
+            }
         }
-    }
     }
 
     public void UpdateEurekas(int count)

@@ -29,10 +29,11 @@ public class EmergentScenarioNotification : MonoBehaviour
     }
 
     public void DisplayNotification(string description)
-    {
-        StopAllCoroutines();
-        StartCoroutine(ShowNotificationCoroutine(description));
-    }
+{
+    gameObject.SetActive(true);  // Ensure the GameObject is active
+    StopAllCoroutines();
+    StartCoroutine(ShowNotificationCoroutine(description));
+}
 
     private IEnumerator ShowNotificationCoroutine(string description)
     {

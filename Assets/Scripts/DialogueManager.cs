@@ -102,7 +102,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     currentNPC.SetState(UniversalCharacterController.CharacterState.Interacting);
     InputManager.Instance.StartDialogue();
     
-    string initialDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: Hello, how can I help you?";
+    string initialDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: Hey hey!";
     dialogueText.text = initialDialogue;
     dialoguePanel.SetActive(true);
     customInputField.text = "";
@@ -135,27 +135,28 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     }
 
     private void UpdateDialogueOptions(List<DialogueOption> options)
+{
+    int optionsCount = Mathf.Max(options.Count, 3);
+    for (int i = 0; i < optionButtons.Length; i++)
     {
-        int optionsCount = Mathf.Max(options.Count, 3);
-        for (int i = 0; i < optionButtons.Length; i++)
+        if (i < optionsCount && optionButtons[i] != null)
         {
-            if (i < optionsCount && optionButtons[i] != null)
-            {
-                string categoryText = i < options.Count ? options[i].Category.ToString().ToUpper() : "DEFAULT";
-                string optionText = i < options.Count ? options[i].Text : $"Default option {i + 1}";
-                
-                optionTexts[i].text = $"<color=#FFD700>[{categoryText}]</color> {optionText}";
-                int index = i;
-                optionButtons[i].onClick.RemoveAllListeners();
-                optionButtons[i].onClick.AddListener(() => SelectDialogueOption(index));
-                optionButtons[i].gameObject.SetActive(true);
-            }
-            else if (optionButtons[i] != null)
-            {
-                optionButtons[i].gameObject.SetActive(false);
-            }
+            string categoryText = i < options.Count ? options[i].Category.ToString().ToUpper() : "DEFAULT";
+            string optionText = i < options.Count ? options[i].Text : $"Default option {i + 1}";
+            
+            string colorHex = options[i].Category == DialogueCategory.Casual ? "#00BFFF" : "#FFD700"; // Light Blue for Casual, Gold for Actions
+            optionTexts[i].text = $"<color={colorHex}>[{categoryText}]</color> {optionText}";
+            int index = i;
+            optionButtons[i].onClick.RemoveAllListeners();
+            optionButtons[i].onClick.AddListener(() => SelectDialogueOption(index));
+            optionButtons[i].gameObject.SetActive(true);
+        }
+        else if (optionButtons[i] != null)
+        {
+            optionButtons[i].gameObject.SetActive(false);
         }
     }
+}
 
     public void SelectDialogueOption(int optionIndex)
     {
@@ -252,22 +253,25 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     }
 
     public void EndConversation()
+{
+    if (currentState == DialogueState.Idle)
     {
-        if (currentNPC != null)
-        {
-            currentNPC.SetState(UniversalCharacterController.CharacterState.Idle);
-        }
-        dialoguePanel.SetActive(false);
-        SetCustomInputActive(false);
-        currentNPC = null;
-        customInputField.text = "";
-        SetDialogueState(DialogueState.Idle);
-        isProcessingInput = false;
-        isGeneratingChoices = false;
-        ShowLoadingIndicator(false);
-        InputManager.Instance.EndDialogue();
+        return;  // Prevent recursive calls
     }
 
+    if (currentNPC != null)
+    {
+        currentNPC.SetState(UniversalCharacterController.CharacterState.Idle);
+    }
+    dialoguePanel.SetActive(false);
+    SetCustomInputActive(false);
+    currentNPC = null;
+    customInputField.text = "";
+    SetDialogueState(DialogueState.Idle);
+    isProcessingInput = false;
+    isGeneratingChoices = false;
+    ShowLoadingIndicator(false);
+}
     private void ShowLoadingIndicator(bool show)
     {
         loadingIndicator.SetActive(show);
@@ -477,5 +481,6 @@ public enum DialogueCategory
     Practical,
     Creative,
     Diplomatic,
-    RiskTaking
+    RiskTaking,
+    Casual
 }

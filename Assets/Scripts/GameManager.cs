@@ -280,9 +280,9 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     public bool IsMilestonesDisplayVisible()
-{
-    return milestonesDisplay != null && milestonesDisplay.activeSelf;
-}
+    {
+        return milestonesDisplay != null && milestonesDisplay.activeSelf;
+    }
 
     private void UpdateMilestonesDisplay()
     {
@@ -565,6 +565,9 @@ public class GameManager : MonoBehaviourPunCallbacks
             }
             playerScores[playerName] += score;
             photonView.RPC("SyncPlayerScore", RpcTarget.All, playerName, playerScores[playerName], score);
+            
+            // Update personal progress when score changes
+            UpdatePersonalProgress(playerName, -1, score);
         }
     }
 
@@ -587,18 +590,53 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
         {
-            personalProgress[goalIndex] = progress;
+            if (goalIndex == -1)
+            {
+                // Update all goals based on overall score
+                for (int i = 0; i < personalProgress.Length; i++)
+                {
+                    personalProgress[i] = Mathf.Min(personalProgress[i] + progress / 100f, 1f);
+                }
+            }
+            else
+            {
+                personalProgress[goalIndex] = Mathf.Min(progress, 1f);
+            }
             photonView.RPC("SyncPersonalProgress", RpcTarget.All, characterName, goalIndex, progress);
         }
-    }  
+    }
 
     [PunRPC]
     private void SyncPersonalProgress(string characterName, int goalIndex, float progress)
     {
         if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
         {
-            personalProgress[goalIndex] = progress;
+            if (goalIndex == -1)
+            {
+                for (int i = 0; i < personalProgress.Length; i++)
+                {
+                    personalProgress[i] = Mathf.Min(personalProgress[i] + progress / 100f, 1f);
+                }
+            }
+            else
+            {
+                personalProgress[goalIndex] = Mathf.Min(progress, 1f);
+            }
             UpdatePlayerProfileUI(characterName);
+            
+            UniversalCharacterController character = GetCharacterByName(characterName);
+            if (character != null)
+            {
+                character.UpdateProgress(personalProgress);
+            }
+        }
+    }
+
+    private void UpdatePlayerProfileUI(string characterName)
+    {
+        if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
+        {
+            PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, playerScores[characterName], personalProgress);
         }
     }
 
@@ -651,19 +689,24 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private void UpdatePlayerProfileUI(string characterName)
+    public void UpdatePlayerProgress(UniversalCharacterController character, float[] personalProgress)
+{
+    if (character == null || personalProgress == null) return;
+
+    string characterName = character.characterName;
+    if (!playerPersonalProgress.ContainsKey(characterName))
     {
-        if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
-        {
-            PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, playerScores[characterName], personalProgress);
-        }
+        playerPersonalProgress[characterName] = new float[personalProgress.Length];
     }
 
-    public void UpdatePlayerProgress(UniversalCharacterController character, float[] personalProgress)
+    for (int i = 0; i < personalProgress.Length; i++)
     {
-        character.UpdateProgress(personalProgress);
-        PlayerProfileManager.Instance.UpdatePlayerProgress(character.characterName, playerScores[character.characterName], personalProgress);
+        playerPersonalProgress[characterName][i] = personalProgress[i];
     }
+
+    // Update UI without calling back to the character
+    PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, playerScores[characterName], personalProgress);
+}
 
     public void UpdatePlayerEurekas(UniversalCharacterController character, int eurekaCount)
     {
@@ -786,5 +829,6 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
 
         challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
+        UpdateScoreDisplay(); // Ensure all UI elements are updated
     }
 }

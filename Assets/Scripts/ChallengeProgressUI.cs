@@ -4,7 +4,8 @@ using UnityEngine.UI;
 public class ChallengeProgressUI : MonoBehaviour
 {
     [SerializeField] private Slider[] milestoneProgressBars;
-    private Color unfilledColor = new Color(0x3A / 255f, 0x3A / 255f, 0x3A / 255f); // #3A3A3A
+    private Color unfilledColor = new Color(0x3A / 255f, 0x3A / 255f, 0x3A / 255f);
+    [SerializeField] private int challengeGoalScore = 1000; // New field for challenge goal score
 
     public void Initialize(Color hubColor)
     {
@@ -26,6 +27,7 @@ public class ChallengeProgressUI : MonoBehaviour
 
             slider.value = 0;
             slider.maxValue = 1;
+            slider.wholeNumbers = false; // Changed to false for smooth progression
         }
     }
 
@@ -35,7 +37,8 @@ public class ChallengeProgressUI : MonoBehaviour
         {
             if (milestoneProgressBars[i] != null)
             {
-                milestoneProgressBars[i].value = progress[i];
+                float normalizedProgress = progress[i] / challengeGoalScore;
+                milestoneProgressBars[i].value = normalizedProgress;
             }
         }
     }

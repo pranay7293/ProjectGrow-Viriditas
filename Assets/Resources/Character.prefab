@@ -1081,7 +1081,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
 --- !u!114 &5944958737743392496
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1095,8 +1095,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: 
-  moveSpeed: 5
+  characterColor: {r: 1, g: 1, b: 1, a: 1}
+  walkSpeed: 5
+  runSpeed: 8
   rotationSpeed: 120
+  interactionDistance: 3
+  aiSettings: {fileID: 0}
+  currentObjective: 
+  acclimationTime: 10
+  initialDelay: 10
+  currentLocation: {fileID: 0}
 --- !u!114 &4096835321216489299
 MonoBehaviour:
   m_ObjectHideFlags: 0

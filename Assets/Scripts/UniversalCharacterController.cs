@@ -55,6 +55,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private float locationEntryTime;
     private bool isAcclimating = false;
 
+    public bool IsCollaborating { get; private set; }
+
     public enum CharacterState
     {
         Idle,
@@ -96,31 +98,30 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     [PunRPC]
-public void Initialize(string name, bool isPlayerControlled, float r, float g, float b)
-{
-    SetCharacterProperties(name, isPlayerControlled, new Color(r, g, b));
-    if (photonView.IsMine)
+    public void Initialize(string name, bool isPlayerControlled, float r, float g, float b)
     {
-        if (isPlayerControlled)
+        SetCharacterProperties(name, isPlayerControlled, new Color(r, g, b));
+        if (photonView.IsMine)
         {
-            SetupPlayerControlled();
+            if (isPlayerControlled)
+            {
+                SetupPlayerControlled();
+            }
+            else
+            {
+                SetupAIControlled();
+            }
+            InitializeProgressBar();
         }
-        else
-        {
-            SetupAIControlled();
-        }
-        InitializeProgressBar();
-    }
-    InitializePersonalGoals();
-    StartCoroutine(DelayedAcclimation());
+        InitializePersonalGoals();
+        StartCoroutine(DelayedAcclimation());
 
-    if (aiSettings == null)
-    {
-        aiSettings = ScriptableObject.CreateInstance<AISettings>();
-        aiSettings.characterRole = isPlayerControlled ? "Player" : "Default AI";
-        Debug.LogWarning($"Created default AISettings for {characterName}");
+        if (aiSettings == null)
+        {
+            aiSettings = ScriptableObject.CreateInstance<AISettings>();
+            aiSettings.characterRole = isPlayerControlled ? "Player" : "Default AI";
+        }
     }
-}
 
     private IEnumerator DelayedAcclimation()
     {
@@ -137,10 +138,6 @@ public void Initialize(string name, bool isPlayerControlled, float r, float g, f
         if (characterMaterial != null)
         {
             characterMaterial.color = characterColor;
-        }
-        else
-        {
-            Debug.LogError($"Character material not found for {characterName}");
         }
     }
 
@@ -193,12 +190,6 @@ public void Initialize(string name, bool isPlayerControlled, float r, float g, f
 
     private void InitializeProgressBar()
     {
-        if (progressBar != null)
-        {
-            Debug.LogWarning($"Progress bar already initialized for {characterName}");
-            return;
-        }
-
         GameObject progressBarPrefab = Resources.Load<GameObject>("CharacterProgressBar");
         if (progressBarPrefab == null)
         {
@@ -218,8 +209,6 @@ public void Initialize(string name, bool isPlayerControlled, float r, float g, f
         progressBarObject.transform.localPosition = new Vector3(0, 2.25f, 0);
         progressBarObject.transform.localRotation = Quaternion.identity;
         progressBar.Initialize(this);
-
-        Debug.Log($"Progress bar initialized for {characterName}");
     }
 
     private void Update()
@@ -242,7 +231,6 @@ public void Initialize(string name, bool isPlayerControlled, float r, float g, f
             }
         }
     }
-
 
     private void HandlePlayerInput()
     {
@@ -354,6 +342,9 @@ public void Initialize(string name, bool isPlayerControlled, float r, float g, f
                 case CharacterState.Acclimating:
                     progressBar.SetKeyState(KeyState.Acclimating);
                     break;
+                case CharacterState.Moving:
+                    progressBar.SetKeyState(KeyState.None);
+                    break;
                 default:
                     progressBar.SetKeyState(KeyState.None);
                     break;
@@ -386,13 +377,6 @@ public void Initialize(string name, bool isPlayerControlled, float r, float g, f
 
         ActionLogManager.Instance.LogAction(characterName, action.actionName);
         GameManager.Instance.UpdateGameState(characterName, action.actionName);
-
-        if (progressBar != null)
-        {
-            progressBar.SetKeyState(KeyState.PerformingAction);
-        }
-
-        Debug.Log($"{characterName} started action: {action.actionName}");
     }
 
     private IEnumerator PerformAction()
@@ -421,10 +405,6 @@ public void Initialize(string name, bool isPlayerControlled, float r, float g, f
             if (RiskRewardManager.Instance != null)
             {
                 RiskRewardManager.Instance.EvaluateActionOutcome(this, currentAction?.actionName ?? "Unknown Action");
-            }
-            else
-            {
-                Debug.LogWarning("CompleteAction: RiskRewardManager.Instance is null");
             }
         }
         
@@ -498,16 +478,12 @@ public void Initialize(string name, bool isPlayerControlled, float r, float g, f
         return new Dictionary<string, bool>(personalGoalCompletion);
     }
 
-    public void UpdateProgress(float[] personalProgress)
+    public void UpdateProgress(float[] progress)
     {
-        PersonalProgress = personalProgress;
+        PersonalProgress = progress;
         if (progressBar != null)
         {
             progressBar.UpdatePersonalGoals();
-        }
-        if (photonView.IsMine)
-        {
-            GameManager.Instance.UpdatePlayerProgress(this, PersonalProgress);
         }
     }
 
@@ -544,10 +520,6 @@ public void Initialize(string name, bool isPlayerControlled, float r, float g, f
         if (LocationActionUI.Instance != null && currentLocation == location)
         {
             LocationActionUI.Instance.ShowActionsForLocation(this, location);
-        }
-        else
-        {
-            Debug.LogWarning("LocationActionUI.Instance is null or location has changed");
         }
     }
 
@@ -599,41 +571,38 @@ public void Initialize(string name, bool isPlayerControlled, float r, float g, f
         }
     }
 
-  private void StartAcclimation()
-{
-    Debug.Log("Starting acclimation");
-    locationEntryTime = Time.time;
-    isAcclimating = true;
-    CharacterProgressBar progressBar = GetComponentInChildren<CharacterProgressBar>();
-    if (progressBar != null && currentLocation != null)
+    private void StartAcclimation()
     {
-        progressBar.StartAcclimation(currentLocation.locationColor);
+        locationEntryTime = Time.time;
+        isAcclimating = true;
+        SetState(CharacterState.Acclimating);
+        if (progressBar != null)
+        {
+            progressBar.StartAcclimation();
+        }
     }
-    else
-    {
-        Debug.LogWarning("ProgressBar or CurrentLocation is null in StartAcclimation");
-    }
-}
 
-private void UpdateAcclimation()
-{
-    if (progressBar == null) return;
-
-    float elapsedTime = Time.time - locationEntryTime;
-    if (elapsedTime >= acclimationTime)
+    private void UpdateAcclimation()
     {
-        isAcclimating = false;
-        SetState(CharacterState.Idle);
-        progressBar.EndAcclimation();
+        float elapsedTime = Time.time - locationEntryTime;
+        if (elapsedTime >= acclimationTime)
+        {
+            isAcclimating = false;
+            SetState(CharacterState.Idle);
+            if (progressBar != null)
+            {
+                progressBar.EndAcclimation();
+            }
+        }
+        else
+        {
+            float progress = 1 - (elapsedTime / acclimationTime);
+            if (progressBar != null)
+            {
+                progressBar.UpdateAcclimationProgress(progress);
+            }
+        }
     }
-    else
-    {
-        float progress = 1 - (elapsedTime / acclimationTime);
-        progressBar.UpdateAcclimationProgress(progress);
-    }
-}
-
-    public bool IsCollaborating { get; private set; }
 
     public Color GetCharacterColor()
     {
@@ -653,30 +622,24 @@ private void UpdateAcclimation()
     {
         CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, collaboratorViewID);
         IsCollaborating = true;
-        if (progressBar != null)
-        {
-            progressBar.SetKeyState(KeyState.Collaborating);
-        }
+        SetState(CharacterState.Interacting);
     }
 
     public void JoinCollab(string actionName, UniversalCharacterController initiator)
-{
-    if (photonView.IsMine && !IsCollaborating)
     {
-        photonView.RPC("RPC_JoinCollab", RpcTarget.All, actionName, initiator.photonView.ViewID, photonView.ViewID);
+        if (photonView.IsMine && !IsCollaborating)
+        {
+            photonView.RPC("RPC_JoinCollab", RpcTarget.All, actionName, initiator.photonView.ViewID, photonView.ViewID);
+        }
     }
-}
 
-[PunRPC]
-private void RPC_JoinCollab(string actionName, int initiatorViewID, int joinerViewID)
-{
-    CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, joinerViewID);
-    IsCollaborating = true;
-    if (progressBar != null)
+    [PunRPC]
+    private void RPC_JoinCollab(string actionName, int initiatorViewID, int joinerViewID)
     {
-        progressBar.SetKeyState(KeyState.Collaborating);
+        CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, joinerViewID);
+        IsCollaborating = true;
+        SetState(CharacterState.Interacting);
     }
-}
 
     public void EndCollab(string actionName)
     {
@@ -691,10 +654,10 @@ private void RPC_JoinCollab(string actionName, int initiatorViewID, int joinerVi
     private void RPC_EndCollab(string actionName)
     {
         CollabManager.Instance.FinalizeCollaboration(actionName);
+        SetState(CharacterState.Idle);
         if (progressBar != null)
         {
-            progressBar.SetKeyState(KeyState.None);
-            progressBar.SetCooldown(CollabManager.Instance.GetCollabCooldown());
+            progressBar.SetKeyState(KeyState.Cooldown);
         }
     }
 
@@ -751,5 +714,15 @@ private void RPC_JoinCollab(string actionName, int initiatorViewID, int joinerVi
             Destroy(cameraRigInstance);
         }
     }
-    
+
+    private void OnCollisionStay(Collision collision)
+    {
+        UniversalCharacterController otherCharacter = collision.gameObject.GetComponent<UniversalCharacterController>();
+        if (otherCharacter != null && navMeshAgent != null && navMeshAgent.enabled)
+        {
+            Vector3 pushDirection = (transform.position - collision.transform.position).normalized;
+            pushDirection.y = 0; // Ensure no vertical movement
+            navMeshAgent.Move(pushDirection * Time.deltaTime * 2f); // Adjust the multiplier as needed
+        }
+    }
 }

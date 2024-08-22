@@ -69,14 +69,16 @@ public class OpenAIService : MonoBehaviour
         string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join(", ", recentEurekas)}" : "";
 
         string prompt = $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n" +
-            $"Based on this context: {context}\n{eurekaContext}\n\n" +
-            "Generate 3 short, distinct action choices (max 8 words each) that {characterName} might consider. " +
-            "Each choice should fall into one of these categories: Ethical, Strategic, Emotional, Practical, Creative, Diplomatic, or Risk-Taking. " +
-            "If there are recent breakthroughs, consider incorporating them into the choices. " +
-            "Format your response as follows:\n" +
-            "1. [Category]: [Choice]\n" +
-            "2. [Category]: [Choice]\n" +
-            "3. [Category]: [Choice]";
+    $"Based on this context: {context}\n{eurekaContext}\n\n" +
+    "Generate 3 short, distinct responses (max 8 words each) that {characterName} might consider. " +
+    "These can be a mix of casual conversational responses and action choices. " +
+    "For action choices, use one of these categories: Ethical, Strategic, Emotional, Practical, Creative, Diplomatic, or Risk-Taking. " +
+    "For casual responses, use the Casual category. " +
+    "If there are recent breakthroughs, consider incorporating them into the choices. " +
+    "Format your response as follows:\n" +
+    "1. [Category]: [Response]\n" +
+    "2. [Category]: [Response]\n" +
+    "3. [Category]: [Response]";
 
         string response = await GetChatCompletionAsync(prompt);
 
@@ -97,27 +99,31 @@ public class OpenAIService : MonoBehaviour
     }
 
     private List<DialogueOption> ParseDialogueOptions(string response)
+{
+    List<DialogueOption> options = new List<DialogueOption>();
+    string[] lines = response.Split('\n');
+
+    foreach (string line in lines)
     {
-        List<DialogueOption> options = new List<DialogueOption>();
-        string[] lines = response.Split('\n');
-
-        foreach (string line in lines)
+        string[] parts = line.Split(':');
+        if (parts.Length == 2)
         {
-            string[] parts = line.Split(':');
-            if (parts.Length == 2)
-            {
-                string categoryStr = parts[0].Trim().Replace("1. ", "").Replace("2. ", "").Replace("3. ", "");
-                string choiceText = parts[1].Trim();
+            string categoryStr = parts[0].Trim().Replace("1. ", "").Replace("2. ", "").Replace("3. ", "");
+            string choiceText = parts[1].Trim();
 
-                if (Enum.TryParse(categoryStr, out DialogueCategory category))
-                {
-                    options.Add(new DialogueOption(choiceText, category));
-                }
+            if (categoryStr.ToLower() == "casual")
+            {
+                options.Add(new DialogueOption(choiceText, DialogueCategory.Casual));
+            }
+            else if (Enum.TryParse(categoryStr, out DialogueCategory category))
+            {
+                options.Add(new DialogueOption(choiceText, category));
             }
         }
-
-        return options;
     }
+
+    return options;
+}
 
     public async Task<string> GetResponse(string prompt, AISettings aiSettings)
     {
@@ -146,10 +152,10 @@ public class OpenAIService : MonoBehaviour
             await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
         }
 
-        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, create three distinct, brief emergent scenarios. Each scenario should be no more than 10 words and present a unique future state or challenge. Format the response as follows:\n" +
-            "1. [Scenario 1]\n" +
-            "2. [Scenario 2]\n" +
-            "3. [Scenario 3]";
+        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, create three distinct, brief emergent scenarios. Each scenario should start with '...' and continue as a natural sentence, presenting a unique future state or challenge. Keep each scenario under 10 words. Format the response as follows:\n" +
+        "1. [Scenario 1]\n" +
+        "2. [Scenario 2]\n" +
+        "3. [Scenario 3]";
 
         string response = await GetChatCompletionAsync(prompt);
         lastApiCallTime = Time.time;

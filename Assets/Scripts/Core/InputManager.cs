@@ -159,12 +159,12 @@ public class InputManager : MonoBehaviourPunCallbacks
     }
 
     public void EndDialogue()
-    {
-        IsInDialogue = false;
-        IsUIActive = false;
-        DialogueManager.Instance.EndConversation();
-        UpdateCursorState();
-    }
+{
+    IsInDialogue = false;
+    IsUIActive = false;
+    DialogueManager.Instance.EndConversation();
+    UpdateCursorState();
+}
 
     private void ToggleChatLog()
     {
