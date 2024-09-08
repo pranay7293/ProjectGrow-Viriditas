@@ -3,9 +3,23 @@ using Photon.Pun;
 using System.Collections;
 using TMPro;
 using System.Collections.Generic;
+using System.Linq;
 
 public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObservable
 {
+    public enum CharacterState
+    {
+        None = 0,
+        Moving = 1,
+        Idle = 2,
+        Interacting = 3,
+        Acclimating = 4,
+        PerformingAction = 5,
+        Chatting = 6,
+        Collaborating = 7,
+        Cooldown = 8
+    }
+
     [Header("Character Settings")]
     public string characterName;
     public Color characterColor = Color.white;
@@ -57,16 +71,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public bool IsCollaborating { get; private set; }
 
-    public enum CharacterState
-    {
-        Idle,
-        Moving,
-        Interacting,
-        PerformingAction,
-        Acclimating
-    }
-
-    private CharacterState currentState = CharacterState.Idle;
+    private HashSet<CharacterState> activeStates = new HashSet<CharacterState>();
 
     private void Awake()
     {
@@ -220,7 +225,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 HandlePlayerInput();
                 MovePlayer();
             }
-            else if (currentState != CharacterState.Interacting)
+            else if (!HasState(CharacterState.Interacting))
             {
                 HandleAIMovement();
             }
@@ -261,7 +266,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void HandleAIMovement()
     {
-        if (currentState == CharacterState.Moving)
+        if (HasState(CharacterState.Moving))
         {
             navMeshAgent.isStopped = false;
         }
@@ -311,7 +316,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (!IsPlayerControlled && navMeshAgent != null)
         {
             navMeshAgent.SetDestination(destination);
-            SetState(CharacterState.Moving);
+            AddState(CharacterState.Moving);
         }
     }
 
@@ -326,35 +331,34 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         currentObjective = objective;
     }
 
-    public void SetState(CharacterState newState)
+    public void AddState(CharacterState newState)
     {
-        currentState = newState;
-        if (progressBar != null)
-        {
-            switch (newState)
-            {
-                case CharacterState.PerformingAction:
-                    progressBar.SetKeyState(KeyState.PerformingAction);
-                    break;
-                case CharacterState.Interacting:
-                    progressBar.SetKeyState(KeyState.Chatting);
-                    break;
-                case CharacterState.Acclimating:
-                    progressBar.SetKeyState(KeyState.Acclimating);
-                    break;
-                case CharacterState.Moving:
-                    progressBar.SetKeyState(KeyState.None);
-                    break;
-                default:
-                    progressBar.SetKeyState(KeyState.None);
-                    break;
-            }
-        }
+        activeStates.Add(newState);
+        UpdateProgressBarState();
     }
 
-    public CharacterState GetState()
+    public void RemoveState(CharacterState state)
     {
-        return currentState;
+        activeStates.Remove(state);
+        UpdateProgressBarState();
+    }
+
+    public bool HasState(CharacterState state)
+    {
+        return activeStates.Contains(state);
+    }
+
+    public CharacterState GetHighestPriorityState()
+    {
+        return activeStates.Count > 0 ? activeStates.Max() : CharacterState.None;
+    }
+
+    private void UpdateProgressBarState()
+    {
+        if (progressBar != null)
+        {
+            progressBar.UpdateKeyState(GetHighestPriorityState());
+        }
     }
 
     public void StartAction(LocationManager.LocationAction action)
@@ -366,7 +370,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
         currentAction = action;
         actionStartTime = Time.time;
-        SetState(CharacterState.PerformingAction);
+        AddState(CharacterState.PerformingAction);
         UpdateGoalProgress(action.actionName);
 
         if (actionCoroutine != null)
@@ -413,7 +417,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             CheckPersonalGoalProgress(currentAction.actionName);
         }
         currentAction = null;
-        SetState(CharacterState.Idle);
+        RemoveState(CharacterState.PerformingAction);
     }
 
     public void StopAction()
@@ -423,7 +427,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             StopCoroutine(actionCoroutine);
         }
         currentAction = null;
-        SetState(CharacterState.Idle);
+        RemoveState(CharacterState.PerformingAction);
     }
 
     private void InitializePersonalGoals()
@@ -566,7 +570,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             {
                 navMeshAgent.Warp(spawnPosition);
             }
-            SetState(CharacterState.Idle);
+            RemoveState(CharacterState.Moving);
             StartAcclimation();
         }
     }
@@ -575,7 +579,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         locationEntryTime = Time.time;
         isAcclimating = true;
-        SetState(CharacterState.Acclimating);
+        AddState(CharacterState.Acclimating);
         if (progressBar != null)
         {
             progressBar.StartAcclimation();
@@ -588,7 +592,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (elapsedTime >= acclimationTime)
         {
             isAcclimating = false;
-            SetState(CharacterState.Idle);
+            RemoveState(CharacterState.Acclimating);
             if (progressBar != null)
             {
                 progressBar.EndAcclimation();
@@ -622,7 +626,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, collaboratorViewID);
         IsCollaborating = true;
-        SetState(CharacterState.Interacting);
+        AddState(CharacterState.Collaborating);
     }
 
     public void JoinCollab(string actionName, UniversalCharacterController initiator)
@@ -638,7 +642,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, joinerViewID);
         IsCollaborating = true;
-        SetState(CharacterState.Interacting);
+        AddState(CharacterState.Collaborating);
     }
 
     public void EndCollab(string actionName)
@@ -654,11 +658,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void RPC_EndCollab(string actionName)
     {
         CollabManager.Instance.FinalizeCollaboration(actionName);
-        SetState(CharacterState.Idle);
-        if (progressBar != null)
-        {
-            progressBar.SetKeyState(KeyState.Cooldown);
-        }
+        RemoveState(CharacterState.Collaborating);
+        AddState(CharacterState.Cooldown);
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
@@ -667,7 +668,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         {
             stream.SendNext(transform.position);
             stream.SendNext(transform.rotation);
-            stream.SendNext((int)currentState);
+            stream.SendNext(activeStates.ToArray());
             stream.SendNext(currentObjective);
             stream.SendNext(actionIndicator.text);
             stream.SendNext(characterColor);
@@ -680,7 +681,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         {
             transform.position = (Vector3)stream.ReceiveNext();
             transform.rotation = (Quaternion)stream.ReceiveNext();
-            currentState = (CharacterState)stream.ReceiveNext();
+            activeStates = new HashSet<CharacterState>((CharacterState[])stream.ReceiveNext());
             currentObjective = (string)stream.ReceiveNext();
             actionIndicator.text = (string)stream.ReceiveNext();
             Color receivedColor = (Color)stream.ReceiveNext();
@@ -703,6 +704,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 characterColor = receivedColor;
                 characterMaterial.color = characterColor;
             }
+
+            UpdateProgressBarState();
         }
     }
 

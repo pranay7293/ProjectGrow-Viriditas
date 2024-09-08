@@ -92,29 +92,29 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     }
 
     public async void InitiateDialogue(UniversalCharacterController npc)
-{
-    if (npc == null || currentState != DialogueState.Idle)
     {
-        return;
+        if (npc == null || currentState != DialogueState.Idle)
+        {
+            return;
+        }
+
+        currentNPC = npc;
+        currentNPC.AddState(UniversalCharacterController.CharacterState.Interacting);
+        InputManager.Instance.StartDialogue();
+        
+        string initialDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: Hey hey!";
+        dialogueText.text = initialDialogue;
+        dialoguePanel.SetActive(true);
+        customInputField.text = "";
+
+        SetCustomInputActive(false);
+        
+        AddToChatLog(currentNPC.characterName, initialDialogue);
+
+        SetDialogueState(DialogueState.GeneratingResponse);
+        await GenerateAndDisplayChoices();
+        SetDialogueState(DialogueState.WaitingForPlayerInput);
     }
-
-    currentNPC = npc;
-    currentNPC.SetState(UniversalCharacterController.CharacterState.Interacting);
-    InputManager.Instance.StartDialogue();
-    
-    string initialDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: Hey hey!";
-    dialogueText.text = initialDialogue;
-    dialoguePanel.SetActive(true);
-    customInputField.text = "";
-
-    SetCustomInputActive(false);  // Ensure custom input is hidden initially
-    
-    AddToChatLog(currentNPC.characterName, initialDialogue);
-
-    SetDialogueState(DialogueState.GeneratingResponse);
-    await GenerateAndDisplayChoices();
-    SetDialogueState(DialogueState.WaitingForPlayerInput);
-}
 
     private async Task GenerateAndDisplayChoices()
     {
@@ -135,28 +135,28 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     }
 
     private void UpdateDialogueOptions(List<DialogueOption> options)
-{
-    int optionsCount = Mathf.Max(options.Count, 3);
-    for (int i = 0; i < optionButtons.Length; i++)
     {
-        if (i < optionsCount && optionButtons[i] != null)
+        int optionsCount = Mathf.Max(options.Count, 3);
+        for (int i = 0; i < optionButtons.Length; i++)
         {
-            string categoryText = i < options.Count ? options[i].Category.ToString().ToUpper() : "DEFAULT";
-            string optionText = i < options.Count ? options[i].Text : $"Default option {i + 1}";
-            
-            string colorHex = options[i].Category == DialogueCategory.Casual ? "#00BFFF" : "#FFD700"; // Light Blue for Casual, Gold for Actions
-            optionTexts[i].text = $"<color={colorHex}>[{categoryText}]</color> {optionText}";
-            int index = i;
-            optionButtons[i].onClick.RemoveAllListeners();
-            optionButtons[i].onClick.AddListener(() => SelectDialogueOption(index));
-            optionButtons[i].gameObject.SetActive(true);
-        }
-        else if (optionButtons[i] != null)
-        {
-            optionButtons[i].gameObject.SetActive(false);
+            if (i < optionsCount && optionButtons[i] != null)
+            {
+                string categoryText = i < options.Count ? options[i].Category.ToString().ToUpper() : "DEFAULT";
+                string optionText = i < options.Count ? options[i].Text : $"Default option {i + 1}";
+                
+                string colorHex = options[i].Category == DialogueCategory.Casual ? "#00BFFF" : "#FFD700";
+                optionTexts[i].text = $"<color={colorHex}>[{categoryText}]</color> {optionText}";
+                int index = i;
+                optionButtons[i].onClick.RemoveAllListeners();
+                optionButtons[i].onClick.AddListener(() => SelectDialogueOption(index));
+                optionButtons[i].gameObject.SetActive(true);
+            }
+            else if (optionButtons[i] != null)
+            {
+                optionButtons[i].gameObject.SetActive(false);
+            }
         }
     }
-}
 
     public void SelectDialogueOption(int optionIndex)
     {
@@ -179,22 +179,22 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     }
 
     private void SetCustomInputActive(bool active)
-{
-    isCustomInputActive = active;
-    if (dialogInputWindow != null)
     {
-        dialogInputWindow.SetActive(active);
-    }
-    else
-    {
-        Debug.LogWarning("DialogInputWindow is not assigned in the DialogueManager.");
-    }
+        isCustomInputActive = active;
+        if (dialogInputWindow != null)
+        {
+            dialogInputWindow.SetActive(active);
+        }
+        else
+        {
+            Debug.LogWarning("DialogInputWindow is not assigned in the DialogueManager.");
+        }
 
-    if (active && customInputField != null)
-    {
-        customInputField.ActivateInputField();
+        if (active && customInputField != null)
+        {
+            customInputField.ActivateInputField();
+        }
     }
-}
 
     public void SubmitCustomInput()
     {
@@ -253,25 +253,26 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     }
 
     public void EndConversation()
-{
-    if (currentState == DialogueState.Idle)
     {
-        return;  // Prevent recursive calls
+        if (currentState == DialogueState.Idle)
+        {
+            return;
+        }
+
+        if (currentNPC != null)
+        {
+            currentNPC.RemoveState(UniversalCharacterController.CharacterState.Interacting);
+        }
+        dialoguePanel.SetActive(false);
+        SetCustomInputActive(false);
+        currentNPC = null;
+        customInputField.text = "";
+        SetDialogueState(DialogueState.Idle);
+        isProcessingInput = false;
+        isGeneratingChoices = false;
+        ShowLoadingIndicator(false);
     }
 
-    if (currentNPC != null)
-    {
-        currentNPC.SetState(UniversalCharacterController.CharacterState.Idle);
-    }
-    dialoguePanel.SetActive(false);
-    SetCustomInputActive(false);
-    currentNPC = null;
-    customInputField.text = "";
-    SetDialogueState(DialogueState.Idle);
-    isProcessingInput = false;
-    isGeneratingChoices = false;
-    ShowLoadingIndicator(false);
-}
     private void ShowLoadingIndicator(bool show)
     {
         loadingIndicator.SetActive(show);
@@ -337,7 +338,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     public void ToggleChatLog()
     {
         chatLogPanel.SetActive(!chatLogPanel.activeSelf);
-        InputManager.Instance.SetUIActive(chatLogPanel.activeSelf);  // Add this line
+        InputManager.Instance.SetUIActive(chatLogPanel.activeSelf);
         if (chatLogPanel.activeSelf)
         {
             UpdateChatLogDisplay();
@@ -396,6 +397,9 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         if (initiator != null && target != null)
         {
+            initiator.AddState(UniversalCharacterController.CharacterState.Interacting);
+            target.AddState(UniversalCharacterController.CharacterState.Interacting);
+
             string initiatorDialogue = await OpenAIService.Instance.GetResponse(GetNPCDialoguePrompt(initiator, target), initiator.aiSettings);
             string targetResponse = await OpenAIService.Instance.GetResponse(GetNPCDialoguePrompt(target, initiator), target.aiSettings);
 
@@ -409,6 +413,9 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             GameManager.Instance.UpdateGameState(target.characterName, targetResponse);
 
             UpdateRelationshipAfterInteraction(initiator, target, initiatorDialogue, targetResponse);
+
+            initiator.RemoveState(UniversalCharacterController.CharacterState.Interacting);
+            target.RemoveState(UniversalCharacterController.CharacterState.Interacting);
         }
     }
 

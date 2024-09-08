@@ -74,12 +74,10 @@ public class CollabManager : MonoBehaviourPunCallbacks
 
         if (target.IsPlayerControlled && target.photonView.IsMine)
         {
-            // Show prompt for local player
             CollabPromptUI.Instance.ShowPrompt(initiator, target, actionName);
         }
         else if (!target.IsPlayerControlled)
         {
-            // Automatic decision for AI
             AIManager aiManager = target.GetComponent<AIManager>();
             if (aiManager != null && aiManager.DecideOnCollaboration(actionName))
             {
@@ -108,20 +106,27 @@ public class CollabManager : MonoBehaviourPunCallbacks
         SetCollabCooldown(initiator.characterName);
         SetCollabCooldown(collaborator.characterName);
         
+        initiator.AddState(UniversalCharacterController.CharacterState.Collaborating);
+        collaborator.AddState(UniversalCharacterController.CharacterState.Collaborating);
+
         GameManager.Instance.UpdatePlayerScore(initiator.characterName, ScoreConstants.COLLABORATION_INITIATION_BONUS);
         GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.COLLABORATION_JOIN_BONUS);
     }
-    
 
     public void FinalizeCollaboration(string actionName)
-{
-    if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
     {
-        EurekaManager.Instance.CheckForEureka(collaborators, actionName);
-        GameManager.Instance.HandleCollabCompletion(actionName, collaborators);
-        activeCollabs.Remove(actionName);
+        if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
+        {
+            EurekaManager.Instance.CheckForEureka(collaborators, actionName);
+            GameManager.Instance.HandleCollabCompletion(actionName, collaborators);
+            foreach (var collaborator in collaborators)
+            {
+                collaborator.RemoveState(UniversalCharacterController.CharacterState.Collaborating);
+                collaborator.AddState(UniversalCharacterController.CharacterState.Cooldown);
+            }
+            activeCollabs.Remove(actionName);
+        }
     }
-}
 
     private void TriggerEureka(List<UniversalCharacterController> collaborators)
     {
@@ -159,7 +164,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
                 CharacterProgressBar progressBar = character.GetComponentInChildren<CharacterProgressBar>();
                 if (progressBar != null)
                 {
-                    progressBar.SetKeyState(KeyState.Cooldown);
+                    progressBar.UpdateKeyState(UniversalCharacterController.CharacterState.Cooldown);
                     progressBar.SetCooldown(collabCooldown);
                 }
             }
@@ -178,6 +183,11 @@ public class CollabManager : MonoBehaviourPunCallbacks
             if (remainingCooldown <= 0)
             {
                 collabCooldowns.Remove(characterName);
+                UniversalCharacterController character = GameManager.Instance.GetCharacterByName(characterName);
+                if (character != null)
+                {
+                    character.RemoveState(UniversalCharacterController.CharacterState.Cooldown);
+                }
             }
             else
             {

@@ -36,7 +36,7 @@ public class AIManager : MonoBehaviourPunCallbacks
     {
         if (!photonView.IsMine || !isInitialized) return;
 
-        if (characterController.GetState() != UniversalCharacterController.CharacterState.Interacting)
+        if (!characterController.HasState(UniversalCharacterController.CharacterState.Interacting))
         {
             npcBehavior.UpdateBehavior();
         }
@@ -85,29 +85,29 @@ public class AIManager : MonoBehaviourPunCallbacks
     }
 
     public bool ConsiderCollaboration(LocationManager.LocationAction action)
-{
-    if (action == null || characterController == null)
     {
-        Debug.LogWarning("Invalid action or character in ConsiderCollaboration");
-        return false;
-    }
-
-    if (CollabManager.Instance.CanInitiateCollab(characterController))
-    {
-        float collaborationChance = CalculateCollaborationChance(action);
-        if (Random.value < collaborationChance)
+        if (action == null || characterController == null)
         {
-            List<UniversalCharacterController> eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(characterController);
-            if (eligibleCollaborators.Count > 0)
+            Debug.LogWarning("Invalid action or character in ConsiderCollaboration");
+            return false;
+        }
+
+        if (CollabManager.Instance.CanInitiateCollab(characterController))
+        {
+            float collaborationChance = CalculateCollaborationChance(action);
+            if (Random.value < collaborationChance)
             {
-                UniversalCharacterController collaborator = eligibleCollaborators[Random.Range(0, eligibleCollaborators.Count)];
-                characterController.InitiateCollab(action.actionName, collaborator);
-                return true;
+                List<UniversalCharacterController> eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(characterController);
+                if (eligibleCollaborators.Count > 0)
+                {
+                    UniversalCharacterController collaborator = eligibleCollaborators[Random.Range(0, eligibleCollaborators.Count)];
+                    characterController.InitiateCollab(action.actionName, collaborator);
+                    return true;
+                }
             }
         }
+        return false;
     }
-    return false;
-}
 
     private float CalculateCollaborationChance(LocationManager.LocationAction action)
     {

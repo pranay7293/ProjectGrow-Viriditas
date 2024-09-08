@@ -3,16 +3,6 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 
-public enum KeyState
-{
-    None,
-    PerformingAction,
-    Collaborating,
-    Cooldown,
-    Chatting,
-    Acclimating
-}
-
 public class CharacterProgressBar : MonoBehaviour
 {
     [Header("UI Elements")]
@@ -31,7 +21,7 @@ public class CharacterProgressBar : MonoBehaviour
 
     private Camera mainCamera;
     private UniversalCharacterController characterController;
-    private KeyState currentKeyState = KeyState.None;
+    private UniversalCharacterController.CharacterState currentKeyState = UniversalCharacterController.CharacterState.None;
 
     public void Initialize(UniversalCharacterController controller)
     {
@@ -72,11 +62,6 @@ public class CharacterProgressBar : MonoBehaviour
         StartCoroutine(UpdateCooldown());
     }
 
-    private void StartCooldown()
-    {
-        SetCooldown(collabCooldown);
-    }
-
     private IEnumerator UpdateCooldown()
     {
         while (cooldownSlider.value > 0)
@@ -85,7 +70,7 @@ public class CharacterProgressBar : MonoBehaviour
             yield return null;
         }
         cooldownSlider.gameObject.SetActive(false);
-        SetKeyState(KeyState.None);
+        UpdateKeyState(UniversalCharacterController.CharacterState.None);
     }
 
     private void SetupKeyStateUI(Color characterColor)
@@ -108,7 +93,7 @@ public class CharacterProgressBar : MonoBehaviour
 
     private void ResetUIState()
     {
-        SetKeyState(KeyState.None);
+        UpdateKeyState(UniversalCharacterController.CharacterState.None);
         cooldownSlider.gameObject.SetActive(false);
         if (locationAcclimationFill != null) locationAcclimationFill.gameObject.SetActive(false);
     }
@@ -155,23 +140,24 @@ public class CharacterProgressBar : MonoBehaviour
         }
     }
 
-    public void SetKeyState(KeyState state)
+    public void UpdateKeyState(UniversalCharacterController.CharacterState state)
     {
         if (state == currentKeyState) return;
 
         currentKeyState = state;
-        keyStateOverlay.gameObject.SetActive(state != KeyState.None);
-        keyStateText.text = state.ToString();
+        bool showKeyState = (int)state >= 4;
+        keyStateOverlay.gameObject.SetActive(showKeyState);
+        keyStateText.text = showKeyState ? state.ToString() : "";
 
         switch (state)
         {
-            case KeyState.Cooldown:
-                StartCooldown();
+            case UniversalCharacterController.CharacterState.Cooldown:
+                SetCooldown(collabCooldown);
                 break;
-            case KeyState.Acclimating:
+            case UniversalCharacterController.CharacterState.Acclimating:
                 StartAcclimation();
                 break;
-            case KeyState.None:
+            case UniversalCharacterController.CharacterState.None:
                 ResetUIState();
                 break;
         }
@@ -200,6 +186,6 @@ public class CharacterProgressBar : MonoBehaviour
         {
             locationAcclimationFill.gameObject.SetActive(false);
         }
-        SetKeyState(KeyState.None);
+        UpdateKeyState(UniversalCharacterController.CharacterState.None);
     }
 }

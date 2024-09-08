@@ -44,11 +44,11 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             MakeDecision();
         }
 
-        if (characterController.GetState() == UniversalCharacterController.CharacterState.Moving)
+        if (characterController.HasState(UniversalCharacterController.CharacterState.Moving))
         {
             if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
             {
-                characterController.SetState(UniversalCharacterController.CharacterState.Idle);
+                characterController.RemoveState(UniversalCharacterController.CharacterState.Moving);
             }
         }
 
@@ -62,7 +62,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     {
         lastDecisionTime = Time.time;
         
-        if (characterController.GetState() == UniversalCharacterController.CharacterState.Acclimating)
+        if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating))
         {
             return;
         }
@@ -111,7 +111,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (destination != Vector3.zero)
         {
             navMeshAgent.SetDestination(destination);
-            characterController.SetState(UniversalCharacterController.CharacterState.Moving);
+            characterController.AddState(UniversalCharacterController.CharacterState.Moving);
             Debug.Log($"{characterController.characterName} is moving to {location}");
         }
     }
@@ -239,7 +239,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (location != null)
         {
             isAcclimating = true;
-            characterController.SetState(UniversalCharacterController.CharacterState.Acclimating);
+            characterController.AddState(UniversalCharacterController.CharacterState.Acclimating);
             StartCoroutine(AcclimationCoroutine());
         }
     }
@@ -248,9 +248,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     {
         yield return new WaitForSeconds(characterController.acclimationTime);
         isAcclimating = false;
-        if (characterController.GetState() == UniversalCharacterController.CharacterState.Acclimating)
+        if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating))
         {
-            characterController.SetState(UniversalCharacterController.CharacterState.Idle);
+            characterController.RemoveState(UniversalCharacterController.CharacterState.Acclimating);
         }
     }
 }
