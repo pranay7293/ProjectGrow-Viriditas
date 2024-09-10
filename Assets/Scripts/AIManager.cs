@@ -36,7 +36,7 @@ public class AIManager : MonoBehaviourPunCallbacks
     {
         if (!photonView.IsMine || !isInitialized) return;
 
-        if (!characterController.HasState(UniversalCharacterController.CharacterState.Interacting))
+        if (!characterController.HasState(UniversalCharacterController.CharacterState.Chatting))
         {
             npcBehavior.UpdateBehavior();
         }

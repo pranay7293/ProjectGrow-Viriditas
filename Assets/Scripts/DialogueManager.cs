@@ -99,7 +99,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         }
 
         currentNPC = npc;
-        currentNPC.AddState(UniversalCharacterController.CharacterState.Interacting);
+        currentNPC.AddState(UniversalCharacterController.CharacterState.Chatting);
         InputManager.Instance.StartDialogue();
         
         string initialDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: Hey hey!";
@@ -261,7 +261,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         if (currentNPC != null)
         {
-            currentNPC.RemoveState(UniversalCharacterController.CharacterState.Interacting);
+            currentNPC.RemoveState(UniversalCharacterController.CharacterState.Chatting);
         }
         dialoguePanel.SetActive(false);
         SetCustomInputActive(false);
@@ -397,8 +397,8 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         if (initiator != null && target != null)
         {
-            initiator.AddState(UniversalCharacterController.CharacterState.Interacting);
-            target.AddState(UniversalCharacterController.CharacterState.Interacting);
+            initiator.AddState(UniversalCharacterController.CharacterState.Chatting);
+            target.AddState(UniversalCharacterController.CharacterState.Chatting);
 
             string initiatorDialogue = await OpenAIService.Instance.GetResponse(GetNPCDialoguePrompt(initiator, target), initiator.aiSettings);
             string targetResponse = await OpenAIService.Instance.GetResponse(GetNPCDialoguePrompt(target, initiator), target.aiSettings);
@@ -414,8 +414,8 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
             UpdateRelationshipAfterInteraction(initiator, target, initiatorDialogue, targetResponse);
 
-            initiator.RemoveState(UniversalCharacterController.CharacterState.Interacting);
-            target.RemoveState(UniversalCharacterController.CharacterState.Interacting);
+            initiator.RemoveState(UniversalCharacterController.CharacterState.Chatting);
+            target.RemoveState(UniversalCharacterController.CharacterState.Chatting);
         }
     }
 

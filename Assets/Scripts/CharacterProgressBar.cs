@@ -141,27 +141,40 @@ public class CharacterProgressBar : MonoBehaviour
     }
 
     public void UpdateKeyState(UniversalCharacterController.CharacterState state)
+{
+    if (state == currentKeyState) return;
+
+    currentKeyState = state;
+    bool showKeyState = (int)state >= 4;
+    keyStateOverlay.gameObject.SetActive(showKeyState);
+    
+    // Add this switch statement to customize the display text
+    string displayText = state.ToString();
+    switch (state)
     {
-        if (state == currentKeyState) return;
-
-        currentKeyState = state;
-        bool showKeyState = (int)state >= 4;
-        keyStateOverlay.gameObject.SetActive(showKeyState);
-        keyStateText.text = showKeyState ? state.ToString() : "";
-
-        switch (state)
-        {
-            case UniversalCharacterController.CharacterState.Cooldown:
-                SetCooldown(collabCooldown);
-                break;
-            case UniversalCharacterController.CharacterState.Acclimating:
-                StartAcclimation();
-                break;
-            case UniversalCharacterController.CharacterState.None:
-                ResetUIState();
-                break;
-        }
+        case UniversalCharacterController.CharacterState.PerformingAction:
+            displayText = "Performing Action";
+            break;
+        case UniversalCharacterController.CharacterState.Collaborating:
+            displayText = "Collabing";
+            break;
     }
+    
+    keyStateText.text = showKeyState ? displayText : "";
+
+    switch (state)
+    {
+        case UniversalCharacterController.CharacterState.Cooldown:
+            SetCooldown(collabCooldown);
+            break;
+        case UniversalCharacterController.CharacterState.Acclimating:
+            StartAcclimation();
+            break;
+        case UniversalCharacterController.CharacterState.None:
+            ResetUIState();
+            break;
+    }
+}
 
     public void StartAcclimation()
     {

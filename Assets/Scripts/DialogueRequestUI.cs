@@ -45,6 +45,7 @@ public class DialogueRequestUI : MonoBehaviour
         requestPanel.SetActive(false);
         if (requestingNPC != null)
         {
+            requestingNPC.AddState(UniversalCharacterController.CharacterState.Chatting);
             DialogueManager.Instance.InitiateDialogue(requestingNPC);
         }
         requestingNPC = null;
