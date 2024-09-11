@@ -17,6 +17,9 @@ public class PlayerProfileManager : MonoBehaviourPunCallbacks
 
     private Dictionary<string, PlayerProfileUI> playerProfiles = new Dictionary<string, PlayerProfileUI>();
 
+    private float lastSortTime = 0f;
+    private const float sortInterval = 60f;
+
     private void Awake()
     {
         if (Instance == null)
@@ -149,7 +152,16 @@ public class PlayerProfileManager : MonoBehaviourPunCallbacks
         playerProfiles[characterName] = profileUI;
     }
 
-    private void SortPlayersByScore()
+     private void Update()
+    {
+        if (Time.time - lastSortTime >= sortInterval)
+        {
+            SortPlayersByScore();
+            lastSortTime = Time.time;
+        }
+    }
+
+    public void SortPlayersByScore()
     {
         var sortedProfiles = playerProfiles.OrderByDescending(kvp => GameManager.Instance.GetPlayerScore(kvp.Key)).ToList();
 

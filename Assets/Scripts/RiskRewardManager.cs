@@ -34,30 +34,22 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
 
         string outcome;
         int scoreChange;
+        string reason;
 
         if (isSuccessful)
         {
             outcome = Random.value < 0.3f ? "PARTIAL SUCCESS" : "SUCCESS";
-            scoreChange = outcome == "PARTIAL SUCCESS" ? 5 : 10;
+            scoreChange = ScoreConstants.GetActionPoints(character.currentAction.duration);
+            reason = $"{outcome} on {actionName}";
         }
         else
         {
             outcome = "FAILURE";
-            scoreChange = -5;
+            scoreChange = ScoreConstants.GetActionFailurePoints(character.currentAction.duration);
+            reason = $"Failed {actionName}";
         }
 
-        ApplyActionOutcome(character, outcome, scoreChange, actionName);
-    }
-
-    private void ApplyActionOutcome(UniversalCharacterController character, string outcome, int scoreChange, string actionName)
-    {
-        if (GameManager.Instance == null)
-        {
-            Debug.LogWarning("ApplyActionOutcome: GameManager.Instance is null");
-            return;
-        }
-
-        GameManager.Instance.UpdatePlayerScore(character.characterName, scoreChange);
+        GameManager.Instance.UpdatePlayerScore(character.characterName, scoreChange, reason);
         GameManager.Instance.UpdateGameState(character.characterName, $"{outcome}: {actionName}");
 
         if (character.photonView.IsMine)
@@ -82,11 +74,6 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
                 aiManager.UpdateEmotionalState(outcome == "SUCCESS" ? EmotionalState.Happy : (outcome == "FAILURE" ? EmotionalState.Sad : EmotionalState.Neutral));
             }
         }
-
-        // Display floating text for all characters
-        Vector3 textPosition = character.transform.position + Vector3.up * 2f;
-        string floatingText = $"{outcome}: {scoreChange}";
-        FloatingTextManager.Instance.ShowFloatingText(floatingText, textPosition, outcome == "SUCCESS" ? FloatingTextType.Points : FloatingTextType.Milestone);
     }
 
     private float CalculateSuccessRate(UniversalCharacterController character, string actionName)

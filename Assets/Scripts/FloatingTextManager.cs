@@ -14,6 +14,7 @@ public class FloatingTextManager : MonoBehaviour
     public Color milestoneColor = new Color(0.831f, 0.506f, 0.341f); // OD8157
     public Color collabColor = new Color(0.722f, 0.204f, 0.541f); // B8348A
     public Color eurekaColor = new Color(0.137f, 0.467f, 0.910f); // 2377E8
+    public Color failureColor = new Color(0.8f, 0.2f, 0.2f); 
 
     private Queue<FloatingText> textPool = new Queue<FloatingText>();
     private int poolSize = 20;
@@ -79,6 +80,8 @@ public class FloatingTextManager : MonoBehaviour
                 return collabColor;
             case FloatingTextType.Eureka:
                 return eurekaColor;
+            case FloatingTextType.Failure:
+                return failureColor;
             default:
                 return Color.white;
         }
@@ -100,5 +103,6 @@ public enum FloatingTextType
     Points,
     Milestone,
     Collab,
-    Eureka
+    Eureka,
+    Failure
 }

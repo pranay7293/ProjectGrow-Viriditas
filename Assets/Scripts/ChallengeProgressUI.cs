@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 
 public class ChallengeProgressUI : MonoBehaviour
 {
@@ -37,9 +38,22 @@ public class ChallengeProgressUI : MonoBehaviour
         {
             if (milestoneProgressBars[i] != null)
             {
-                float normalizedProgress = progress[i] / challengeGoalScore;
-                milestoneProgressBars[i].value = normalizedProgress;
+                StartCoroutine(SmoothSliderUpdate(milestoneProgressBars[i], progress[i]));
             }
         }
+    }
+
+    private IEnumerator SmoothSliderUpdate(Slider slider, float targetValue)
+    {
+        float elapsedTime = 0;
+        float startValue = slider.value;
+        while (elapsedTime < 0.5f)
+        {
+            elapsedTime += Time.deltaTime;
+            float t = elapsedTime / 0.5f;
+            slider.value = Mathf.Lerp(startValue, targetValue, t);
+            yield return null;
+        }
+        slider.value = targetValue;
     }
 }

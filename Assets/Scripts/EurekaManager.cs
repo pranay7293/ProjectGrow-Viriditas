@@ -36,39 +36,39 @@ public class EurekaManager : MonoBehaviourPunCallbacks
 }
 
 [PunRPC]
-public async void TriggerEureka(int[] collaboratorViewIDs)
-{
-    List<UniversalCharacterController> collaborators = collaboratorViewIDs
-        .Select(id => PhotonView.Find(id).GetComponent<UniversalCharacterController>())
-        .ToList();
-
-    string eurekaDescription = await OpenAIService.Instance.GenerateEurekaDescription(collaborators, GameManager.Instance.GetCurrentGameState());
-    string completedMilestone = GameManager.Instance.CompleteRandomMilestone(eurekaDescription);
-
-    EurekaUI.Instance.DisplayEurekaNotification(eurekaDescription);
-
-    List<string> involvedCharacters = collaborators.Select(c => c.characterName).ToList();
-    EurekaLogManager.Instance.AddEurekaLogEntry(eurekaDescription, involvedCharacters);
-
-    AddRecentEureka(eurekaDescription);
-
-    foreach (var collaborator in collaborators)
+    public async void TriggerEureka(int[] collaboratorViewIDs)
     {
-        collaborator.IncrementEurekaCount();
-        GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS);
-        
-        Vector3 textPosition = collaborator.transform.position + Vector3.up * 2f;
-        FloatingTextManager.Instance.ShowFloatingText($"+{ScoreConstants.EUREKA_BONUS} Eureka!", textPosition, FloatingTextType.Eureka);
-    }
+        List<UniversalCharacterController> collaborators = collaboratorViewIDs
+            .Select(id => PhotonView.Find(id).GetComponent<UniversalCharacterController>())
+            .ToList();
 
-    GameManager.Instance.UpdateMilestoneProgress("Eureka", "Eureka Moment");
+        string eurekaDescription = await OpenAIService.Instance.GenerateEurekaDescription(collaborators, GameManager.Instance.GetCurrentGameState());
+        string completedMilestone = GameManager.Instance.CompleteRandomMilestone(eurekaDescription);
 
-    // Trigger the Eureka effect at the location
-    if (collaborators.Count > 0 && collaborators[0].currentLocation != null)
-    {
-        collaborators[0].currentLocation.PlayEurekaEffect();
+        EurekaUI.Instance.DisplayEurekaNotification(eurekaDescription);
+
+        List<string> involvedCharacters = collaborators.Select(c => c.characterName).ToList();
+        EurekaLogManager.Instance.AddEurekaLogEntry(eurekaDescription, involvedCharacters);
+
+        AddRecentEureka(eurekaDescription);
+
+        foreach (var collaborator in collaborators)
+        {
+            collaborator.IncrementEurekaCount();
+            GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS, "Eureka Moment");
+            
+            Vector3 textPosition = collaborator.transform.position + Vector3.up * 2f;
+            FloatingTextManager.Instance.ShowFloatingText($"+{ScoreConstants.EUREKA_BONUS} Eureka!", textPosition, FloatingTextType.Eureka);
+        }
+
+        GameManager.Instance.UpdateMilestoneProgress("Eureka", "Eureka Moment");
+
+        // Trigger the Eureka effect at the location
+        if (collaborators.Count > 0 && collaborators[0].currentLocation != null)
+        {
+            collaborators[0].currentLocation.PlayEurekaEffect();
+        }
     }
-}
 
     public void InitiateEureka(List<UniversalCharacterController> collaborators)
     {

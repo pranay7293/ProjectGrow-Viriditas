@@ -10,6 +10,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
     [SerializeField] private float collabRadius = 5f;
     [SerializeField] private float collabCooldown = 45f;
     [SerializeField] private int maxCollaborators = 3;
+    [SerializeField] private float collabBonusMultiplier = 0.5f; // 50% bonus for collaborations
 
     private Dictionary<string, List<UniversalCharacterController>> activeCollabs = new Dictionary<string, List<UniversalCharacterController>>();
     private Dictionary<string, float> collabCooldowns = new Dictionary<string, float>();
@@ -109,41 +110,38 @@ public class CollabManager : MonoBehaviourPunCallbacks
         initiator.AddState(UniversalCharacterController.CharacterState.Collaborating);
         collaborator.AddState(UniversalCharacterController.CharacterState.Collaborating);
 
-        GameManager.Instance.UpdatePlayerScore(initiator.characterName, ScoreConstants.COLLABORATION_INITIATION_BONUS);
-        GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.COLLABORATION_JOIN_BONUS);
+        // We no longer award points for initiating or joining a collaboration
     }
 
-    public void FinalizeCollaboration(string actionName)
+    public void FinalizeCollaboration(string actionName, int actionDuration)
     {
         if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
         {
-            EurekaManager.Instance.CheckForEureka(collaborators, actionName);
-            GameManager.Instance.HandleCollabCompletion(actionName, collaborators);
+            int basePoints = ScoreConstants.GetActionPoints(actionDuration);
+            int collabBonus = Mathf.RoundToInt(basePoints * collabBonusMultiplier);
+
             foreach (var collaborator in collaborators)
             {
+                // Award full points for the action
+                GameManager.Instance.UpdatePlayerScore(collaborator.characterName, basePoints, $"Completed {actionName}");
+                
+                // Award collaboration bonus
+                GameManager.Instance.UpdatePlayerScore(collaborator.characterName, collabBonus, $"Collaboration bonus for {actionName}");
+
                 collaborator.RemoveState(UniversalCharacterController.CharacterState.Collaborating);
                 collaborator.AddState(UniversalCharacterController.CharacterState.Cooldown);
             }
+
+            EurekaManager.Instance.CheckForEureka(collaborators, actionName);
             activeCollabs.Remove(actionName);
         }
-    }
-
-    private void TriggerEureka(List<UniversalCharacterController> collaborators)
-    {
-        foreach (var collaborator in collaborators)
-        {
-            collaborator.IncrementEurekaCount();
-            GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS);
-        }
-        
-        EurekaManager.Instance.InitiateEureka(collaborators);
     }
 
     public float GetCollabSuccessBonus(string actionName)
     {
         if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
         {
-            return (collaborators.Count - 1) * ScoreConstants.COLLAB_SUCCESS_BONUS_MULTIPLIER;
+            return collabBonusMultiplier;
         }
         return 0f;
     }

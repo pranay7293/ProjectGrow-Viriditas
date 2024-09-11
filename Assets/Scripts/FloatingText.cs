@@ -8,7 +8,7 @@ public class FloatingText : MonoBehaviour
     private RectTransform rectTransform;
     
     [SerializeField] private float moveSpeed = 100f;
-    [SerializeField] private float fadeDuration = 2f;
+    [SerializeField] private float fadeDuration = 3f;
 
     public float FadeDuration => fadeDuration;
 

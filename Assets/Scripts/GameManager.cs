@@ -467,25 +467,6 @@ public class GameManager : MonoBehaviourPunCallbacks
         ResetPlayerPositions();
     }
 
-    public void HandleCollabCompletion(string actionName, List<UniversalCharacterController> collaborators)
-    {
-        foreach (var collaborator in collaborators)
-        {
-            UpdatePlayerScore(collaborator.characterName, ScoreConstants.COLLABORATION_BONUS);
-            
-            if (Random.value < ScoreConstants.EUREKA_CHANCE)
-            {
-                collaborator.IncrementEurekaCount();
-                UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS);
-            }
-        }
-
-        foreach (var collaborator in collaborators)
-        {
-            collaborator.EndCollab(actionName);
-        }
-    }
-
     private int EvaluateActionImpact(string action)
     {
         if (action.Length <= 15)
@@ -501,7 +482,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         if (milestoneCompletion[milestone] == false)
         {
             milestoneCompletion[milestone] = true;
-            UpdatePlayerScore(characterName, ScoreConstants.MILESTONE_COMPLETION_BONUS);
+            UpdatePlayerScore(characterName, ScoreConstants.KEY_MILESTONE_COMPLETION, "Milestone Completion");
             UpdatePersonalProgress(characterName, milestoneIndex, 1f);
             photonView.RPC("SyncMilestoneCompletion", RpcTarget.All, milestone, characterName, milestoneIndex);
             CheckAllMilestonesCompleted();
@@ -555,24 +536,21 @@ public class GameManager : MonoBehaviourPunCallbacks
         return milestoneCompletion.ContainsKey(milestone) && milestoneCompletion[milestone];
     }
 
-    public void UpdatePlayerScore(string playerName, int score)
+   public void UpdatePlayerScore(string playerName, int score, string reason = "")
+{
+    if (PhotonNetwork.IsMasterClient)
     {
-        if (PhotonNetwork.IsMasterClient)
+        if (!playerScores.ContainsKey(playerName))
         {
-            if (!playerScores.ContainsKey(playerName))
-            {
-                playerScores[playerName] = 0;
-            }
-            playerScores[playerName] += score;
-            photonView.RPC("SyncPlayerScore", RpcTarget.All, playerName, playerScores[playerName], score);
-            
-            // Update personal progress when score changes
-            UpdatePersonalProgress(playerName, -1, score);
+            playerScores[playerName] = 0;
         }
+        playerScores[playerName] += score;
+        photonView.RPC("SyncPlayerScore", RpcTarget.All, playerName, playerScores[playerName], score, reason);
     }
+}
 
-    [PunRPC]
-    private void SyncPlayerScore(string playerName, int totalScore, int scoreGain)
+[PunRPC]
+    private void SyncPlayerScore(string playerName, int totalScore, int scoreChange, string reason)
     {
         playerScores[playerName] = totalScore;
         UpdateScoreDisplay();
@@ -580,10 +558,31 @@ public class GameManager : MonoBehaviourPunCallbacks
         UniversalCharacterController character = GetCharacterByName(playerName);
         if (character != null)
         {
+            // Update CharacterProgressBar
+            character.UpdateProgress(playerPersonalProgress[playerName]);
+
+            // Show floating text
             Vector3 textPosition = character.transform.position + Vector3.up * 2f;
-            string scoreText = (scoreGain >= 0 ? "+" : "") + scoreGain;
-            FloatingTextManager.Instance.ShowFloatingText(scoreText, textPosition, FloatingTextType.Points);
+            string scoreText = (scoreChange >= 0 ? "+" : "") + scoreChange;
+            FloatingTextType textType = scoreChange >= 0 ? FloatingTextType.Points : FloatingTextType.Failure;
+            FloatingTextManager.Instance.ShowFloatingText(scoreText, textPosition, textType);
         }
+
+        // Update PlayerProfileUI
+        PlayerProfileManager.Instance.UpdatePlayerProgress(playerName, totalScore, playerPersonalProgress[playerName]);
+
+        // Trigger a sort in PlayerProfileManager
+        PlayerProfileManager.Instance.SortPlayersByScore();
+
+        // Log the score change
+        string logMessage = $"{playerName} {(scoreChange >= 0 ? "gained" : "lost")} {Mathf.Abs(scoreChange)} points. Reason: {reason}";
+        ActionLogManager.Instance.LogAction("SYSTEM", logMessage);
+    }
+
+    public void HandleActionFailure(string playerName, int duration)
+    {
+        int penaltyPoints = ScoreConstants.GetActionFailurePoints(duration);
+        UpdatePlayerScore(playerName, penaltyPoints, "Action Failure");
     }
 
     private void UpdatePersonalProgress(string characterName, int goalIndex, float progress)

@@ -22,7 +22,7 @@ public class CharacterProgressBar : MonoBehaviour
     private Camera mainCamera;
     private UniversalCharacterController characterController;
     private UniversalCharacterController.CharacterState currentKeyState = UniversalCharacterController.CharacterState.None;
-
+    private float[] personalGoalProgress;
     public void Initialize(UniversalCharacterController controller)
     {
         characterController = controller;
@@ -31,6 +31,9 @@ public class CharacterProgressBar : MonoBehaviour
 
         SetupUIElements(controller.characterColor);
         ResetUIState();
+
+        // Initialize personal goal progress
+        personalGoalProgress = new float[personalGoalSliders.Length];
     }
 
     private void SetupUIElements(Color characterColor)
@@ -132,12 +135,36 @@ public class CharacterProgressBar : MonoBehaviour
     {
         for (int i = 0; i < personalGoalSliders.Length; i++)
         {
-            if (i < characterController.PersonalProgress.Length)
+            if (personalGoalSliders[i] != null)
             {
-                float normalizedProgress = characterController.PersonalProgress[i] / personalGoalMaxScore;
-                personalGoalSliders[i].value = normalizedProgress;
+                StartCoroutine(SmoothSliderUpdate(personalGoalSliders[i], personalGoalProgress[i]));
             }
         }
+    }
+
+    private IEnumerator SmoothSliderUpdate(Slider slider, float targetValue)
+    {
+        float elapsedTime = 0;
+        float startValue = slider.value;
+        while (elapsedTime < 0.5f)
+        {
+            elapsedTime += Time.deltaTime;
+            float t = elapsedTime / 0.5f;
+            slider.value = Mathf.Lerp(startValue, targetValue, t);
+            yield return null;
+        }
+        slider.value = targetValue;
+    }
+
+    public void SetPersonalGoalProgress(float[] progress)
+    {
+        if (progress.Length != personalGoalProgress.Length)
+        {
+            Debug.LogError("Mismatch in personal goal progress array length");
+            return;
+        }
+        personalGoalProgress = progress;
+        UpdatePersonalGoals();
     }
 
     public void UpdateKeyState(UniversalCharacterController.CharacterState state)

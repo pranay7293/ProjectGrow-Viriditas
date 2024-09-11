@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
 public class PlayerProfileUI : MonoBehaviour
 {
@@ -61,16 +62,29 @@ public class PlayerProfileUI : MonoBehaviour
     }
 
    public void UpdatePersonalGoals(float[] progress)
+{
+    for (int i = 0; i < personalGoalSliders.Length && i < progress.Length; i++)
     {
-        for (int i = 0; i < personalGoalSliders.Length && i < progress.Length; i++)
+        if (personalGoalSliders[i] != null)
         {
-            if (personalGoalSliders[i] != null)
-            {
-                float normalizedProgress = progress[i] / personalGoalMaxScore;
-                personalGoalSliders[i].value = normalizedProgress;
-            }
+            StartCoroutine(SmoothSliderUpdate(personalGoalSliders[i], progress[i]));
         }
     }
+}
+
+private IEnumerator SmoothSliderUpdate(Slider slider, float targetValue)
+{
+    float elapsedTime = 0;
+    float startValue = slider.value;
+    while (elapsedTime < 0.5f)
+    {
+        elapsedTime += Time.deltaTime;
+        float t = elapsedTime / 0.5f;
+        slider.value = Mathf.Lerp(startValue, targetValue, t);
+        yield return null;
+    }
+    slider.value = targetValue;
+}
 
     public void UpdateEurekas(int count)
     {
