@@ -224,6 +224,19 @@ public class GameManager : MonoBehaviourPunCallbacks
         photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, playerScores);
     }
 
+    private void UpdateChallengeProgress()
+    {
+        if (challengeProgressUI != null && currentChallenge != null)
+        {
+            float[] milestoneProgress = new float[currentChallenge.milestones.Count];
+            for (int i = 0; i < currentChallenge.milestones.Count; i++)
+            {
+                milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
+            }
+            challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
+        }
+    }
+
     private HubData GetSelectedHub()
     {
         int selectedHubIndex = PlayerPrefs.GetInt("SelectedHubIndex", 0);
@@ -483,7 +496,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             milestoneCompletion[milestone] = true;
             UpdatePlayerScore(characterName, ScoreConstants.KEY_MILESTONE_COMPLETION, "Milestone Completion");
-            UpdatePersonalProgress(characterName, milestoneIndex, 1f);
+            UpdatePersonalProgress(characterName, ScoreConstants.KEY_MILESTONE_COMPLETION);
             photonView.RPC("SyncMilestoneCompletion", RpcTarget.All, milestone, characterName, milestoneIndex);
             CheckAllMilestonesCompleted();
         }
@@ -493,7 +506,6 @@ public class GameManager : MonoBehaviourPunCallbacks
     private void SyncMilestoneCompletion(string milestone, string characterName, int milestoneIndex)
     {
         milestoneCompletion[milestone] = true;
-        UpdatePersonalProgress(characterName, milestoneIndex, 1f);
         if (milestoneIndex < milestoneCheckboxes.Length)
         {
             milestoneCheckboxes[milestoneIndex].IsChecked = true;
@@ -536,24 +548,27 @@ public class GameManager : MonoBehaviourPunCallbacks
         return milestoneCompletion.ContainsKey(milestone) && milestoneCompletion[milestone];
     }
 
-   public void UpdatePlayerScore(string playerName, int score, string reason = "")
-{
-    if (PhotonNetwork.IsMasterClient)
+    public void UpdatePlayerScore(string playerName, int score, string reason = "")
     {
-        if (!playerScores.ContainsKey(playerName))
+        if (PhotonNetwork.IsMasterClient)
         {
-            playerScores[playerName] = 0;
-        }
-        playerScores[playerName] += score;
-        photonView.RPC("SyncPlayerScore", RpcTarget.All, playerName, playerScores[playerName], score, reason);
-    }
-}
+            if (!playerScores.ContainsKey(playerName))
+            {
+                playerScores[playerName] = 0;
+            }
+            playerScores[playerName] += score;
 
-[PunRPC]
+            // Update personal progress here
+            UpdatePersonalProgress(playerName, score);
+
+            photonView.RPC("SyncPlayerScore", RpcTarget.All, playerName, playerScores[playerName], score, reason);
+        }
+    }
+
+    [PunRPC]
     private void SyncPlayerScore(string playerName, int totalScore, int scoreChange, string reason)
     {
         playerScores[playerName] = totalScore;
-        UpdateScoreDisplay();
 
         UniversalCharacterController character = GetCharacterByName(playerName);
         if (character != null)
@@ -571,6 +586,9 @@ public class GameManager : MonoBehaviourPunCallbacks
         // Update PlayerProfileUI
         PlayerProfileManager.Instance.UpdatePlayerProgress(playerName, totalScore, playerPersonalProgress[playerName]);
 
+        // Update ChallengeProgressUI
+        UpdateChallengeProgress();
+
         // Trigger a sort in PlayerProfileManager
         PlayerProfileManager.Instance.SortPlayersByScore();
 
@@ -585,50 +603,23 @@ public class GameManager : MonoBehaviourPunCallbacks
         UpdatePlayerScore(playerName, penaltyPoints, "Action Failure");
     }
 
-    private void UpdatePersonalProgress(string characterName, int goalIndex, float progress)
+    private void UpdatePersonalProgress(string playerName, int scoreChange)
     {
-        if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
+        if (!playerPersonalProgress.ContainsKey(playerName))
         {
-            if (goalIndex == -1)
-            {
-                // Update all goals based on overall score
-                for (int i = 0; i < personalProgress.Length; i++)
-                {
-                    personalProgress[i] = Mathf.Min(personalProgress[i] + progress / 100f, 1f);
-                }
-            }
-            else
-            {
-                personalProgress[goalIndex] = Mathf.Min(progress, 1f);
-            }
-            photonView.RPC("SyncPersonalProgress", RpcTarget.All, characterName, goalIndex, progress);
+            playerPersonalProgress[playerName] = new float[3]; // Assuming 3 personal goals
         }
-    }
 
-    [PunRPC]
-    private void SyncPersonalProgress(string characterName, int goalIndex, float progress)
-    {
-        if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
+        float[] progress = playerPersonalProgress[playerName];
+        
+        // Update progress based on score change
+        // This is a simple example; you might want to adjust this based on your specific game logic
+        for (int i = 0; i < progress.Length; i++)
         {
-            if (goalIndex == -1)
-            {
-                for (int i = 0; i < personalProgress.Length; i++)
-                {
-                    personalProgress[i] = Mathf.Min(personalProgress[i] + progress / 100f, 1f);
-                }
-            }
-            else
-            {
-                personalProgress[goalIndex] = Mathf.Min(progress, 1f);
-            }
-            UpdatePlayerProfileUI(characterName);
-            
-            UniversalCharacterController character = GetCharacterByName(characterName);
-            if (character != null)
-            {
-                character.UpdateProgress(personalProgress);
-            }
+            progress[i] = Mathf.Clamp01(progress[i] + (scoreChange / 100f)); // Assuming 100 points is full progress
         }
+
+        playerPersonalProgress[playerName] = progress;
     }
 
     private void UpdatePlayerProfileUI(string characterName)
@@ -689,23 +680,23 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     public void UpdatePlayerProgress(UniversalCharacterController character, float[] personalProgress)
-{
-    if (character == null || personalProgress == null) return;
-
-    string characterName = character.characterName;
-    if (!playerPersonalProgress.ContainsKey(characterName))
     {
-        playerPersonalProgress[characterName] = new float[personalProgress.Length];
-    }
+        if (character == null || personalProgress == null) return;
 
-    for (int i = 0; i < personalProgress.Length; i++)
-    {
-        playerPersonalProgress[characterName][i] = personalProgress[i];
-    }
+        string characterName = character.characterName;
+        if (!playerPersonalProgress.ContainsKey(characterName))
+        {
+            playerPersonalProgress[characterName] = new float[personalProgress.Length];
+        }
 
-    // Update UI without calling back to the character
-    PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, playerScores[characterName], personalProgress);
-}
+        for (int i = 0; i < personalProgress.Length; i++)
+        {
+            playerPersonalProgress[characterName][i] = personalProgress[i];
+        }
+
+        // Update UI without calling back to the character
+        PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, playerScores[characterName], personalProgress);
+    }
 
     public void UpdatePlayerEurekas(UniversalCharacterController character, int eurekaCount)
     {
