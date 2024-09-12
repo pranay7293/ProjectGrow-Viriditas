@@ -114,28 +114,28 @@ public class CollabManager : MonoBehaviourPunCallbacks
     }
 
     public void FinalizeCollaboration(string actionName, int actionDuration)
+{
+    if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
     {
-        if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
+        int basePoints = ScoreConstants.GetActionPoints(actionDuration);
+        int collabBonus = Mathf.RoundToInt(basePoints * collabBonusMultiplier);
+
+        foreach (var collaborator in collaborators)
         {
-            int basePoints = ScoreConstants.GetActionPoints(actionDuration);
-            int collabBonus = Mathf.RoundToInt(basePoints * collabBonusMultiplier);
+            // Award full points for the action
+            GameManager.Instance.UpdatePlayerScore(collaborator.characterName, basePoints, $"Completed {actionName}", new List<string> { actionName, "Collaboration" });
+            
+            // Award collaboration bonus
+            GameManager.Instance.UpdatePlayerScore(collaborator.characterName, collabBonus, $"Collaboration bonus for {actionName}", new List<string> { "CollaborationBonus" });
 
-            foreach (var collaborator in collaborators)
-            {
-                // Award full points for the action
-                GameManager.Instance.UpdatePlayerScore(collaborator.characterName, basePoints, $"Completed {actionName}");
-                
-                // Award collaboration bonus
-                GameManager.Instance.UpdatePlayerScore(collaborator.characterName, collabBonus, $"Collaboration bonus for {actionName}");
-
-                collaborator.RemoveState(UniversalCharacterController.CharacterState.Collaborating);
-                collaborator.AddState(UniversalCharacterController.CharacterState.Cooldown);
-            }
-
-            EurekaManager.Instance.CheckForEureka(collaborators, actionName);
-            activeCollabs.Remove(actionName);
+            collaborator.RemoveState(UniversalCharacterController.CharacterState.Collaborating);
+            collaborator.AddState(UniversalCharacterController.CharacterState.Cooldown);
         }
+
+        EurekaManager.Instance.CheckForEureka(collaborators, actionName);
+        activeCollabs.Remove(actionName);
     }
+}
 
     public float GetCollabSuccessBonus(string actionName)
     {

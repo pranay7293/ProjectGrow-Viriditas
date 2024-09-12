@@ -56,21 +56,21 @@ public class PlayerProfileUI : MonoBehaviour
 
                 slider.value = 0;
                 slider.maxValue = 1;
-                slider.wholeNumbers = false; // Changed to false for smooth progression
+                slider.wholeNumbers = false;
             }
         }
     }
 
    public void UpdatePersonalGoals(float[] progress)
-{
-    for (int i = 0; i < personalGoalSliders.Length && i < progress.Length; i++)
     {
-        if (personalGoalSliders[i] != null)
+        for (int i = 0; i < personalGoalSliders.Length && i < progress.Length; i++)
         {
-            StartCoroutine(SmoothSliderUpdate(personalGoalSliders[i], progress[i]));
+            if (personalGoalSliders[i] != null)
+            {
+                personalGoalSliders[i].value = progress[i];
+            }
         }
     }
-}
 
 private IEnumerator SmoothSliderUpdate(Slider slider, float targetValue)
 {

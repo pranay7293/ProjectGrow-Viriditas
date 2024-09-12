@@ -1,5 +1,6 @@
 using UnityEngine;
 using Photon.Pun;
+using System.Collections.Generic;
 
 public class RiskRewardManager : MonoBehaviourPunCallbacks
 {
@@ -49,7 +50,7 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
             reason = $"Failed {actionName}";
         }
 
-        GameManager.Instance.UpdatePlayerScore(character.characterName, scoreChange, reason);
+        GameManager.Instance.UpdatePlayerScore(character.characterName, scoreChange, reason, new List<string> { actionName, outcome });
         GameManager.Instance.UpdateGameState(character.characterName, $"{outcome}: {actionName}");
 
         if (character.photonView.IsMine)

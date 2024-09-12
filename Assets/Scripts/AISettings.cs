@@ -13,4 +13,5 @@ public class AISettings : ScriptableObject
     public float interactionProbability = 0.5f;
     [TextArea(3, 10)]
     public List<string> personalGoals;
+    public List<string> personalGoalTags = new List<string>();
 }

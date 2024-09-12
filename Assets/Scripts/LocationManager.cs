@@ -11,9 +11,10 @@ public class LocationManager : MonoBehaviourPunCallbacks
         [TextArea(3, 5)]
         public string description;
         public float baseSuccessRate;
-        public int duration; // 15, 30, or 45 seconds
+        public int duration;
         public string requiredRole;
         public Sprite actionIcon;
+        public List<string> tags = new List<string>();
     }
 
     public string locationName;
@@ -77,26 +78,24 @@ public class LocationManager : MonoBehaviourPunCallbacks
         
         // Award points for starting an action
         int points = ScoreConstants.GetActionPoints(action.duration);
-        GameManager.Instance.UpdatePlayerScore(character.characterName, points);
+        GameManager.Instance.UpdatePlayerScore(character.characterName, points, action.actionName, action.tags);
     }
 
     public void PlayEurekaEffect()
-{
-    if (activeEurekaEffect != null)
     {
-        Destroy(activeEurekaEffect);
+        if (activeEurekaEffect != null)
+        {
+            Destroy(activeEurekaEffect);
+        }
+
+        Renderer locationRenderer = GetComponent<Renderer>();
+        Vector3 center = locationRenderer != null 
+            ? locationRenderer.bounds.center 
+            : transform.position;
+
+        center += Vector3.up * 1f;
+
+        activeEurekaEffect = Instantiate(eurekaEffectPrefab, center, Quaternion.identity);
+        Destroy(activeEurekaEffect, 5f);
     }
-
-    // Find the center of the location
-    Renderer locationRenderer = GetComponent<Renderer>();
-    Vector3 center = locationRenderer != null 
-        ? locationRenderer.bounds.center 
-        : transform.position;
-
-    // Offset slightly upwards to be more visible
-    center += Vector3.up * 1f;
-
-    activeEurekaEffect = Instantiate(eurekaEffectPrefab, center, Quaternion.identity);
-    Destroy(activeEurekaEffect, 5f); // Destroy after 5 seconds
-}
 }

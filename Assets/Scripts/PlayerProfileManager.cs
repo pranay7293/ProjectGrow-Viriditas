@@ -171,11 +171,12 @@ public class PlayerProfileManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public void UpdatePlayerProgress(string characterName, float overallProgress, float[] personalProgress)
+    public void UpdatePlayerProfile(string characterName, int score, Dictionary<string, float> progress)
     {
         if (playerProfiles.TryGetValue(characterName, out PlayerProfileUI profile))
         {
-            profile.UpdatePersonalGoals(personalProgress);
+            profile.UpdateScore(score);
+            profile.UpdatePersonalGoals(progress.Values.ToArray());
         }
     }
 

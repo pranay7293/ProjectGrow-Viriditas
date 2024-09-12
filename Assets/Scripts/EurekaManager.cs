@@ -53,13 +53,13 @@ public class EurekaManager : MonoBehaviourPunCallbacks
         AddRecentEureka(eurekaDescription);
 
         foreach (var collaborator in collaborators)
-        {
-            collaborator.IncrementEurekaCount();
-            GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS, "Eureka Moment");
-            
-            Vector3 textPosition = collaborator.transform.position + Vector3.up * 2f;
-            FloatingTextManager.Instance.ShowFloatingText($"+{ScoreConstants.EUREKA_BONUS} Eureka!", textPosition, FloatingTextType.Eureka);
-        }
+{
+    collaborator.IncrementEurekaCount();
+    GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS, "Eureka Moment", new List<string> { "Eureka" });
+    
+    Vector3 textPosition = collaborator.transform.position + Vector3.up * 2f;
+    FloatingTextManager.Instance.ShowFloatingText($"+{ScoreConstants.EUREKA_BONUS} Eureka!", textPosition, FloatingTextType.Eureka);
+}
 
         GameManager.Instance.UpdateMilestoneProgress("Eureka", "Eureka Moment");
 

@@ -456,26 +456,30 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
     }
 
-    private void CompletePersonalGoal(string goal)
-    {
-        personalGoalCompletion[goal] = true;
-        GameManager.Instance.UpdatePlayerScore(characterName, ScoreConstants.PERSONAL_GOAL_COMPLETION, "Personal Goal Completion");
-        GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goal}");
-    }
+   private void CompletePersonalGoal(string goal)
+{
+    personalGoalCompletion[goal] = true;
+    GameManager.Instance.UpdatePlayerScore(characterName, ScoreConstants.PERSONAL_GOAL_COMPLETION, "Personal Goal Completion", new List<string> { "PersonalGoal", goal });
+    GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goal}");
+}
 
     private void UpdateGoalProgress(string actionName)
+{
+    for (int i = 0; i < PersonalProgress.Length; i++)
     {
-        for (int i = 0; i < PersonalProgress.Length; i++)
+        if (aiSettings.personalGoals[i].ToLower().Contains(actionName.ToLower()))
         {
-            if (aiSettings.personalGoals[i].ToLower().Contains(actionName.ToLower()))
-            {
-                PersonalProgress[i] = Mathf.Min(PersonalProgress[i] + 0.25f, 1f);
-                GameManager.Instance.UpdatePlayerProgress(this, PersonalProgress);
-            }
+            PersonalProgress[i] = Mathf.Min(PersonalProgress[i] + 0.25f, 1f);
         }
-
-        GameManager.Instance.UpdateMilestoneProgress(characterName, actionName);
     }
+
+    if (progressBar != null)
+    {
+        progressBar.SetPersonalGoalProgress(PersonalProgress);
+    }
+
+    GameManager.Instance.UpdateMilestoneProgress(characterName, actionName);
+}
 
     public List<string> GetPersonalGoals()
     {
@@ -487,13 +491,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return new Dictionary<string, bool>(personalGoalCompletion);
     }
 
-    public void UpdateProgress(float[] progress)
+    public void UpdateProgress(Dictionary<string, float> progress)
     {
-        PersonalProgress = progress;
-        if (progressBar != null)
-        {
-            progressBar.SetPersonalGoalProgress(progress);
-        }
+    if (progressBar != null)
+    {
+        progressBar.SetPersonalGoalProgress(progress.Values.ToArray());
+    }
     }
 
     public void IncrementEurekaCount()

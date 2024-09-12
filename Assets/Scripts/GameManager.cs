@@ -10,8 +10,8 @@ public class GameManager : MonoBehaviourPunCallbacks
     public static GameManager Instance { get; private set; }
 
     [Header("Game Settings")]
-    [SerializeField] private float challengeDuration = 900f; // 15 minutes
-    [SerializeField] private float minimumPlayTime = 60f; // 1 minute minimum play time
+    [SerializeField] private float challengeDuration = 900f;
+    [SerializeField] private float minimumPlayTime = 60f;
 
     [Header("UI References")]
     [SerializeField] private TextMeshProUGUI timerText;
@@ -34,7 +34,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     private HubData currentHub;
     private Dictionary<string, bool> milestoneCompletion = new Dictionary<string, bool>();
     private Dictionary<string, int> playerScores = new Dictionary<string, int>();
-    private Dictionary<string, float[]> playerPersonalProgress = new Dictionary<string, float[]>();
+    private Dictionary<string, Dictionary<string, float>> playerProgress = new Dictionary<string, Dictionary<string, float>>();
     private List<string> recentPlayerActions = new List<string>();
     private Dictionary<string, UniversalCharacterController> spawnedCharacters = new Dictionary<string, UniversalCharacterController>();
     private Dictionary<string, int> playerEurekas = new Dictionary<string, int>();
@@ -165,7 +165,7 @@ public class GameManager : MonoBehaviourPunCallbacks
             }
 
             playerScores[characterName] = 0;
-            playerPersonalProgress[characterName] = new float[3] { 0f, 0f, 0f };
+            playerProgress[characterName] = new Dictionary<string, float>();
             playerEurekas[characterName] = 0;
         }
         else
@@ -222,19 +222,6 @@ public class GameManager : MonoBehaviourPunCallbacks
         SerializableChallengeData serializableChallenge = new SerializableChallengeData(currentChallenge);
         string challengeJson = JsonUtility.ToJson(serializableChallenge);
         photonView.RPC("SyncGameState", RpcTarget.All, challengeJson, remainingTime, playerScores);
-    }
-
-    private void UpdateChallengeProgress()
-    {
-        if (challengeProgressUI != null && currentChallenge != null)
-        {
-            float[] milestoneProgress = new float[currentChallenge.milestones.Count];
-            for (int i = 0; i < currentChallenge.milestones.Count; i++)
-            {
-                milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
-            }
-            challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
-        }
     }
 
     private HubData GetSelectedHub()
@@ -427,41 +414,41 @@ public class GameManager : MonoBehaviourPunCallbacks
         return new List<string>(recentPlayerActions);
     }
 
-    public void UpdateGameState(string characterName, string action, bool isEmergentScenario = false)
+   public void UpdateGameState(string characterName, string actionName, bool isEmergentScenario = false)
+{
+    if (string.IsNullOrEmpty(characterName) || string.IsNullOrEmpty(actionName))
     {
-        if (string.IsNullOrEmpty(characterName) || string.IsNullOrEmpty(action))
-        {
-            Debug.LogWarning("Invalid character name or action in UpdateGameState");
-            return;
-        }
+        Debug.LogWarning("Invalid character name or action in UpdateGameState");
+        return;
+    }
 
-        if (isEmergentScenario)
-        {
-            Debug.Log($"Emergent Scenario: {action}");
-            photonView.RPC("RPC_ImplementEmergentScenario", RpcTarget.All, action);
-        }
-        else
-        {
-            Debug.Log($"{characterName} performed action: {action}");
-            int scoreIncrease = EvaluateActionImpact(action);
-            AddPlayerAction(action);
-            ActionLogManager.Instance.LogAction(characterName, action);
+    if (isEmergentScenario)
+    {
+        Debug.Log($"Emergent Scenario: {actionName}");
+        photonView.RPC("RPC_ImplementEmergentScenario", RpcTarget.All, actionName);
+    }
+    else
+    {
+        Debug.Log($"{characterName} performed action: {actionName}");
+        AddPlayerAction(actionName);
+        ActionLogManager.Instance.LogAction(characterName, actionName);
 
-            UpdateMilestoneProgress(characterName, action);
-            UpdatePlayerScore(characterName, scoreIncrease);
+        UniversalCharacterController character = GetCharacterByName(characterName);
+        if (character != null && character.currentAction != null)
+        {
+            int scoreChange = ScoreConstants.GetActionPoints(character.currentAction.duration);
+            List<string> actionTags = TagSystem.GetTagsForAction(actionName);
+            UpdatePlayerScore(characterName, scoreChange, actionName, actionTags);
+            UpdateMilestoneProgress(characterName, actionName, actionTags);
 
-            UniversalCharacterController character = GetCharacterByName(characterName);
-            if (character != null)
+            AIManager aiManager = character.GetComponent<AIManager>();
+            if (aiManager != null)
             {
-                AIManager aiManager = character.GetComponent<AIManager>();
-                if (aiManager != null)
-                {
-                    LocationManager.LocationAction locationAction = new LocationManager.LocationAction { actionName = action };
-                    aiManager.ConsiderCollaboration(locationAction);
-                }
+                aiManager.ConsiderCollaboration(character.currentAction);
             }
         }
     }
+}
 
     [PunRPC]
     private void RPC_ImplementEmergentScenario(string scenario)
@@ -480,23 +467,12 @@ public class GameManager : MonoBehaviourPunCallbacks
         ResetPlayerPositions();
     }
 
-    private int EvaluateActionImpact(string action)
-    {
-        if (action.Length <= 15)
-            return ScoreConstants.SIMPLE_ACTION_POINTS;
-        else if (action.Length <= 30)
-            return ScoreConstants.MEDIUM_ACTION_POINTS;
-        else
-            return ScoreConstants.COMPLEX_ACTION_POINTS;
-    }
-
     public void CompleteMilestone(string characterName, string milestone, int milestoneIndex)
     {
         if (milestoneCompletion[milestone] == false)
         {
             milestoneCompletion[milestone] = true;
-            UpdatePlayerScore(characterName, ScoreConstants.KEY_MILESTONE_COMPLETION, "Milestone Completion");
-            UpdatePersonalProgress(characterName, ScoreConstants.KEY_MILESTONE_COMPLETION);
+            UpdatePlayerScore(characterName, ScoreConstants.KEY_MILESTONE_COMPLETION, "Milestone Completion", new List<string> { milestone });
             photonView.RPC("SyncMilestoneCompletion", RpcTarget.All, milestone, characterName, milestoneIndex);
             CheckAllMilestonesCompleted();
         }
@@ -548,7 +524,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         return milestoneCompletion.ContainsKey(milestone) && milestoneCompletion[milestone];
     }
 
-    public void UpdatePlayerScore(string playerName, int score, string reason = "")
+    public void UpdatePlayerScore(string playerName, int score, string actionName, List<string> tags)
     {
         if (PhotonNetwork.IsMasterClient)
         {
@@ -558,76 +534,97 @@ public class GameManager : MonoBehaviourPunCallbacks
             }
             playerScores[playerName] += score;
 
-            // Update personal progress here
-            UpdatePersonalProgress(playerName, score);
+            UpdateProgressBasedOnTags(playerName, tags, score);
 
-            photonView.RPC("SyncPlayerScore", RpcTarget.All, playerName, playerScores[playerName], score, reason);
+            photonView.RPC("SyncPlayerScore", RpcTarget.All, playerName, playerScores[playerName], score, actionName);
         }
     }
 
-    [PunRPC]
-    private void SyncPlayerScore(string playerName, int totalScore, int scoreChange, string reason)
+    private void UpdateProgressBasedOnTags(string playerName, List<string> tags, int score)
     {
-        playerScores[playerName] = totalScore;
-
-        UniversalCharacterController character = GetCharacterByName(playerName);
-        if (character != null)
+        foreach (var tag in tags)
         {
-            // Update CharacterProgressBar
-            character.UpdateProgress(playerPersonalProgress[playerName]);
-
-            // Show floating text
-            Vector3 textPosition = character.transform.position + Vector3.up * 2f;
-            string scoreText = (scoreChange >= 0 ? "+" : "") + scoreChange;
-            FloatingTextType textType = scoreChange >= 0 ? FloatingTextType.Points : FloatingTextType.Failure;
-            FloatingTextManager.Instance.ShowFloatingText(scoreText, textPosition, textType);
+            UpdateProgress(playerName, tag, score);
         }
-
-        // Update PlayerProfileUI
-        PlayerProfileManager.Instance.UpdatePlayerProgress(playerName, totalScore, playerPersonalProgress[playerName]);
-
-        // Update ChallengeProgressUI
-        UpdateChallengeProgress();
-
-        // Trigger a sort in PlayerProfileManager
-        PlayerProfileManager.Instance.SortPlayersByScore();
-
-        // Log the score change
-        string logMessage = $"{playerName} {(scoreChange >= 0 ? "gained" : "lost")} {Mathf.Abs(scoreChange)} points. Reason: {reason}";
-        ActionLogManager.Instance.LogAction("SYSTEM", logMessage);
     }
 
-    public void HandleActionFailure(string playerName, int duration)
+    private void UpdateProgress(string playerName, string tag, int score)
     {
-        int penaltyPoints = ScoreConstants.GetActionFailurePoints(duration);
-        UpdatePlayerScore(playerName, penaltyPoints, "Action Failure");
-    }
+        float progressIncrement = (float)score / ScoreConstants.KEY_MILESTONE_COMPLETION;
 
-    private void UpdatePersonalProgress(string playerName, int scoreChange)
-    {
-        if (!playerPersonalProgress.ContainsKey(playerName))
+        if (currentChallenge.milestoneTags.Contains(tag))
         {
-            playerPersonalProgress[playerName] = new float[3]; // Assuming 3 personal goals
+            if (!milestoneCompletion.ContainsKey(tag))
+            {
+                milestoneCompletion[tag] = false;
+            }
+            int milestoneIndex = currentChallenge.milestoneTags.IndexOf(tag);
+            float currentProgress = challengeProgressUI.GetMilestoneProgress(milestoneIndex);
+            float newProgress = Mathf.Clamp01(currentProgress + progressIncrement);
+            challengeProgressUI.UpdateMilestoneProgress(new float[] { newProgress });
+
+            if (newProgress >= 1f && !milestoneCompletion[tag])
+            {
+                CompleteMilestone(playerName, tag, milestoneIndex);
+            }
+        }
+        else
+        {
+            if (!playerProgress.ContainsKey(playerName))
+            {
+                playerProgress[playerName] = new Dictionary<string, float>();
+            }
+            if (!playerProgress[playerName].ContainsKey(tag))
+            {
+                playerProgress[playerName][tag] = 0f;
+            }
+            playerProgress[playerName][tag] = Mathf.Clamp01(playerProgress[playerName][tag] + progressIncrement);
         }
 
-        float[] progress = playerPersonalProgress[playerName];
-        
-        // Update progress based on score change
-        // This is a simple example; you might want to adjust this based on your specific game logic
-        for (int i = 0; i < progress.Length; i++)
-        {
-            progress[i] = Mathf.Clamp01(progress[i] + (scoreChange / 100f)); // Assuming 100 points is full progress
-        }
-
-        playerPersonalProgress[playerName] = progress;
+        UpdatePlayerProfileUI(playerName);
     }
 
     private void UpdatePlayerProfileUI(string characterName)
     {
-        if (playerPersonalProgress.TryGetValue(characterName, out float[] personalProgress))
+        if (playerProgress.TryGetValue(characterName, out Dictionary<string, float> progress))
         {
-            PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, playerScores[characterName], personalProgress);
+            PlayerProfileManager.Instance.UpdatePlayerProfile(characterName, playerScores[characterName], progress);
         }
+    }
+
+    [PunRPC]
+private void SyncPlayerScore(string playerName, int totalScore, int scoreChange, string actionName)
+{
+    playerScores[playerName] = totalScore;
+
+    UniversalCharacterController character = GetCharacterByName(playerName);
+    if (character != null)
+    {
+        // Update CharacterProgressBar
+        character.UpdateProgress(playerProgress[playerName]);
+
+        // Show floating text
+        Vector3 textPosition = character.transform.position + Vector3.up * 2f;
+        string scoreText = (scoreChange >= 0 ? "+" : "") + scoreChange;
+        FloatingTextType textType = scoreChange >= 0 ? FloatingTextType.Points : FloatingTextType.Failure;
+        FloatingTextManager.Instance.ShowFloatingText(scoreText, textPosition, textType);
+    }
+
+    // Update PlayerProfileUI
+    PlayerProfileManager.Instance.UpdatePlayerProfile(playerName, totalScore, playerProgress[playerName]);
+
+    // Trigger a sort in PlayerProfileManager
+    PlayerProfileManager.Instance.SortPlayersByScore();
+
+    // Log the score change
+    string logMessage = $"{playerName} {(scoreChange >= 0 ? "gained" : "lost")} {Mathf.Abs(scoreChange)} points. Action: {actionName}";
+    ActionLogManager.Instance.LogAction("SYSTEM", logMessage);
+}
+
+    public void HandleActionFailure(string playerName, int duration)
+    {
+        int penaltyPoints = ScoreConstants.GetActionFailurePoints(duration);
+        UpdatePlayerScore(playerName, penaltyPoints, "Action Failure", new List<string> { "Failure" });
     }
 
     public void EndChallenge()
@@ -677,25 +674,6 @@ public class GameManager : MonoBehaviourPunCallbacks
                 UpdatePlayerProfileUI(characterName);
             }
         }
-    }
-
-    public void UpdatePlayerProgress(UniversalCharacterController character, float[] personalProgress)
-    {
-        if (character == null || personalProgress == null) return;
-
-        string characterName = character.characterName;
-        if (!playerPersonalProgress.ContainsKey(characterName))
-        {
-            playerPersonalProgress[characterName] = new float[personalProgress.Length];
-        }
-
-        for (int i = 0; i < personalProgress.Length; i++)
-        {
-            playerPersonalProgress[characterName][i] = personalProgress[i];
-        }
-
-        // Update UI without calling back to the character
-        PlayerProfileManager.Instance.UpdatePlayerProgress(characterName, playerScores[characterName], personalProgress);
     }
 
     public void UpdatePlayerEurekas(UniversalCharacterController character, int eurekaCount)
@@ -797,28 +775,29 @@ public class GameManager : MonoBehaviourPunCallbacks
         return currentHub.hubColor;
     }
 
-    public void UpdateMilestoneProgress(string characterName, string actionName)
-    {
-        float progressIncrement = 0.2f; // 20% progress per relevant action
-        float[] milestoneProgress = new float[currentChallenge.milestones.Count];
+    public void UpdateMilestoneProgress(string characterName, string action, List<string> tags = null)
+{
+    float progressIncrement = 0.2f; // 20% progress per relevant action
+    float[] milestoneProgress = new float[currentChallenge.milestones.Count];
 
-        for (int i = 0; i < currentChallenge.milestones.Count; i++)
+    for (int i = 0; i < currentChallenge.milestones.Count; i++)
+    {
+        if (currentChallenge.milestones[i].ToLower().Contains(action.ToLower()) || 
+            (tags != null && tags.Any(tag => currentChallenge.milestones[i].ToLower().Contains(tag.ToLower()))))
         {
-            if (currentChallenge.milestones[i].ToLower().Contains(actionName.ToLower()))
+            milestoneProgress[i] = Mathf.Min(milestoneCompletion[currentChallenge.milestones[i]] ? 1f : milestoneProgress[i] + progressIncrement, 1f);
+            if (milestoneProgress[i] >= 1f && !milestoneCompletion[currentChallenge.milestones[i]])
             {
-                milestoneProgress[i] = Mathf.Min(milestoneCompletion[currentChallenge.milestones[i]] ? 1f : milestoneProgress[i] + progressIncrement, 1f);
-                if (milestoneProgress[i] >= 1f && !milestoneCompletion[currentChallenge.milestones[i]])
-                {
-                    CompleteMilestone(characterName, currentChallenge.milestones[i], i);
-                }
-            }
-            else
-            {
-                milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
+                CompleteMilestone(characterName, currentChallenge.milestones[i], i);
             }
         }
-
-        challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
-        UpdateScoreDisplay(); // Ensure all UI elements are updated
+        else
+        {
+            milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
+        }
     }
+
+    challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
+    UpdateScoreDisplay(); // Ensure all UI elements are updated
+}
 }

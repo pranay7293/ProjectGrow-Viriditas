@@ -11,4 +11,5 @@ public class ChallengeData : ScriptableObject
     public int goalScore;
     public bool isAvailable;
     public Sprite iconSprite;
+    public List<string> milestoneTags = new List<string>();
 }

@@ -15,6 +15,9 @@ public static class ScoreConstants
     public const int MEDIUM_ACTION_FAILURE = -5;
     public const int COMPLEX_ACTION_FAILURE = -7;
 
+    public const float PRIMARY_TAG_CONTRIBUTION = 0.1f;
+    public const float SECONDARY_TAG_CONTRIBUTION = 0.05f;
+
     public static int GetActionPoints(int duration)
     {
         if (duration <= 15)

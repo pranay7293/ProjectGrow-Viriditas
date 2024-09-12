@@ -32,6 +32,15 @@ public class ChallengeProgressUI : MonoBehaviour
         }
     }
 
+        public float GetMilestoneProgress(int index)
+    {
+        if (index >= 0 && index < milestoneProgressBars.Length)
+        {
+            return milestoneProgressBars[index].value;
+        }
+        return 0f;
+    }
+
     public void UpdateMilestoneProgress(float[] progress)
     {
         for (int i = 0; i < milestoneProgressBars.Length && i < progress.Length; i++)
