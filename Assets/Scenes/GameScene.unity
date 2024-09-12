@@ -3187,18 +3187,30 @@ MonoBehaviour:
     duration: 15
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Model
+    - Analyze
+    - Forecast
   - actionName: Forecast
     description: Predict market trends
     baseSuccessRate: 50
     duration: 30
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Forecast
+    - Strategize
+    - Trade
   - actionName: Trade
     description: Engage in virtual market exchanges
     baseSuccessRate: 50
     duration: 45
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Trade
+    - Negotiate
+    - Collaborate
   locationColor: {r: 1, g: 0.20392157, b: 0.85490197, a: 0}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!4 &280927794 stripped
@@ -5089,18 +5101,30 @@ MonoBehaviour:
     duration: 15
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Create
+    - Innovate
+    - Explore
   - actionName: Exhibit
     description: Showcase artistic creations
     baseSuccessRate: 50
     duration: 30
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Exhbibit
+    - Broadcast
+    - Collaborate
   - actionName: Critique
     description: Analyze and discuss art pieces
     baseSuccessRate: 50
     duration: 45
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Critique
+    - Analyze
+    - Debate
   locationColor: {r: 0.06666667, g: 0.6901961, b: 0.12156863, a: 0}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &346536219
@@ -6938,18 +6962,30 @@ MonoBehaviour:
     duration: 15
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Simulate
+    - Analyze
+    - Experiment
   - actionName: Innovate
     description: Develop space technologies
     baseSuccessRate: 50
     duration: 30
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Innovate
+    - Engineer
+    - Prototype
   - actionName: Explore
     description: Study extraterrestrial biology
     baseSuccessRate: 50
     duration: 45
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Explore
+    - Research
+    - Collaborate
   locationColor: {r: 0, g: 0, b: 0, a: 0}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &498126928
@@ -9330,18 +9366,29 @@ MonoBehaviour:
     duration: 15
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Debate
+    - Philosophize
   - actionName: Strategize
     description: Develop ethical guidelines
     baseSuccessRate: 50
     duration: 30
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Strategize
+    - Ideate
+    - Forecast
   - actionName: Philosophize
     description: Explore moral implications
     baseSuccessRate: 50
     duration: 45
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Philosophize
+    - Debate
+    - Analyze
   locationColor: {r: 1, g: 0.6666667, b: 0.9607843, a: 0}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &629679789
@@ -11362,18 +11409,30 @@ MonoBehaviour:
     duration: 15
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Tinker
+    - Experiment
+    - Innovate
   - actionName: Fabricate
     description: Create physical prototypes
     baseSuccessRate: 50
     duration: 30
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Fabricate
+    - Engineer
+    - Automate
   - actionName: Collaborate
     description: Work on community projects
     baseSuccessRate: 50
     duration: 45
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Collaborate
+    - Innovate
+    - Strategize
   locationColor: {r: 0.43137255, g: 0.07058824, b: 0.69803923, a: 0}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!4 &711526837 stripped
@@ -16231,6 +16290,7 @@ MonoBehaviour:
   collabRadius: 5
   collabCooldown: 45
   maxCollaborators: 2
+  collabBonusMultiplier: 0.5
 --- !u!1 &1092612307
 GameObject:
   m_ObjectHideFlags: 0
@@ -18271,18 +18331,29 @@ MonoBehaviour:
     duration: 15
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Broadcast
+    - Produce
   - actionName: Interview
     description: Gather information from characters
     baseSuccessRate: 50
     duration: 30
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Interview
+    - Analyze
+    - Document
   - actionName: Produce
     description: Create and edit media content
     baseSuccessRate: 50
     duration: 45
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Produce
+    - Create
+    - Innovate
   locationColor: {r: 1, g: 1, b: 1, a: 1}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &1262407247
@@ -22301,18 +22372,30 @@ MonoBehaviour:
     duration: 15
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Experiment
+    - Research
+    - Analyze
   - actionName: Analyze
     description: Examine research data
     baseSuccessRate: 50
     duration: 30
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Analyze
+    - Document
+    - Model
   - actionName: Document
     description: Record findings and results
     baseSuccessRate: 50
     duration: 45
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Document
+    - Rsearch
+    - Collaborate
   locationColor: {r: 0.93333334, g: 0.6313726, b: 0.10980392, a: 0}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &1547602006
@@ -25194,18 +25277,30 @@ MonoBehaviour:
     duration: 15
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Ideate
+    - Innovate
+    - Explore
   - actionName: Prototype
     description: Create startup project models
     baseSuccessRate: 50
     duration: 30
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Prototype
+    - Engineer
+    - Fabricate
   - actionName: Pitch
     description: Present ideas to potential investors
     baseSuccessRate: 50
     duration: 45
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Pitch
+    - Strategize
+    - Collaborate
   locationColor: {r: 0.6509804, g: 0.15686275, b: 0.0627451, a: 0}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &1712194766
@@ -25554,18 +25649,30 @@ MonoBehaviour:
     duration: 15
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Engineer
+    - Innovate
+    - Experiment
   - actionName: Cultivate
     description: Grow biological samples
     baseSuccessRate: 50
     duration: 30
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Cultivate
+    - Research
+    - Analyze
   - actionName: Automate
     description: Optimize bioprocesses
     baseSuccessRate: 50
     duration: 45
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Automate
+    - Innovate
+    - Fabricate
   locationColor: {r: 0.3882353, g: 0.3882353, b: 0.3882353, a: 0}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!1 &1739473774
@@ -27045,6 +27152,7 @@ MonoBehaviour:
   milestoneColor: {r: 0.050980393, g: 0.5058824, b: 0.34117648, a: 1}
   collabColor: {r: 0.722, g: 0.204, b: 0.541, a: 1}
   eurekaColor: {r: 0.137, g: 0.467, b: 0.91, a: 1}
+  failureColor: {r: 0.8, g: 0.2, b: 0.2, a: 1}
 --- !u!224 &1839624513 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 912176862398453681, guid: 5993089d0054c40c9b66f4721b273fa2, type: 3}
@@ -34054,18 +34162,29 @@ MonoBehaviour:
     duration: 15
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Treat
+    - Consult
   - actionName: Research
     description: Conduct medical experiments
     baseSuccessRate: 50
     duration: 30
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Research
+    - Analyze
+    - Experiment
   - actionName: Consult
     description: Advise on medical issues
     baseSuccessRate: 50
     duration: 45
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    tags:
+    - Consult
+    - Debate
+    - Strategize
   locationColor: {r: 0.050980393, g: 0.5254902, b: 0.972549, a: 0}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
 --- !u!224 &8906645219026930148

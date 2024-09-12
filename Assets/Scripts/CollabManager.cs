@@ -46,14 +46,14 @@ public class CollabManager : MonoBehaviourPunCallbacks
     public List<UniversalCharacterController> GetEligibleCollaborators(UniversalCharacterController initiator)
     {
         List<UniversalCharacterController> eligibleCollaborators = new List<UniversalCharacterController>();
-        if (initiator == null) return eligibleCollaborators;
+        if (initiator == null || initiator.currentLocation == null) return eligibleCollaborators;
 
-        Collider[] colliders = Physics.OverlapSphere(initiator.transform.position, collabRadius);
-
-        foreach (Collider collider in colliders)
+        foreach (var character in GameManager.Instance.GetAllCharacters())
         {
-            UniversalCharacterController character = collider.GetComponent<UniversalCharacterController>();
-            if (character != null && character != initiator && !collabCooldowns.ContainsKey(character.characterName))
+            if (character != initiator && 
+                character.currentLocation == initiator.currentLocation && 
+                Vector3.Distance(initiator.transform.position, character.transform.position) <= collabRadius &&
+                !collabCooldowns.ContainsKey(character.characterName))
             {
                 eligibleCollaborators.Add(character);
             }
@@ -98,6 +98,19 @@ public class CollabManager : MonoBehaviourPunCallbacks
         UniversalCharacterController collaborator = collaboratorView.GetComponent<UniversalCharacterController>();
         if (initiator == null || collaborator == null) return;
 
+        if (initiator.currentLocation == null || collaborator.currentLocation == null || initiator.currentLocation != collaborator.currentLocation)
+        {
+            Debug.LogWarning($"Cannot initiate collaboration: characters are not in the same location");
+            return;
+        }
+
+        LocationManager.LocationAction action = initiator.currentLocation.availableActions.Find(a => a.actionName == actionName);
+        if (action == null)
+        {
+            Debug.LogWarning($"Action '{actionName}' not found for {initiator.characterName} in location {initiator.currentLocation.locationName}");
+            return;
+        }
+
         if (!activeCollabs.ContainsKey(actionName))
         {
             activeCollabs[actionName] = new List<UniversalCharacterController>();
@@ -110,32 +123,34 @@ public class CollabManager : MonoBehaviourPunCallbacks
         initiator.AddState(UniversalCharacterController.CharacterState.Collaborating);
         collaborator.AddState(UniversalCharacterController.CharacterState.Collaborating);
 
-        // We no longer award points for initiating or joining a collaboration
+        // Start the collaborative action
+        initiator.StartAction(action);
+        collaborator.StartAction(action);
     }
 
     public void FinalizeCollaboration(string actionName, int actionDuration)
-{
-    if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
     {
-        int basePoints = ScoreConstants.GetActionPoints(actionDuration);
-        int collabBonus = Mathf.RoundToInt(basePoints * collabBonusMultiplier);
-
-        foreach (var collaborator in collaborators)
+        if (activeCollabs.TryGetValue(actionName, out List<UniversalCharacterController> collaborators))
         {
-            // Award full points for the action
-            GameManager.Instance.UpdatePlayerScore(collaborator.characterName, basePoints, $"Completed {actionName}", new List<string> { actionName, "Collaboration" });
-            
-            // Award collaboration bonus
-            GameManager.Instance.UpdatePlayerScore(collaborator.characterName, collabBonus, $"Collaboration bonus for {actionName}", new List<string> { "CollaborationBonus" });
+            int basePoints = ScoreConstants.GetActionPoints(actionDuration);
+            int collabBonus = Mathf.RoundToInt(basePoints * collabBonusMultiplier);
 
-            collaborator.RemoveState(UniversalCharacterController.CharacterState.Collaborating);
-            collaborator.AddState(UniversalCharacterController.CharacterState.Cooldown);
+            foreach (var collaborator in collaborators)
+            {
+                // Award full points for the action
+                GameManager.Instance.UpdatePlayerScore(collaborator.characterName, basePoints, $"Completed {actionName}", new List<string> { actionName, "Collaboration" });
+                
+                // Award collaboration bonus
+                GameManager.Instance.UpdatePlayerScore(collaborator.characterName, collabBonus, $"Collaboration bonus for {actionName}", new List<string> { "CollaborationBonus" });
+
+                collaborator.RemoveState(UniversalCharacterController.CharacterState.Collaborating);
+                collaborator.AddState(UniversalCharacterController.CharacterState.Cooldown);
+            }
+
+            EurekaManager.Instance.CheckForEureka(collaborators, actionName);
+            activeCollabs.Remove(actionName);
         }
-
-        EurekaManager.Instance.CheckForEureka(collaborators, actionName);
-        activeCollabs.Remove(actionName);
     }
-}
 
     public float GetCollabSuccessBonus(string actionName)
     {

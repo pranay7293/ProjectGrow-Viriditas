@@ -38,7 +38,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     [HideInInspector] public LocationManager currentLocation;
 
-    private List<string> personalGoals = new List<string>();
+    private List<string> personalGoalTags = new List<string>();
     private Dictionary<string, bool> personalGoalCompletion = new Dictionary<string, bool>();
 
     private AIManager aiManager;
@@ -437,53 +437,53 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void InitializePersonalGoals()
     {
-        personalGoals = new List<string>(aiSettings.personalGoals);
-        foreach (string goal in personalGoals)
+        personalGoalTags = new List<string>(aiSettings.personalGoalTags);
+        foreach (string goalTag in personalGoalTags)
         {
-            personalGoalCompletion[goal] = false;
+            personalGoalCompletion[goalTag] = false;
         }
     }
 
     private void CheckPersonalGoalProgress(string action)
     {
-        foreach (string goal in personalGoals)
+        foreach (string goalTag in personalGoalTags)
         {
-            if (!personalGoalCompletion[goal] && action.ToLower().Contains(goal.ToLower()))
+            if (!personalGoalCompletion[goalTag] && action.ToLower().Contains(goalTag.ToLower()))
             {
-                CompletePersonalGoal(goal);
+                CompletePersonalGoal(goalTag);
                 break;
             }
         }
     }
 
-   private void CompletePersonalGoal(string goal)
-{
-    personalGoalCompletion[goal] = true;
-    GameManager.Instance.UpdatePlayerScore(characterName, ScoreConstants.PERSONAL_GOAL_COMPLETION, "Personal Goal Completion", new List<string> { "PersonalGoal", goal });
-    GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goal}");
-}
+    private void CompletePersonalGoal(string goalTag)
+    {
+        personalGoalCompletion[goalTag] = true;
+        GameManager.Instance.UpdatePlayerScore(characterName, ScoreConstants.PERSONAL_GOAL_COMPLETION, "Personal Goal Completion", new List<string> { "PersonalGoal", goalTag });
+        GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goalTag}");
+    }
 
     private void UpdateGoalProgress(string actionName)
-{
-    for (int i = 0; i < PersonalProgress.Length; i++)
     {
-        if (aiSettings.personalGoals[i].ToLower().Contains(actionName.ToLower()))
+        for (int i = 0; i < PersonalProgress.Length; i++)
         {
-            PersonalProgress[i] = Mathf.Min(PersonalProgress[i] + 0.25f, 1f);
+            if (i < aiSettings.personalGoalTags.Count && actionName.ToLower().Contains(aiSettings.personalGoalTags[i].ToLower()))
+            {
+                PersonalProgress[i] = Mathf.Min(PersonalProgress[i] + 0.25f, 1f);
+            }
         }
+
+        if (progressBar != null)
+        {
+            progressBar.SetPersonalGoalProgress(PersonalProgress);
+        }
+
+        GameManager.Instance.UpdateMilestoneProgress(characterName, actionName);
     }
 
-    if (progressBar != null)
+    public List<string> GetPersonalGoalTags()
     {
-        progressBar.SetPersonalGoalProgress(PersonalProgress);
-    }
-
-    GameManager.Instance.UpdateMilestoneProgress(characterName, actionName);
-}
-
-    public List<string> GetPersonalGoals()
-    {
-        return new List<string>(personalGoals);
+        return new List<string>(personalGoalTags);
     }
 
     public Dictionary<string, bool> GetPersonalGoalCompletion()
@@ -493,10 +493,22 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void UpdateProgress(Dictionary<string, float> progress)
     {
-    if (progressBar != null)
-    {
-        progressBar.SetPersonalGoalProgress(progress.Values.ToArray());
-    }
+        if (progressBar != null)
+        {
+            float[] progressArray = new float[3]; // Always use 3 values
+            for (int i = 0; i < 3; i++)
+            {
+                if (i < aiSettings.personalGoalTags.Count && progress.TryGetValue(aiSettings.personalGoalTags[i], out float value))
+                {
+                    progressArray[i] = value;
+                }
+                else
+                {
+                    progressArray[i] = 0f; // Set to 0 if no corresponding goal exists
+                }
+            }
+            progressBar.SetPersonalGoalProgress(progressArray);
+        }
     }
 
     public void IncrementEurekaCount()
@@ -621,22 +633,22 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return characterColor;
     }
 
-   public void InitiateCollab(string actionName, UniversalCharacterController collaborator)
-{
-    if (photonView.IsMine && !IsCollaborating)
+    public void InitiateCollab(string actionName, UniversalCharacterController collaborator)
     {
-        LocationManager.LocationAction action = currentLocation.availableActions.Find(a => a.actionName == actionName);
-        if (action != null)
+        if (photonView.IsMine && !IsCollaborating && currentLocation != null)
         {
-            currentAction = action;
-            photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID, collaborator.photonView.ViewID);
-        }
-        else
-        {
-            Debug.LogWarning($"InitiateCollab: Action {actionName} not found for {characterName}");
+            LocationManager.LocationAction action = currentLocation.availableActions.Find(a => a.actionName == actionName);
+            if (action != null)
+            {
+                currentAction = action;
+                photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID, collaborator.photonView.ViewID);
+            }
+            else
+            {
+                Debug.LogWarning($"InitiateCollab: Action {actionName} not found for {characterName} in {currentLocation.locationName}");
+            }
         }
     }
-}
 
     [PunRPC]
     private void RPC_InitiateCollab(string actionName, int initiatorViewID, int collaboratorViewID)
@@ -647,21 +659,21 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     public void JoinCollab(string actionName, UniversalCharacterController initiator)
-{
-    if (photonView.IsMine && !IsCollaborating)
     {
-        LocationManager.LocationAction action = currentLocation.availableActions.Find(a => a.actionName == actionName);
-        if (action != null)
+        if (photonView.IsMine && !IsCollaborating)
         {
-            currentAction = action;
-            photonView.RPC("RPC_JoinCollab", RpcTarget.All, actionName, initiator.photonView.ViewID, photonView.ViewID);
-        }
-        else
-        {
-            Debug.LogWarning($"JoinCollab: Action {actionName} not found for {characterName}");
+            LocationManager.LocationAction action = currentLocation.availableActions.Find(a => a.actionName == actionName);
+            if (action != null)
+            {
+                currentAction = action;
+                photonView.RPC("RPC_JoinCollab", RpcTarget.All, actionName, initiator.photonView.ViewID, photonView.ViewID);
+            }
+            else
+            {
+                Debug.LogWarning($"JoinCollab: Action {actionName} not found for {characterName}");
+            }
         }
     }
-}
 
     [PunRPC]
     private void RPC_JoinCollab(string actionName, int initiatorViewID, int joinerViewID)
@@ -672,29 +684,29 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     public void EndCollab(string actionName)
-{
-    if (photonView.IsMine && IsCollaborating)
     {
-        IsCollaborating = false;
-        if (currentAction != null)
+        if (photonView.IsMine && IsCollaborating)
         {
-            photonView.RPC("RPC_EndCollab", RpcTarget.All, actionName, currentAction.duration);
-        }
-        else
-        {
-            Debug.LogWarning($"EndCollab called for {characterName} but currentAction is null");
-            photonView.RPC("RPC_EndCollab", RpcTarget.All, actionName, 0);
+            IsCollaborating = false;
+            if (currentAction != null)
+            {
+                photonView.RPC("RPC_EndCollab", RpcTarget.All, actionName, currentAction.duration);
+            }
+            else
+            {
+                Debug.LogWarning($"EndCollab called for {characterName} but currentAction is null");
+                photonView.RPC("RPC_EndCollab", RpcTarget.All, actionName, 0);
+            }
         }
     }
-}
 
-[PunRPC]
-private void RPC_EndCollab(string actionName, int actionDuration)
-{
-    CollabManager.Instance.FinalizeCollaboration(actionName, actionDuration);
-    RemoveState(CharacterState.Collaborating);
-    AddState(CharacterState.Cooldown);
-}
+    [PunRPC]
+    private void RPC_EndCollab(string actionName, int actionDuration)
+    {
+        CollabManager.Instance.FinalizeCollaboration(actionName, actionDuration);
+        RemoveState(CharacterState.Collaborating);
+        AddState(CharacterState.Cooldown);
+    }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {

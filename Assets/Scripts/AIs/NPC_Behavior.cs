@@ -44,14 +44,12 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (!photonView.IsMine) return;
         if (characterController == null || aiManager == null) return;
 
-        // Regular behavior update
         if (!characterController.HasState(UniversalCharacterController.CharacterState.Chatting) &&
             !characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
         {
             UpdateBehavior();
         }
 
-        // Background thinking
         if (Time.time - lastBackgroundThinkingTime > backgroundThinkingInterval)
         {
             PerformBackgroundThinking();
@@ -88,13 +86,8 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
         GameState currentState = GameManager.Instance.GetCurrentGameState();
         
-        // Update mental model based on current game state
         UpdateMentalModelFromGameState(currentState);
-
-        // Consider initiating or joining collaborations
         ConsiderCollaborations();
-
-        // Evaluate current objectives and potentially adjust priorities
         EvaluateObjectives(currentState);
     }
 
@@ -107,7 +100,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             npcData.UpdateKnowledge(milestone, currentState.MilestoneCompletion[milestone] ? "Completed" : "In Progress");
         }
 
-        // Update emotional state based on progress
         UpdateEmotionalState(currentState);
     }
 
@@ -134,7 +126,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (npcData == null || collaborator == null) return false;
 
         float relationshipScore = npcData.GetRelationship(collaborator.characterName);
-        return relationshipScore > 0.5f && Random.value < 0.3f; // 30% chance if relationship is good
+        return relationshipScore > 0.5f && Random.value < 0.3f;
     }
 
     private void InitiateCollaboration(UniversalCharacterController collaborator)
@@ -167,7 +159,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         }
         if (aiManager != null)
         {
-            objectives.AddRange(aiManager.GetPersonalGoals());
+            objectives.AddRange(aiManager.GetPersonalGoalTags());
         }
         return objectives;
     }
@@ -292,23 +284,23 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (GameManager.Instance == null || aiManager == null) return null;
 
         GameState currentState = GameManager.Instance.GetCurrentGameState();
-        List<string> personalGoals = aiManager.GetPersonalGoals();
+        List<string> personalGoalTags = aiManager.GetPersonalGoalTags();
         string currentChallenge = currentState.CurrentChallenge.title;
 
         var scoredActions = actions.Select(action => new
         {
             Action = action,
-            Score = ScoreAction(action, personalGoals, currentChallenge)
+            Score = ScoreAction(action, personalGoalTags, currentChallenge)
         }).ToList();
 
         return scoredActions.OrderByDescending(sa => sa.Score).FirstOrDefault()?.Action;
     }
 
-    private float ScoreAction(LocationManager.LocationAction action, List<string> personalGoals, string currentChallenge)
+    private float ScoreAction(LocationManager.LocationAction action, List<string> personalGoalTags, string currentChallenge)
     {
         float score = 0;
 
-        if (personalGoals.Any(goal => action.actionName.ToLower().Contains(goal.ToLower())))
+        if (personalGoalTags.Any(goal => action.actionName.ToLower().Contains(goal.ToLower())))
         {
             score += 2;
         }
@@ -383,10 +375,10 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     {
         if (aiManager == null || characterController == null) return;
 
-        List<string> personalGoals = aiManager.GetPersonalGoals();
+        List<string> personalGoalTags = aiManager.GetPersonalGoalTags();
         Dictionary<string, bool> personalGoalCompletion = aiManager.GetPersonalGoalCompletion();
         
-        string incompleteGoal = personalGoals.FirstOrDefault(goal => !personalGoalCompletion[goal]);
+        string incompleteGoal = personalGoalTags.FirstOrDefault(goal => !personalGoalCompletion[goal]);
         
         if (incompleteGoal != null)
         {
