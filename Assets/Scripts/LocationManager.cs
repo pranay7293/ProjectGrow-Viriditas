@@ -57,6 +57,12 @@ public class LocationManager : MonoBehaviourPunCallbacks
         }
     }
 
+    public void UpdateCharacterAvailableActions(UniversalCharacterController character)
+    {
+        List<LocationAction> actions = GetAvailableActions(character.aiSettings.characterRole);
+        character.UpdateAvailableActions(actions);
+    }
+
     public List<LocationAction> GetAvailableActions(string characterRole)
     {
         return availableActions.FindAll(action => string.IsNullOrEmpty(action.requiredRole) || action.requiredRole == characterRole);
@@ -76,9 +82,7 @@ public class LocationManager : MonoBehaviourPunCallbacks
 
         character.StartAction(action);
         
-        // Award points for starting an action
-        int points = ScoreConstants.GetActionPoints(action.duration);
-        GameManager.Instance.UpdatePlayerScore(character.characterName, points, action.actionName, action.tags);
+        GameManager.Instance.UpdatePlayerScore(character.characterName, ScoreConstants.GetActionPoints(action.duration), action.actionName, action.tags);
     }
 
     public void PlayEurekaEffect()

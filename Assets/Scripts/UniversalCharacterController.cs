@@ -73,6 +73,14 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private HashSet<CharacterState> activeStates = new HashSet<CharacterState>();
 
+    private List<LocationManager.LocationAction> availableActions = new List<LocationManager.LocationAction>();
+
+    public GameObject guideTextBoxPrefab;
+    private GameObject guideTextBox;
+    private TextMeshProUGUI guideText;
+    private float guideDisplayDuration = 2f;
+    private float guideFadeDuration = 0.5f;
+
     private void Awake()
     {
         InitializeComponents();
@@ -100,7 +108,25 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             actionIndicator.text = "";
             actionIndicator.gameObject.SetActive(false);
         }
+
+        InitializeGuideTextBox();
     }
+
+    private void InitializeGuideTextBox()
+{
+    if (guideTextBoxPrefab != null)
+    {
+        guideTextBox = Instantiate(guideTextBoxPrefab, transform);
+        guideTextBox.transform.localPosition = new Vector3(0, 3f, 0);
+        guideTextBox.transform.localRotation = Quaternion.identity;
+        guideText = guideTextBox.GetComponentInChildren<TextMeshProUGUI>();
+        guideTextBox.SetActive(false);
+    }
+    else
+    {
+        Debug.LogError("CharacterGuideTextBox prefab not assigned to UniversalCharacterController.");
+    }
+}
 
     [PunRPC]
     public void Initialize(string name, bool isPlayerControlled, float r, float g, float b)
@@ -363,9 +389,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void StartAction(LocationManager.LocationAction action)
     {
-        if (currentAction != null)
+        if (HasState(CharacterState.PerformingAction))
         {
-            StopAction();
+            ShowGuide("Already performing an action. Please wait.");
+            return;
         }
 
         currentAction = action;
@@ -420,16 +447,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (currentAction != null)
         {
             CheckPersonalGoalProgress(currentAction.actionName);
-        }
-        currentAction = null;
-        RemoveState(CharacterState.PerformingAction);
-    }
-
-    public void StopAction()
-    {
-        if (actionCoroutine != null)
-        {
-            StopCoroutine(actionCoroutine);
         }
         currentAction = null;
         RemoveState(CharacterState.PerformingAction);
@@ -521,22 +538,34 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     public void EnterLocation(LocationManager location)
+{
+    currentLocation = location;
+    StartAcclimation();
+    availableActions.Clear(); // Clear previous actions
+    if (IsPlayerControlled && photonView.IsMine)
     {
-        currentLocation = location;
-        StartAcclimation();
-        if (IsPlayerControlled && photonView.IsMine)
+        StartCoroutine(DelayedShowActions(location));
+    }
+    else
+    {
+        NPC_Behavior npcBehavior = GetComponent<NPC_Behavior>();
+        if (npcBehavior != null)
         {
-            StartCoroutine(DelayedShowActions(location));
-        }
-        else
-        {
-            NPC_Behavior npcBehavior = GetComponent<NPC_Behavior>();
-            if (npcBehavior != null)
-            {
-                npcBehavior.SetCurrentLocation(location);
-            }
+            npcBehavior.SetCurrentLocation(location);
         }
     }
+    location.UpdateCharacterAvailableActions(this);
+}
+
+    public void UpdateAvailableActions(List<LocationManager.LocationAction> actions)
+    {
+        availableActions = new List<LocationManager.LocationAction>(actions);
+    }
+
+public bool IsActionAvailable(string actionName)
+{
+    return availableActions.Exists(a => a.actionName == actionName);
+}
 
     private IEnumerator DelayedShowActions(LocationManager location)
     {
@@ -549,6 +578,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void ExitLocation()
     {
+        if (HasState(CharacterState.PerformingAction))
+        {
+            ShowGuide("Cannot leave while performing an action.");
+            return;
+        }
+
         if (currentLocation != null)
         {
             if (IsPlayerControlled && photonView.IsMine)
@@ -573,6 +608,44 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             }
             
             currentLocation = null;
+            availableActions.Clear();
+        }
+    }
+
+    private void ShowGuide(string message)
+    {
+        if (guideTextBox != null && guideText != null)
+        {
+            guideText.text = message;
+            guideTextBox.SetActive(true);
+            StartCoroutine(FadeGuide(true));
+        }
+    }
+
+    private IEnumerator FadeGuide(bool fadeIn)
+    {
+        float elapsedTime = 0f;
+        Color startColor = guideText.color;
+        Color targetColor = new Color(startColor.r, startColor.g, startColor.b, fadeIn ? 1f : 0f);
+
+        while (elapsedTime < guideFadeDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float alpha = Mathf.Lerp(startColor.a, targetColor.a, elapsedTime / guideFadeDuration);
+            guideText.color = new Color(startColor.r, startColor.g, startColor.b, alpha);
+            yield return null;
+        }
+
+        guideText.color = targetColor;
+
+        if (fadeIn)
+        {
+            yield return new WaitForSeconds(guideDisplayDuration);
+            StartCoroutine(FadeGuide(false));
+        }
+        else
+        {
+            guideTextBox.SetActive(false);
         }
     }
 
@@ -634,21 +707,21 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     public void InitiateCollab(string actionName, UniversalCharacterController collaborator)
+{
+    if (photonView.IsMine && !IsCollaborating && currentLocation != null && !HasState(CharacterState.Acclimating))
     {
-        if (photonView.IsMine && !IsCollaborating && currentLocation != null)
+        if (IsActionAvailable(actionName))
         {
-            LocationManager.LocationAction action = currentLocation.availableActions.Find(a => a.actionName == actionName);
-            if (action != null)
-            {
-                currentAction = action;
-                photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID, collaborator.photonView.ViewID);
-            }
-            else
-            {
-                Debug.LogWarning($"InitiateCollab: Action {actionName} not found for {characterName} in {currentLocation.locationName}");
-            }
+            LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
+            currentAction = action;
+            photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID, collaborator.photonView.ViewID);
+        }
+        else
+        {
+            Debug.LogWarning($"InitiateCollab: Action {actionName} not found for {characterName} in {currentLocation.locationName}");
         }
     }
+}
 
     [PunRPC]
     private void RPC_InitiateCollab(string actionName, int initiatorViewID, int collaboratorViewID)
@@ -662,7 +735,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         if (photonView.IsMine && !IsCollaborating)
         {
-            LocationManager.LocationAction action = currentLocation.availableActions.Find(a => a.actionName == actionName);
+            LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
             if (action != null)
             {
                 currentAction = action;
@@ -738,7 +811,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
             if (!string.IsNullOrEmpty(actionName) && currentAction == null && currentLocation != null)
             {
-                LocationManager.LocationAction action = currentLocation.availableActions.Find(a => a.actionName == actionName);
+                LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
                 if (action != null)
                 {
                     StartAction(action);

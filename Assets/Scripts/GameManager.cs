@@ -441,10 +441,14 @@ public class GameManager : MonoBehaviourPunCallbacks
             UpdatePlayerScore(characterName, scoreChange, actionName, actionTags);
             UpdateMilestoneProgress(characterName, actionName, actionTags);
 
-            AIManager aiManager = character.GetComponent<AIManager>();
-            if (aiManager != null)
+            // Only consider collaboration for AI characters not already performing an action
+            if (!character.IsPlayerControlled && !character.HasState(UniversalCharacterController.CharacterState.PerformingAction))
             {
-                aiManager.ConsiderCollaboration(character.currentAction);
+                AIManager aiManager = character.GetComponent<AIManager>();
+                if (aiManager != null)
+                {
+                    aiManager.ConsiderCollaboration(character.currentAction);
+                }
             }
         }
     }

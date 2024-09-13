@@ -86,9 +86,20 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     public bool ConsiderCollaboration(LocationManager.LocationAction action)
     {
-        if (action == null || characterController == null)
+        if (action == null || characterController == null || characterController.currentLocation == null)
         {
-            Debug.LogWarning("Invalid action or character in ConsiderCollaboration");
+            return false;
+        }
+
+        if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
+            characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction) ||
+            characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
+        {
+            return false;
+        }
+
+        if (!characterController.IsActionAvailable(action.actionName))
+        {
             return false;
         }
 
@@ -141,6 +152,13 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     public bool DecideOnCollaboration(string actionName)
     {
+        if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
+            characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction) ||
+            characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
+        {
+            return false;
+        }
+
         float collaborationChance = 0.5f; // Base 50% chance
 
         if (actionName.ToLower().Contains(characterController.aiSettings.characterRole.ToLower()))

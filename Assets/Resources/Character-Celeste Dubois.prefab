@@ -1132,6 +1132,15 @@ MonoBehaviour:
   acclimationTime: 10
   initialDelay: 10
   currentLocation: {fileID: 0}
+  currentAction:
+    actionName: 
+    description: 
+    baseSuccessRate: 0
+    duration: 0
+    requiredRole: 
+    actionIcon: {fileID: 0}
+    tags: []
+  guideTextBoxPrefab: {fileID: 7059216339600709800, guid: 261c8e0ab39b041ac8094519ea7b08fe, type: 3}
 --- !u!114 &4096835321216489299
 MonoBehaviour:
   m_ObjectHideFlags: 0

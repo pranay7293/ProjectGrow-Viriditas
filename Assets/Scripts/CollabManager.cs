@@ -40,7 +40,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
             Debug.LogWarning("Invalid initiator in CanInitiateCollab");
             return false;
         }
-        return !collabCooldowns.ContainsKey(initiator.characterName);
+        return !collabCooldowns.ContainsKey(initiator.characterName) && !initiator.HasState(UniversalCharacterController.CharacterState.PerformingAction);
     }
 
     public List<UniversalCharacterController> GetEligibleCollaborators(UniversalCharacterController initiator)
@@ -53,7 +53,8 @@ public class CollabManager : MonoBehaviourPunCallbacks
             if (character != initiator && 
                 character.currentLocation == initiator.currentLocation && 
                 Vector3.Distance(initiator.transform.position, character.transform.position) <= collabRadius &&
-                !collabCooldowns.ContainsKey(character.characterName))
+                !collabCooldowns.ContainsKey(character.characterName) &&
+                !character.HasState(UniversalCharacterController.CharacterState.PerformingAction))
             {
                 eligibleCollaborators.Add(character);
             }
@@ -107,7 +108,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
         LocationManager.LocationAction action = initiator.currentLocation.availableActions.Find(a => a.actionName == actionName);
         if (action == null)
         {
-            Debug.LogWarning($"Action '{actionName}' not found for {initiator.characterName} in location {initiator.currentLocation.locationName}");
+            Debug.LogWarning($"Action '{actionName}' not found for {initiator.characterName} in {initiator.currentLocation.locationName}");
             return;
         }
 
