@@ -1,7 +1,9 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
 using System.Linq;
+using System.Threading.Tasks;
 
 public class CollabManager : MonoBehaviourPunCallbacks
 {
@@ -63,7 +65,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
         return eligibleCollaborators.Take(maxCollaborators).ToList();
     }
 
-    [PunRPC]
+        [PunRPC]
     public void RequestCollaboration(int initiatorViewID, int targetViewID, string actionName)
     {
         PhotonView initiatorView = PhotonView.Find(initiatorViewID);
@@ -81,36 +83,47 @@ public class CollabManager : MonoBehaviourPunCallbacks
         else if (!target.IsPlayerControlled)
         {
             AIManager aiManager = target.GetComponent<AIManager>();
-            if (aiManager != null && aiManager.DecideOnCollaboration(actionName))
+            if (aiManager != null)
             {
-                InitiateCollab(actionName, initiatorViewID, targetViewID);
+                StartCoroutine(DecideOnCollaborationCoroutine(aiManager, actionName, initiatorViewID, targetViewID));
             }
         }
     }
 
+    private IEnumerator DecideOnCollaborationCoroutine(AIManager aiManager, string actionName, int initiatorViewID, int targetViewID)
+    {
+    Task<bool> decisionTask = aiManager.DecideOnCollaboration(actionName);
+    yield return new WaitUntil(() => decisionTask.IsCompleted);
+
+    if (decisionTask.Result)
+    {
+        InitiateCollab(actionName, initiatorViewID, targetViewID);
+    }
+    }
+
     [PunRPC]
     public void InitiateCollab(string actionName, int initiatorViewID, int collaboratorViewID)
+{
+    PhotonView initiatorView = PhotonView.Find(initiatorViewID);
+    PhotonView collaboratorView = PhotonView.Find(collaboratorViewID);
+    if (initiatorView == null || collaboratorView == null) return;
+
+    UniversalCharacterController initiator = initiatorView.GetComponent<UniversalCharacterController>();
+    UniversalCharacterController collaborator = collaboratorView.GetComponent<UniversalCharacterController>();
+    if (initiator == null || collaborator == null) return;
+
+    if (initiator.currentLocation == null || collaborator.currentLocation == null || initiator.currentLocation != collaborator.currentLocation)
     {
-        PhotonView initiatorView = PhotonView.Find(initiatorViewID);
-        PhotonView collaboratorView = PhotonView.Find(collaboratorViewID);
-        if (initiatorView == null || collaboratorView == null) return;
+        Debug.LogWarning($"Cannot initiate collaboration: characters are not in the same location");
+        return;
+    }
 
-        UniversalCharacterController initiator = initiatorView.GetComponent<UniversalCharacterController>();
-        UniversalCharacterController collaborator = collaboratorView.GetComponent<UniversalCharacterController>();
-        if (initiator == null || collaborator == null) return;
-
-        if (initiator.currentLocation == null || collaborator.currentLocation == null || initiator.currentLocation != collaborator.currentLocation)
-        {
-            Debug.LogWarning($"Cannot initiate collaboration: characters are not in the same location");
-            return;
-        }
-
-        LocationManager.LocationAction action = initiator.currentLocation.availableActions.Find(a => a.actionName == actionName);
-        if (action == null)
-        {
-            Debug.LogWarning($"Action '{actionName}' not found for {initiator.characterName} in {initiator.currentLocation.locationName}");
-            return;
-        }
+    LocationManager.LocationAction action = initiator.currentLocation.GetActionByName(actionName);
+    if (action == null)
+    {
+        Debug.LogWarning($"Action '{actionName}' not found for {initiator.characterName} in {initiator.currentLocation.locationName}");
+        return;
+    }
 
         if (!activeCollabs.ContainsKey(actionName))
         {

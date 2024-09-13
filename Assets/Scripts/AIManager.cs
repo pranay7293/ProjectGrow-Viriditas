@@ -2,17 +2,24 @@ using UnityEngine;
 using Photon.Pun;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 public class AIManager : MonoBehaviourPunCallbacks
 {
     private UniversalCharacterController characterController;
     private NPC_Behavior npcBehavior;
     private NPC_Data npcData;
+    private AIDecisionMaker decisionMaker;
 
     private bool isInitialized = false;
 
     [SerializeField] private float dialogueInitiationCooldown = 300f; // 5 minutes
     private float lastDialogueInitiationTime = 0f;
+
+    private void Awake()
+    {
+        decisionMaker = gameObject.AddComponent<AIDecisionMaker>();
+    }
 
     public void Initialize(UniversalCharacterController controller)
     {
@@ -64,9 +71,9 @@ public class AIManager : MonoBehaviourPunCallbacks
         npcData.UpdateRelationship(characterName, change);
     }
 
-    public string MakeDecision(List<string> options, GameState currentState)
+    public async Task<string> MakeDecision(List<string> options, GameState currentState)
     {
-        return npcData.MakeDecision(options, currentState);
+        return await decisionMaker.MakeDecision(this, options, currentState);
     }
 
     public void UpdateEmotionalState(EmotionalState newState)
@@ -150,7 +157,7 @@ public class AIManager : MonoBehaviourPunCallbacks
         return topScenarios[Random.Range(0, topScenarios.Count)].Key;
     }
 
-    public bool DecideOnCollaboration(string actionName)
+    public async Task<bool> DecideOnCollaboration(string actionName)
     {
         if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
             characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction) ||
@@ -159,22 +166,11 @@ public class AIManager : MonoBehaviourPunCallbacks
             return false;
         }
 
-        float collaborationChance = 0.5f; // Base 50% chance
+        List<string> options = new List<string> { "Collaborate", "Work alone" };
+        GameState currentState = GameManager.Instance.GetCurrentGameState();
+        string decision = await MakeDecision(options, currentState);
 
-        if (actionName.ToLower().Contains(characterController.aiSettings.characterRole.ToLower()))
-        {
-            collaborationChance += 0.2f;
-        }
-
-        if (GameManager.Instance.GetCurrentChallenge().title.ToLower().Contains(actionName.ToLower()))
-        {
-            collaborationChance += 0.2f;
-        }
-
-        float averageRelationship = npcData.GetAverageRelationship();
-        collaborationChance += averageRelationship * 0.1f;
-
-        return Random.value < collaborationChance;
+        return decision == "Collaborate";
     }
 
     public void InitiateDialogueWithPlayer(UniversalCharacterController player)
@@ -193,5 +189,10 @@ public class AIManager : MonoBehaviourPunCallbacks
         {
             GameManager.Instance.dialogueRequestUI.ShowRequest(characterController);
         }
+    }
+
+    public UniversalCharacterController GetCharacterController()
+    {
+        return characterController;
     }
 }

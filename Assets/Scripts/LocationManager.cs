@@ -68,10 +68,15 @@ public class LocationManager : MonoBehaviourPunCallbacks
         return availableActions.FindAll(action => string.IsNullOrEmpty(action.requiredRole) || action.requiredRole == characterRole);
     }
 
+    public LocationAction GetActionByName(string actionName)
+    {
+        return availableActions.Find(a => a.actionName == actionName);
+    }
+
     [PunRPC]
     public void StartAction(string actionName, int characterViewID)
     {
-        LocationAction action = availableActions.Find(a => a.actionName == actionName);
+        LocationAction action = GetActionByName(actionName);
         if (action == null) return;
 
         PhotonView characterView = PhotonView.Find(characterViewID);

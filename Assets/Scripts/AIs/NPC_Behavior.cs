@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Photon.Pun;
+using System.Threading.Tasks;
 
 public class NPC_Behavior : MonoBehaviourPunCallbacks
 {
@@ -63,7 +64,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
         if (Time.time - lastDecisionTime > characterController.aiSettings.decisionInterval)
         {
-            MakeDecision();
+            StartCoroutine(MakeDecisionCoroutine());
         }
 
         if (characterController.HasState(UniversalCharacterController.CharacterState.Moving))
@@ -194,15 +195,15 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         npcData.UpdateEmotionalState(newState);
     }
 
-    private void MakeDecision()
+    private IEnumerator MakeDecisionCoroutine()
     {
-        if (characterController == null || aiManager == null || GameManager.Instance == null) return;
+        if (characterController == null || aiManager == null || GameManager.Instance == null) yield break;
 
         lastDecisionTime = Time.time;
         
         if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating))
         {
-            return;
+            yield break;
         }
 
         List<string> options = new List<string>
@@ -215,7 +216,10 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         };
 
         GameState currentState = GameManager.Instance.GetCurrentGameState();
-        string decision = aiManager.MakeDecision(options, currentState);
+        Task<string> decisionTask = aiManager.MakeDecision(options, currentState);
+        yield return new WaitUntil(() => decisionTask.IsCompleted);
+
+        string decision = decisionTask.Result;
 
         switch (decision)
         {
@@ -274,7 +278,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     {
         if (characterController == null || currentLocationManager == null) return;
 
-        characterController.photonView.RPC("StartAction", RpcTarget.All, action.actionName);
+        characterController.StartAction(action);
         
         ActionLogManager.Instance?.LogAction(characterController.characterName, $"performing {action.actionName} at {currentLocationManager.locationName}");
     }
@@ -365,10 +369,17 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (GameManager.Instance == null || characterController == null) return;
 
         string currentChallenge = GameManager.Instance.GetCurrentChallenge().title;
-        characterController.photonView.RPC("StartAction", RpcTarget.All, $"Working on {currentChallenge}");
+        LocationManager.LocationAction action = new LocationManager.LocationAction
+        {
+            actionName = $"Working on {currentChallenge}",
+            duration = 30, // Set an appropriate duration
+            baseSuccessRate = 0.7f, // Set an appropriate success rate
+            description = $"Focusing intensely on solving {currentChallenge}"
+        };
 
-        string detailedAction = $"focusing intensely on solving {currentChallenge}";
-        DialogueManager.Instance?.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {detailedAction}");
+        characterController.StartAction(action);
+
+        DialogueManager.Instance?.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {action.description}");
     }
 
     private void PursuePersonalGoal()
@@ -382,9 +393,17 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         
         if (incompleteGoal != null)
         {
-            characterController.photonView.RPC("StartAction", RpcTarget.All, $"Pursuing personal goal: {incompleteGoal}");
+            LocationManager.LocationAction action = new LocationManager.LocationAction
+            {
+                actionName = $"Pursuing personal goal: {incompleteGoal}",
+                duration = 30, // Set an appropriate duration
+                baseSuccessRate = 0.8f, // Set an appropriate success rate
+                description = $"Focusing on personal goal: {incompleteGoal}"
+            };
 
-            DialogueManager.Instance?.AddToChatLog(characterController.characterName, $"{characterController.characterName} is focusing on their personal goal: {incompleteGoal}");
+            characterController.StartAction(action);
+
+            DialogueManager.Instance?.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {action.description}");
         }
         else
         {

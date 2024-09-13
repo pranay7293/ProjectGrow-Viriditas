@@ -69,16 +69,16 @@ public class OpenAIService : MonoBehaviour
         string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join(", ", recentEurekas)}" : "";
 
         string prompt = $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n" +
-    $"Based on this context: {context}\n{eurekaContext}\n\n" +
-    "Generate 3 short, distinct responses (max 8 words each) that {characterName} might consider. " +
-    "These can be a mix of casual conversational responses and action choices. " +
-    "For action choices, use one of these categories: Ethical, Strategic, Emotional, Practical, Creative, Diplomatic, or Risk-Taking. " +
-    "For casual responses, use the Casual category. " +
-    "If there are recent breakthroughs, consider incorporating them into the choices. " +
-    "Format your response as follows:\n" +
-    "1. [Category]: [Response]\n" +
-    "2. [Category]: [Response]\n" +
-    "3. [Category]: [Response]";
+            $"Based on this context: {context}\n{eurekaContext}\n\n" +
+            "Generate 3 short, distinct responses (max 8 words each) that {characterName} might consider. " +
+            "These can be a mix of casual conversational responses and action choices. " +
+            "For action choices, use one of these categories: Ethical, Strategic, Emotional, Practical, Creative, Diplomatic, or Risk-Taking. " +
+            "For casual responses, use the Casual category. " +
+            "If there are recent breakthroughs, consider incorporating them into the choices. " +
+            "Format your response as follows:\n" +
+            "1. [Category]: [Response]\n" +
+            "2. [Category]: [Response]\n" +
+            "3. [Category]: [Response]";
 
         string response = await GetChatCompletionAsync(prompt);
 
@@ -99,31 +99,31 @@ public class OpenAIService : MonoBehaviour
     }
 
     private List<DialogueOption> ParseDialogueOptions(string response)
-{
-    List<DialogueOption> options = new List<DialogueOption>();
-    string[] lines = response.Split('\n');
-
-    foreach (string line in lines)
     {
-        string[] parts = line.Split(':');
-        if (parts.Length == 2)
-        {
-            string categoryStr = parts[0].Trim().Replace("1. ", "").Replace("2. ", "").Replace("3. ", "");
-            string choiceText = parts[1].Trim();
+        List<DialogueOption> options = new List<DialogueOption>();
+        string[] lines = response.Split('\n');
 
-            if (categoryStr.ToLower() == "casual")
+        foreach (string line in lines)
+        {
+            string[] parts = line.Split(':');
+            if (parts.Length == 2)
             {
-                options.Add(new DialogueOption(choiceText, DialogueCategory.Casual));
-            }
-            else if (Enum.TryParse(categoryStr, out DialogueCategory category))
-            {
-                options.Add(new DialogueOption(choiceText, category));
+                string categoryStr = parts[0].Trim().Replace("1. ", "").Replace("2. ", "").Replace("3. ", "");
+                string choiceText = parts[1].Trim();
+
+                if (categoryStr.ToLower() == "casual")
+                {
+                    options.Add(new DialogueOption(choiceText, DialogueCategory.Casual));
+                }
+                else if (Enum.TryParse(categoryStr, out DialogueCategory category))
+                {
+                    options.Add(new DialogueOption(choiceText, category));
+                }
             }
         }
-    }
 
-    return options;
-}
+        return options;
+    }
 
     public async Task<string> GetResponse(string prompt, AISettings aiSettings)
     {
@@ -184,12 +184,12 @@ public class OpenAIService : MonoBehaviour
 
     public async Task<string> GenerateEurekaDescription(List<UniversalCharacterController> collaborators, GameState gameState)
     {
-    string collaboratorRoles = string.Join(", ", collaborators.Select(c => c.aiSettings.characterRole));
-    string prompt = $@"As {collaboratorRoles} collaborate on '{gameState.CurrentChallenge.title}', 
-    describe an unexpected breakthrough. Consider their diverse backgrounds, current game progress (Milestones: {string.Join(", ", gameState.CurrentChallenge.milestones)}), 
-    and potential real-world impact. Emphasize interdisciplinary insights. Be concise (20 words) and compelling:";
+        string collaboratorRoles = string.Join(", ", collaborators.Select(c => c.aiSettings.characterRole));
+        string prompt = $@"As {collaboratorRoles} collaborate on '{gameState.CurrentChallenge.title}', 
+        describe an unexpected breakthrough. Consider their diverse backgrounds, current game progress (Milestones: {string.Join(", ", gameState.CurrentChallenge.milestones)}), 
+        and potential real-world impact. Emphasize interdisciplinary insights. Be concise (20 words) and compelling:";
 
-    return await GetResponse(prompt, null);
+        return await GetResponse(prompt, null);
     }
 
     private async Task<string> GetChatCompletionAsync(string prompt)

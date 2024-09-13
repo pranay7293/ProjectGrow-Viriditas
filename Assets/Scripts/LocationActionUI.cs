@@ -148,23 +148,23 @@ public class LocationActionUI : MonoBehaviour
     }
 
     private void OnActionButtonClicked(int index)
+{
+    if (currentLocation == null)
     {
-        if (currentLocation == null)
-        {
-            Debug.LogError("CurrentLocation is null in OnActionButtonClicked");
-            return;
-        }
-
-        List<LocationManager.LocationAction> availableActions = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole);
-        if (index < 0 || index >= availableActions.Count)
-        {
-            Debug.LogError($"Invalid action index: {index}");
-            return;
-        }
-
-        LocationManager.LocationAction selectedAction = availableActions[index];
-        currentCharacter.StartAction(selectedAction);
+        Debug.LogError("CurrentLocation is null in OnActionButtonClicked");
+        return;
     }
+
+    List<LocationManager.LocationAction> availableActions = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole);
+    if (index < 0 || index >= availableActions.Count)
+    {
+        Debug.LogError($"Invalid action index: {index}");
+        return;
+    }
+
+    LocationManager.LocationAction selectedAction = availableActions[index];
+    currentCharacter.StartAction(selectedAction);
+}
 
     private void ToggleCollabOptions(int actionIndex)
     {

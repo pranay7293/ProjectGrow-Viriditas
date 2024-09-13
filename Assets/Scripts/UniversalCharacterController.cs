@@ -113,20 +113,20 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     private void InitializeGuideTextBox()
-{
-    if (guideTextBoxPrefab != null)
     {
-        guideTextBox = Instantiate(guideTextBoxPrefab, transform);
-        guideTextBox.transform.localPosition = new Vector3(0, 3f, 0);
-        guideTextBox.transform.localRotation = Quaternion.identity;
-        guideText = guideTextBox.GetComponentInChildren<TextMeshProUGUI>();
-        guideTextBox.SetActive(false);
+        if (guideTextBoxPrefab != null)
+        {
+            guideTextBox = Instantiate(guideTextBoxPrefab, transform);
+            guideTextBox.transform.localPosition = new Vector3(0, 3f, 0);
+            guideTextBox.transform.localRotation = Quaternion.identity;
+            guideText = guideTextBox.GetComponentInChildren<TextMeshProUGUI>();
+            guideTextBox.SetActive(false);
+        }
+        else
+        {
+            Debug.LogError("CharacterGuideTextBox prefab not assigned to UniversalCharacterController.");
+        }
     }
-    else
-    {
-        Debug.LogError("CharacterGuideTextBox prefab not assigned to UniversalCharacterController.");
-    }
-}
 
     [PunRPC]
     public void Initialize(string name, bool isPlayerControlled, float r, float g, float b)
@@ -408,6 +408,21 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
         ActionLogManager.Instance.LogAction(characterName, $"Started action: {action.actionName}");
         GameManager.Instance.UpdateGameState(characterName, action.actionName);
+
+        photonView.RPC("RPC_StartAction", RpcTarget.All, action.actionName);
+    }
+
+    [PunRPC]
+    private void RPC_StartAction(string actionName)
+    {
+        if (currentLocation != null && !HasState(CharacterState.PerformingAction))
+        {
+            LocationManager.LocationAction action = currentLocation.GetActionByName(actionName);
+            if (action != null)
+            {
+                StartAction(action);
+            }
+        }
     }
 
     private IEnumerator PerformAction()
@@ -512,7 +527,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         if (progressBar != null)
         {
-            float[] progressArray = new float[3]; // Always use 3 values
+            float[] progressArray = new float[3];
             for (int i = 0; i < 3; i++)
             {
                 if (i < aiSettings.personalGoalTags.Count && progress.TryGetValue(aiSettings.personalGoalTags[i], out float value))
@@ -521,7 +536,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 }
                 else
                 {
-                    progressArray[i] = 0f; // Set to 0 if no corresponding goal exists
+                    progressArray[i] = 0f;
                 }
             }
             progressBar.SetPersonalGoalProgress(progressArray);
@@ -538,34 +553,34 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     public void EnterLocation(LocationManager location)
-{
-    currentLocation = location;
-    StartAcclimation();
-    availableActions.Clear(); // Clear previous actions
-    if (IsPlayerControlled && photonView.IsMine)
     {
-        StartCoroutine(DelayedShowActions(location));
-    }
-    else
-    {
-        NPC_Behavior npcBehavior = GetComponent<NPC_Behavior>();
-        if (npcBehavior != null)
+        currentLocation = location;
+        StartAcclimation();
+        availableActions.Clear();
+        if (IsPlayerControlled && photonView.IsMine)
         {
-            npcBehavior.SetCurrentLocation(location);
+            StartCoroutine(DelayedShowActions(location));
         }
+        else
+        {
+            NPC_Behavior npcBehavior = GetComponent<NPC_Behavior>();
+            if (npcBehavior != null)
+            {
+                npcBehavior.SetCurrentLocation(location);
+            }
+        }
+        location.UpdateCharacterAvailableActions(this);
     }
-    location.UpdateCharacterAvailableActions(this);
-}
 
     public void UpdateAvailableActions(List<LocationManager.LocationAction> actions)
     {
         availableActions = new List<LocationManager.LocationAction>(actions);
     }
 
-public bool IsActionAvailable(string actionName)
-{
-    return availableActions.Exists(a => a.actionName == actionName);
-}
+    public bool IsActionAvailable(string actionName)
+    {
+        return availableActions.Exists(a => a.actionName == actionName);
+    }
 
     private IEnumerator DelayedShowActions(LocationManager location)
     {
@@ -707,21 +722,21 @@ public bool IsActionAvailable(string actionName)
     }
 
     public void InitiateCollab(string actionName, UniversalCharacterController collaborator)
-{
-    if (photonView.IsMine && !IsCollaborating && currentLocation != null && !HasState(CharacterState.Acclimating))
     {
-        if (IsActionAvailable(actionName))
+        if (photonView.IsMine && !IsCollaborating && currentLocation != null && !HasState(CharacterState.Acclimating))
         {
-            LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
-            currentAction = action;
-            photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID, collaborator.photonView.ViewID);
-        }
-        else
-        {
-            Debug.LogWarning($"InitiateCollab: Action {actionName} not found for {characterName} in {currentLocation.locationName}");
+            if (IsActionAvailable(actionName))
+            {
+                LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
+                currentAction = action;
+                photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID, collaborator.photonView.ViewID);
+            }
+            else
+            {
+                Debug.LogWarning($"InitiateCollab: Action {actionName} not found for {characterName} in {currentLocation.locationName}");
+            }
         }
     }
-}
 
     [PunRPC]
     private void RPC_InitiateCollab(string actionName, int initiatorViewID, int collaboratorViewID)
@@ -843,8 +858,8 @@ public bool IsActionAvailable(string actionName)
         if (otherCharacter != null && navMeshAgent != null && navMeshAgent.enabled)
         {
             Vector3 pushDirection = (transform.position - collision.transform.position).normalized;
-            pushDirection.y = 0; // Ensure no vertical movement
-            navMeshAgent.Move(pushDirection * Time.deltaTime * 2f); // Adjust the multiplier as needed
+            pushDirection.y = 0;
+            navMeshAgent.Move(pushDirection * Time.deltaTime * 2f);
         }
     }
 }
