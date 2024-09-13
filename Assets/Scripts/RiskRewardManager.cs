@@ -90,17 +90,17 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
         {
             Debug.LogWarning($"CalculateSuccessRate: aiSettings is null for character {character.characterName}. Using default player role.");
         }
-        
+
         float collabBonus = 0f;
-        if (CollabManager.Instance != null)
+        if (CollabManager.Instance != null && character.IsCollaborating && !string.IsNullOrEmpty(character.currentCollabID))
         {
-            collabBonus = CollabManager.Instance.GetCollabSuccessBonus(actionName);
+            collabBonus = CollabManager.Instance.GetCollabSuccessBonus(character.currentCollabID);
         }
         else
         {
-            Debug.LogWarning("CalculateSuccessRate: CollabManager.Instance is null");
+            Debug.LogWarning("CalculateSuccessRate: CollabManager.Instance is null or character is not collaborating");
         }
-        
+
         return Mathf.Clamp01(baseRate + roleBonus + collabBonus);
     }
 }

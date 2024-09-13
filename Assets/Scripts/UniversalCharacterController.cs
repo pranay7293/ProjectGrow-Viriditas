@@ -70,7 +70,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private bool isAcclimating = false;
 
     public bool IsCollaborating { get; private set; }
-
+    public string currentCollabID;
+    
     private HashSet<CharacterState> activeStates = new HashSet<CharacterState>();
 
     private List<LocationManager.LocationAction> availableActions = new List<LocationManager.LocationAction>();
@@ -446,19 +447,27 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void CompleteAction()
     {
-        if (photonView.IsMine)
+        if (photonView.IsMine || !IsPlayerControlled)
         {
             if (RiskRewardManager.Instance != null)
             {
                 RiskRewardManager.Instance.EvaluateActionOutcome(this, currentAction?.actionName ?? "Unknown Action");
             }
-            
-            if (CollabManager.Instance != null && IsCollaborating)
+
+            if (CollabManager.Instance != null && IsCollaborating && !string.IsNullOrEmpty(currentCollabID))
             {
-                CollabManager.Instance.FinalizeCollaboration(currentAction.actionName, currentAction.duration);
+                CollabManager.Instance.FinalizeCollaboration(currentCollabID, currentAction.duration);
+                IsCollaborating = false;
+                RemoveState(CharacterState.Collaborating);
+                currentCollabID = null;
+            }
+            else
+            {
+                // Handle solo action completion
+                GameManager.Instance.UpdateGameState(characterName, currentAction.actionName);
             }
         }
-        
+
         if (currentAction != null)
         {
             CheckPersonalGoalProgress(currentAction.actionName);
@@ -466,6 +475,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         currentAction = null;
         RemoveState(CharacterState.PerformingAction);
     }
+
 
     private void InitializePersonalGoals()
     {
@@ -729,7 +739,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             {
                 LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
                 currentAction = action;
-                photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID, collaborator.photonView.ViewID);
+
+                // Generate a unique collaboration ID
+                string collabID = System.Guid.NewGuid().ToString();
+
+                // Include the collabID in the RPC call
+                photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID, new int[] { collaborator.photonView.ViewID }, collabID);
             }
             else
             {
@@ -739,13 +754,14 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     [PunRPC]
-    private void RPC_InitiateCollab(string actionName, int initiatorViewID, int collaboratorViewID)
+    private void RPC_InitiateCollab(string actionName, int initiatorViewID, int[] collaboratorViewIDs, string collabID)
     {
-        CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, collaboratorViewID);
+        CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, collaboratorViewIDs, collabID);
         IsCollaborating = true;
         AddState(CharacterState.Collaborating);
     }
 
+    // Update JoinCollab method
     public void JoinCollab(string actionName, UniversalCharacterController initiator)
     {
         if (photonView.IsMine && !IsCollaborating)
@@ -754,7 +770,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             if (action != null)
             {
                 currentAction = action;
-                photonView.RPC("RPC_JoinCollab", RpcTarget.All, actionName, initiator.photonView.ViewID, photonView.ViewID);
+
+                // Generate a unique collaboration ID
+                string collabID = System.Guid.NewGuid().ToString();
+
+                // Include the collabID in the RPC call
+                photonView.RPC("RPC_JoinCollab", RpcTarget.All, actionName, initiator.photonView.ViewID, new int[] { photonView.ViewID }, collabID);
             }
             else
             {
@@ -764,12 +785,13 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     [PunRPC]
-    private void RPC_JoinCollab(string actionName, int initiatorViewID, int joinerViewID)
+    private void RPC_JoinCollab(string actionName, int initiatorViewID, int[] collaboratorViewIDs, string collabID)
     {
-        CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, joinerViewID);
+        CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, collaboratorViewIDs, collabID);
         IsCollaborating = true;
         AddState(CharacterState.Collaborating);
     }
+
 
     public void EndCollab(string actionName)
     {
@@ -797,51 +819,57 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+{
+    if (stream.IsWriting)
     {
-        if (stream.IsWriting)
-        {
-            stream.SendNext(transform.position);
-            stream.SendNext(transform.rotation);
-            stream.SendNext(activeStates.ToArray());
-            stream.SendNext(currentObjective);
-            stream.SendNext(actionIndicator.text);
-            stream.SendNext(characterColor);
-            stream.SendNext(PersonalProgress);
-            stream.SendNext(EurekaCount);
-            stream.SendNext(currentAction != null ? currentAction.actionName : "");
-            stream.SendNext(actionStartTime);
-        }
-        else
-        {
-            transform.position = (Vector3)stream.ReceiveNext();
-            transform.rotation = (Quaternion)stream.ReceiveNext();
-            activeStates = new HashSet<CharacterState>((CharacterState[])stream.ReceiveNext());
-            currentObjective = (string)stream.ReceiveNext();
-            actionIndicator.text = (string)stream.ReceiveNext();
-            Color receivedColor = (Color)stream.ReceiveNext();
-            PersonalProgress = (float[])stream.ReceiveNext();
-            EurekaCount = (int)stream.ReceiveNext();
-            string actionName = (string)stream.ReceiveNext();
-            actionStartTime = (float)stream.ReceiveNext();
-
-            if (!string.IsNullOrEmpty(actionName) && currentAction == null && currentLocation != null)
-            {
-                LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
-                if (action != null)
-                {
-                    StartAction(action);
-                }
-            }
-
-            if (characterMaterial != null && receivedColor != characterColor)
-            {
-                characterColor = receivedColor;
-                characterMaterial.color = characterColor;
-            }
-
-            UpdateProgressBarState();
-        }
+        stream.SendNext(transform.position);
+        stream.SendNext(transform.rotation);
+        stream.SendNext(activeStates.ToArray());
+        stream.SendNext(currentObjective);
+        stream.SendNext(actionIndicator.text);
+        stream.SendNext(characterColor);
+        stream.SendNext(PersonalProgress);
+        stream.SendNext(EurekaCount);
+        stream.SendNext(currentAction != null ? currentAction.actionName : "");
+        stream.SendNext(actionStartTime);
+        stream.SendNext(currentCollabID ?? "");
     }
+    else
+    {
+        transform.position = (Vector3)stream.ReceiveNext();
+        transform.rotation = (Quaternion)stream.ReceiveNext();
+        activeStates = new HashSet<CharacterState>((CharacterState[])stream.ReceiveNext());
+        currentObjective = (string)stream.ReceiveNext();
+        actionIndicator.text = (string)stream.ReceiveNext();
+        Color receivedColor = (Color)stream.ReceiveNext();
+        PersonalProgress = (float[])stream.ReceiveNext();
+        EurekaCount = (int)stream.ReceiveNext();
+        string actionName = (string)stream.ReceiveNext();
+        actionStartTime = (float)stream.ReceiveNext();
+        currentCollabID = (string)stream.ReceiveNext();
+        if (string.IsNullOrEmpty(currentCollabID))
+        {
+            currentCollabID = null;
+        }
+
+        if (!string.IsNullOrEmpty(actionName) && currentAction == null && currentLocation != null)
+        {
+            LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
+            if (action != null)
+            {
+                StartAction(action);
+            }
+        }
+
+        if (characterMaterial != null && receivedColor != characterColor)
+        {
+            characterColor = receivedColor;
+            characterMaterial.color = characterColor;
+        }
+
+        UpdateProgressBarState();
+    }
+}
 
     public override void OnDisable()
     {

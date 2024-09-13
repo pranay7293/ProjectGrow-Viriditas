@@ -30,15 +30,7 @@ public class EurekaManager : MonoBehaviourPunCallbacks
 
     private void Start()
     {
-        // Ensure initialization after all network objects are created
-        if (PhotonNetwork.IsMessageQueueRunning)
-        {
-            InitializeManager();
-        }
-        else
-        {
-            PhotonNetwork.AddCallbackTarget(this);
-        }
+        InitializeManager();
     }
 
     public override void OnEnable()
@@ -62,8 +54,8 @@ public class EurekaManager : MonoBehaviourPunCallbacks
     {
         if (!isInitialized)
         {
-            // Perform any necessary initialization here
             isInitialized = true;
+            Debug.Log("EurekaManager initialized.");
         }
     }
 
@@ -75,7 +67,7 @@ public class EurekaManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        float eurekaChance = 0.5f;
+        float eurekaChance = 0.5f; // Adjusted for testing
         if (Random.value < eurekaChance)
         {
             InitiateEureka(collaborators);
@@ -125,7 +117,7 @@ public class EurekaManager : MonoBehaviourPunCallbacks
         {
             collaborator.IncrementEurekaCount();
             GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS, "Eureka Moment", new List<string> { "Eureka" });
-            
+
             Vector3 textPosition = collaborator.transform.position + Vector3.up * 2f;
             FloatingTextManager.Instance.ShowFloatingText($"+{ScoreConstants.EUREKA_BONUS} Eureka!", textPosition, FloatingTextType.Eureka);
         }
