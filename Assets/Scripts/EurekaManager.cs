@@ -13,6 +13,8 @@ public class EurekaManager : MonoBehaviourPunCallbacks
     private List<string> recentEurekas = new List<string>();
     private const int maxRecentEurekas = 5;
 
+    private bool isInitialized = false;
+
     private void Awake()
     {
         if (Instance == null)
@@ -26,21 +28,88 @@ public class EurekaManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public void CheckForEureka(List<UniversalCharacterController> collaborators, string actionName)
-{
-    float eurekaChance = 0.2f; // 20% chance for prototype
-    if (Random.value < eurekaChance)
+    private void Start()
     {
-        InitiateEureka(collaborators);
+        // Ensure initialization after all network objects are created
+        if (PhotonNetwork.IsMessageQueueRunning)
+        {
+            InitializeManager();
+        }
+        else
+        {
+            PhotonNetwork.AddCallbackTarget(this);
+        }
     }
-}
 
-[PunRPC]
+    public override void OnEnable()
+    {
+        base.OnEnable();
+        PhotonNetwork.AddCallbackTarget(this);
+    }
+
+    public override void OnDisable()
+    {
+        base.OnDisable();
+        PhotonNetwork.RemoveCallbackTarget(this);
+    }
+
+    public override void OnJoinedRoom()
+    {
+        InitializeManager();
+    }
+
+    private void InitializeManager()
+    {
+        if (!isInitialized)
+        {
+            // Perform any necessary initialization here
+            isInitialized = true;
+        }
+    }
+
+    public void CheckForEureka(List<UniversalCharacterController> collaborators, string actionName)
+    {
+        if (!isInitialized)
+        {
+            Debug.LogWarning("EurekaManager not initialized. Skipping Eureka check.");
+            return;
+        }
+
+        float eurekaChance = 0.5f;
+        if (Random.value < eurekaChance)
+        {
+            InitiateEureka(collaborators);
+        }
+    }
+
+    public void InitiateEureka(List<UniversalCharacterController> collaborators)
+    {
+        if (!isInitialized)
+        {
+            Debug.LogWarning("EurekaManager not initialized. Skipping Eureka initiation.");
+            return;
+        }
+
+        if (PhotonNetwork.IsMasterClient && collaborators != null && collaborators.Count > 0)
+        {
+            int[] collaboratorViewIDs = collaborators.Select(c => c.photonView.ViewID).ToArray();
+            photonView.RPC("TriggerEureka", RpcTarget.All, new object[] { collaboratorViewIDs });
+        }
+    }
+
+    [PunRPC]
     public async void TriggerEureka(int[] collaboratorViewIDs)
     {
         List<UniversalCharacterController> collaborators = collaboratorViewIDs
-            .Select(id => PhotonView.Find(id).GetComponent<UniversalCharacterController>())
+            .Select(id => PhotonView.Find(id)?.GetComponent<UniversalCharacterController>())
+            .Where(c => c != null)
             .ToList();
+
+        if (collaborators.Count == 0)
+        {
+            Debug.LogWarning("No valid collaborators found for Eureka event.");
+            return;
+        }
 
         string eurekaDescription = await OpenAIService.Instance.GenerateEurekaDescription(collaborators, GameManager.Instance.GetCurrentGameState());
         string completedMilestone = GameManager.Instance.CompleteRandomMilestone(eurekaDescription);
@@ -53,13 +122,13 @@ public class EurekaManager : MonoBehaviourPunCallbacks
         AddRecentEureka(eurekaDescription);
 
         foreach (var collaborator in collaborators)
-{
-    collaborator.IncrementEurekaCount();
-    GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS, "Eureka Moment", new List<string> { "Eureka" });
-    
-    Vector3 textPosition = collaborator.transform.position + Vector3.up * 2f;
-    FloatingTextManager.Instance.ShowFloatingText($"+{ScoreConstants.EUREKA_BONUS} Eureka!", textPosition, FloatingTextType.Eureka);
-}
+        {
+            collaborator.IncrementEurekaCount();
+            GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS, "Eureka Moment", new List<string> { "Eureka" });
+            
+            Vector3 textPosition = collaborator.transform.position + Vector3.up * 2f;
+            FloatingTextManager.Instance.ShowFloatingText($"+{ScoreConstants.EUREKA_BONUS} Eureka!", textPosition, FloatingTextType.Eureka);
+        }
 
         GameManager.Instance.UpdateMilestoneProgress("Eureka", "Eureka Moment");
 
@@ -67,15 +136,6 @@ public class EurekaManager : MonoBehaviourPunCallbacks
         if (collaborators.Count > 0 && collaborators[0].currentLocation != null)
         {
             collaborators[0].currentLocation.PlayEurekaEffect();
-        }
-    }
-
-    public void InitiateEureka(List<UniversalCharacterController> collaborators)
-    {
-        if (PhotonNetwork.IsMasterClient)
-        {
-            int[] collaboratorViewIDs = collaborators.Select(c => c.photonView.ViewID).ToArray();
-            photonView.RPC("TriggerEureka", RpcTarget.All, new object[] { collaboratorViewIDs });
         }
     }
 

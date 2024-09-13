@@ -32,7 +32,7 @@ public class AIDecisionMaker : MonoBehaviour
             }
         }
 
-        string decision = await GetGPT4Decision(aiManager, options, gameState);
+        string decision = await GetAIDecision(aiManager, options, gameState);
 
         decisionCache[cacheKey] = new CachedDecision { Decision = decision, Timestamp = Time.time };
 
@@ -45,7 +45,7 @@ public class AIDecisionMaker : MonoBehaviour
         return decision;
     }
 
-    private async Task<string> GetGPT4Decision(AIManager aiManager, List<string> options, GameState gameState)
+    private async Task<string> GetAIDecision(AIManager aiManager, List<string> options, GameState gameState)
     {
         string prompt = GeneratePrompt(aiManager, options, gameState);
         string response = await OpenAIService.Instance.GetResponse(prompt, aiManager.GetCharacterController().aiSettings);
@@ -60,7 +60,7 @@ public class AIDecisionMaker : MonoBehaviour
         string completedMilestones = string.Join(", ", gameState.MilestoneCompletion.Where(kvp => kvp.Value).Select(kvp => kvp.Key));
         string incompleteMilestones = string.Join(", ", gameState.MilestoneCompletion.Where(kvp => !kvp.Value).Select(kvp => kvp.Key));
 
-        return $"You are {character.characterName}, a {character.aiSettings.characterRole} in Project GROW. " +
+        return $"You are {character.characterName}, a {character.aiSettings.characterRole}. " +
                $"Your personality: {character.aiSettings.characterPersonality}\n" +
                $"Your personal goals: {personalGoals}\n" +
                $"Current challenge: {gameState.CurrentChallenge.title}\n" +
@@ -69,7 +69,7 @@ public class AIDecisionMaker : MonoBehaviour
                $"Current collective progress: {gameState.CollectiveProgress}%\n" +
                $"Your current score: {gameState.PlayerScores[character.characterName]}\n" +
                $"Time remaining: {Mathf.FloorToInt(gameState.RemainingTime / 60)} minutes\n\n" +
-               "Given the following options, what action would you take? Consider your personal goals, the current challenge, and the overall game state. " +
+               "Given the following options, what action would you take? Consider your personality, personal goals, the current challenge, and the overall game state. " +
                "Respond with only the number of your chosen option.\n\n" +
                string.Join("\n", options.Select((option, index) => $"{index + 1}. {option}"));
     }

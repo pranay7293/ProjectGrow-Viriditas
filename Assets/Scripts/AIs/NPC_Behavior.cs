@@ -24,6 +24,10 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private float backgroundThinkingInterval = 5f;
     private float lastBackgroundThinkingTime;
 
+    private float idleMovementRadius = 2f;
+    private float idleMovementInterval = 5f;
+    private float lastIdleMovementTime;
+
     public void Initialize(UniversalCharacterController controller, NPC_Data data, AIManager manager)
     {
         characterController = controller;
@@ -38,6 +42,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         lastDecisionTime = Time.time;
         lastInteractionTime = Time.time;
         lastBackgroundThinkingTime = Time.time;
+        lastIdleMovementTime = Time.time;
     }
 
     private void Update()
@@ -56,6 +61,11 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             PerformBackgroundThinking();
             lastBackgroundThinkingTime = Time.time;
         }
+
+        if (characterController.HasState(UniversalCharacterController.CharacterState.Idle))
+        {
+            UpdateIdleMovement();
+        }
     }
 
     public void UpdateBehavior()
@@ -72,6 +82,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             if (navMeshAgent != null && !navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
             {
                 characterController.RemoveState(UniversalCharacterController.CharacterState.Moving);
+                characterController.AddState(UniversalCharacterController.CharacterState.Idle);
             }
         }
 
@@ -212,7 +223,8 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             "Perform location action",
             "Interact with nearby character",
             "Work on current challenge",
-            "Pursue personal goal"
+            "Pursue personal goal",
+            "Idle"
         };
 
         GameState currentState = GameManager.Instance.GetCurrentGameState();
@@ -238,6 +250,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             case "Pursue personal goal":
                 PursuePersonalGoal();
                 break;
+            case "Idle":
+                EnterIdleState();
+                break;
         }
     }
 
@@ -258,6 +273,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         {
             navMeshAgent.SetDestination(destination);
             characterController.AddState(UniversalCharacterController.CharacterState.Moving);
+            characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
             Debug.Log($"{characterController.characterName} is moving to {location}");
         }
     }
@@ -279,6 +295,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (characterController == null || currentLocationManager == null) return;
 
         characterController.StartAction(action);
+        characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
         
         ActionLogManager.Instance?.LogAction(characterController.characterName, $"performing {action.actionName} at {currentLocationManager.locationName}");
     }
@@ -354,6 +371,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (target == null || aiManager == null) return;
 
         lastInteractionTime = Time.time;
+        characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
         if (target.IsPlayerControlled)
         {
             aiManager.InitiateDialogueWithPlayer(target);
@@ -372,12 +390,13 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         LocationManager.LocationAction action = new LocationManager.LocationAction
         {
             actionName = $"Working on {currentChallenge}",
-            duration = 30, // Set an appropriate duration
-            baseSuccessRate = 0.7f, // Set an appropriate success rate
+            duration = 30,
+            baseSuccessRate = 0.7f,
             description = $"Focusing intensely on solving {currentChallenge}"
         };
 
         characterController.StartAction(action);
+        characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
 
         DialogueManager.Instance?.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {action.description}");
     }
@@ -396,18 +415,40 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             LocationManager.LocationAction action = new LocationManager.LocationAction
             {
                 actionName = $"Pursuing personal goal: {incompleteGoal}",
-                duration = 30, // Set an appropriate duration
-                baseSuccessRate = 0.8f, // Set an appropriate success rate
+                duration = 30,
+                baseSuccessRate = 0.8f,
                 description = $"Focusing on personal goal: {incompleteGoal}"
             };
 
             characterController.StartAction(action);
+            characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
 
             DialogueManager.Instance?.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {action.description}");
         }
         else
         {
             WorkOnChallenge();
+        }
+    }
+
+    private void EnterIdleState()
+    {
+        characterController.AddState(UniversalCharacterController.CharacterState.Idle);
+        lastIdleMovementTime = Time.time - idleMovementInterval; // Trigger immediate idle movement
+    }
+
+    private void UpdateIdleMovement()
+    {
+        if (Time.time - lastIdleMovementTime >= idleMovementInterval)
+        {
+            Vector3 randomDirection = Random.insideUnitSphere * idleMovementRadius;
+            randomDirection += transform.position;
+            NavMeshHit hit;
+            NavMesh.SamplePosition(randomDirection, out hit, idleMovementRadius, 1);
+            Vector3 finalPosition = hit.position;
+
+            navMeshAgent.SetDestination(finalPosition);
+            lastIdleMovementTime = Time.time;
         }
     }
 
@@ -433,6 +474,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating))
         {
             characterController.RemoveState(UniversalCharacterController.CharacterState.Acclimating);
+            EnterIdleState();
         }
     }
 }

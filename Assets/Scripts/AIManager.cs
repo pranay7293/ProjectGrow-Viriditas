@@ -73,7 +73,8 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     public async Task<string> MakeDecision(List<string> options, GameState currentState)
     {
-        return await decisionMaker.MakeDecision(this, options, currentState);
+    options.Add("Idle");
+    return await decisionMaker.MakeDecision(this, options, currentState);
     }
 
     public void UpdateEmotionalState(EmotionalState newState)

@@ -291,16 +291,16 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     private void HandleAIMovement()
+{
+    if (HasState(CharacterState.Moving) || HasState(CharacterState.Idle))
     {
-        if (HasState(CharacterState.Moving))
-        {
-            navMeshAgent.isStopped = false;
-        }
-        else
-        {
-            navMeshAgent.isStopped = true;
-        }
+        navMeshAgent.isStopped = false;
     }
+    else
+    {
+        navMeshAgent.isStopped = true;
+    }
+}
 
     public void TriggerDialogue()
     {
