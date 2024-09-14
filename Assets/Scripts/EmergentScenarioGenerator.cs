@@ -10,8 +10,8 @@ public class EmergentScenarioGenerator : MonoBehaviour
         public string description;
     }
 
-    public async Task<List<ScenarioData>> GenerateScenarios(string currentChallenge, List<string> recentPlayerActions)
+    public async Task<List<ScenarioData>> GenerateScenarios(GameState gameState, List<string> recentPlayerActions)
     {
-        return await OpenAIService.Instance.GenerateScenarios(currentChallenge, recentPlayerActions);
+        return await OpenAIService.Instance.GenerateScenarios(gameState, recentPlayerActions);
     }
 }

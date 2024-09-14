@@ -47,6 +47,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private GameObject cameraRigInstance;
     private Renderer characterRenderer;
     private Material characterMaterial;
+    private OutlineController outlineController;
+    private bool isInteractable = false;
     private TextMeshPro actionIndicator;
 
     public LocationManager.LocationAction currentAction;
@@ -85,7 +87,38 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void Awake()
     {
         InitializeComponents();
+        outlineController = gameObject.AddComponent<OutlineController>();
     }
+
+    public void SetInteractable(bool interactable)
+{
+    isInteractable = interactable;
+    if (!isInteractable)
+    {
+        outlineController.HideOutline();
+    }
+}
+
+public bool IsInteractable()
+{
+    return isInteractable && 
+           !HasState(CharacterState.Chatting) && 
+           !HasState(CharacterState.Collaborating) && 
+           !HasState(CharacterState.PerformingAction);
+}
+
+public void ShowOutline()
+{
+    if (IsInteractable())
+    {
+        outlineController.ShowOutline();
+    }
+}
+
+public void HideOutline()
+{
+    outlineController.HideOutline();
+}
 
     private void InitializeComponents()
     {

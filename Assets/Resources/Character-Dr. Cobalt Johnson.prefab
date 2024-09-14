@@ -1311,6 +1311,7 @@ MonoBehaviour:
     requiredRole: 
     actionIcon: {fileID: 0}
     tags: []
+  currentCollabID: 
   guideTextBoxPrefab: {fileID: 7059216339600709800, guid: 261c8e0ab39b041ac8094519ea7b08fe, type: 3}
 --- !u!114 &4096835321216489299
 MonoBehaviour:

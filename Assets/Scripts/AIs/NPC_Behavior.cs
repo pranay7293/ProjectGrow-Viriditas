@@ -55,6 +55,8 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         {
             UpdateBehavior();
         }
+        
+        UpdateInteractableState();
 
         if (Time.time - lastBackgroundThinkingTime > backgroundThinkingInterval)
         {
@@ -67,6 +69,18 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             UpdateIdleMovement();
         }
     }
+
+    public void UpdateInteractableState()
+{
+    if (characterController != null)
+    {
+        bool isInteractable = !characterController.HasState(UniversalCharacterController.CharacterState.Chatting) &&
+                              !characterController.HasState(UniversalCharacterController.CharacterState.Collaborating) &&
+                              !characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction);
+        
+        characterController.SetInteractable(isInteractable);
+    }
+}
 
     public void UpdateBehavior()
     {

@@ -145,17 +145,37 @@ public class OpenAIService : MonoBehaviour
         return string.IsNullOrEmpty(response) ? "Not sure how to respond to that..." : response;
     }
 
-    public async Task<List<EmergentScenarioGenerator.ScenarioData>> GenerateScenarios(string currentChallenge, List<string> recentPlayerActions)
+    public async Task<List<EmergentScenarioGenerator.ScenarioData>> GenerateScenarios(GameState gameState, List<string> recentPlayerActions)
     {
         if (Time.time - lastApiCallTime < apiCallCooldown)
         {
             await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
         }
 
-        string prompt = $"Based on the current challenge '{currentChallenge}' and recent player actions: {string.Join(", ", recentPlayerActions)}, create three distinct, brief emergent scenarios. Each scenario should start with '...' and continue as a natural sentence, presenting a unique future state or challenge. Keep each scenario under 10 words. Format the response as follows:\n" +
-        "1. [Scenario 1]\n" +
-        "2. [Scenario 2]\n" +
-        "3. [Scenario 3]";
+        string completedMilestones = string.Join(", ", gameState.MilestoneCompletion.Where(m => m.Value).Select(m => m.Key));
+        string incompleteMilestones = string.Join(", ", gameState.MilestoneCompletion.Where(m => !m.Value).Select(m => m.Key));
+        string topPlayers = string.Join(", ", gameState.PlayerScores.OrderByDescending(kv => kv.Value).Take(3).Select(kv => $"{kv.Key} ({kv.Value} points)"));
+        
+        string prompt = $@"Current challenge: '{gameState.CurrentChallenge.title}'
+Completed milestones: {completedMilestones}
+Incomplete milestones: {incompleteMilestones}
+Collective progress: {gameState.CollectiveProgress}%
+Top players: {topPlayers}
+Time remaining: {Mathf.FloorToInt(gameState.RemainingTime / 60)} minutes
+Recent player actions: {string.Join(", ", recentPlayerActions)}
+
+Based on this game state, generate three distinct, high-stakes 'What If...?' scenarios that could dramatically alter the course of the challenge. Each scenario should:
+1. Start with '...'
+2. Present a unique, unexpected development or complication
+3. Relate to the current challenge and game state
+4. Have potential for both positive and negative outcomes
+5. Encourage strategic thinking and collaboration
+6. Be concise but impactful (max 20 words)
+
+Format the response as follows:
+... [Scenario 1]
+... [Scenario 2]
+... [Scenario 3]";
 
         string response = await GetChatCompletionAsync(prompt);
         lastApiCallTime = Time.time;
@@ -166,15 +186,15 @@ public class OpenAIService : MonoBehaviour
     private List<EmergentScenarioGenerator.ScenarioData> ParseScenarioResponse(string response)
     {
         var scenarios = new List<EmergentScenarioGenerator.ScenarioData>();
-        var lines = response.Split('\n');
+        var lines = response.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
         foreach (var line in lines)
         {
-            if (line.StartsWith("1.") || line.StartsWith("2.") || line.StartsWith("3."))
+            if (line.StartsWith("..."))
             {
                 scenarios.Add(new EmergentScenarioGenerator.ScenarioData
                 {
-                    description = line.Substring(3).Trim()
+                    description = line.Trim()
                 });
             }
         }

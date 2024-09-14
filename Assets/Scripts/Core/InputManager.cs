@@ -6,12 +6,12 @@ public class InputManager : MonoBehaviourPunCallbacks
 {
     public static InputManager Instance { get; private set; }
 
-    public bool PlayerInteractActivate => Input.GetKeyDown(KeyCode.E);
     public bool PlayerRunModifier => Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
     public bool IsInDialogue { get; private set; }
     public bool IsChatLogOpen { get; private set; }
     public bool IsUIActive { get; private set; }
 
+    [SerializeField] private KeyCode interactKey = KeyCode.E;
     [SerializeField] private KeyCode toggleChatLogKey = KeyCode.Tab;
     [SerializeField] private KeyCode endDialogueKey = KeyCode.Escape;
     [SerializeField] private KeyCode toggleCustomInputKey = 
@@ -26,9 +26,11 @@ public class InputManager : MonoBehaviourPunCallbacks
     [SerializeField] private KeyCode acceptDialogueRequestKey = KeyCode.Y;
     [SerializeField] private KeyCode declineDialogueRequestKey = KeyCode.N;
     [SerializeField] private EurekaLogUI eurekaLogUI;
+    [SerializeField] private float interactionDistance = 5f;
 
     private UniversalCharacterController localPlayer;
     private bool wasUIActiveLastFrame;
+    private UniversalCharacterController currentInteractableCharacter;
 
     private void Awake()
     {
@@ -70,6 +72,7 @@ public class InputManager : MonoBehaviourPunCallbacks
         if (localPlayer != null && localPlayer.photonView.IsMine)
         {
             HandlePlayerInput();
+            CheckForInteractableCharacter();
         }
 
         UpdateCursorState();
@@ -77,9 +80,9 @@ public class InputManager : MonoBehaviourPunCallbacks
 
     private void HandlePlayerInput()
     {
-        if (PlayerInteractActivate && !IsInDialogue && !IsPointerOverUIElement())
+        if (Input.GetKeyDown(interactKey) && !IsInDialogue && !IsPointerOverUIElement())
         {
-            localPlayer.TriggerDialogue();
+            TryInteract();
         }
 
         if (Input.GetKeyDown(endDialogueKey) && IsInDialogue)
@@ -135,19 +138,51 @@ public class InputManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private void HandleDialogueInput()
+    private void CheckForInteractableCharacter()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
+        Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+        RaycastHit hit;
+
+        if (Physics.Raycast(ray, out hit, interactionDistance))
         {
-            DialogueManager.Instance.SelectDialogueOption(0);
+            UniversalCharacterController character = hit.collider.GetComponent<UniversalCharacterController>();
+            if (character != null && character.IsInteractable())
+            {
+                if (currentInteractableCharacter != character)
+                {
+                    if (currentInteractableCharacter != null)
+                    {
+                        currentInteractableCharacter.HideOutline();
+                    }
+                    currentInteractableCharacter = character;
+                    currentInteractableCharacter.ShowOutline();
+                }
+            }
+            else
+            {
+                ClearCurrentInteractableCharacter();
+            }
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
+        else
         {
-            DialogueManager.Instance.SelectDialogueOption(1);
+            ClearCurrentInteractableCharacter();
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Keypad3))
+    }
+
+    private void ClearCurrentInteractableCharacter()
+    {
+        if (currentInteractableCharacter != null)
         {
-            DialogueManager.Instance.SelectDialogueOption(2);
+            currentInteractableCharacter.HideOutline();
+            currentInteractableCharacter = null;
+        }
+    }
+
+    private void TryInteract()
+    {
+        if (currentInteractableCharacter != null)
+        {
+            DialogueManager.Instance.InitiateDialogue(currentInteractableCharacter);
         }
     }
 
@@ -159,12 +194,12 @@ public class InputManager : MonoBehaviourPunCallbacks
     }
 
     public void EndDialogue()
-{
-    IsInDialogue = false;
-    IsUIActive = false;
-    DialogueManager.Instance.EndConversation();
-    UpdateCursorState();
-}
+    {
+        IsInDialogue = false;
+        IsUIActive = false;
+        DialogueManager.Instance.EndConversation();
+        UpdateCursorState();
+    }
 
     private void ToggleChatLog()
     {

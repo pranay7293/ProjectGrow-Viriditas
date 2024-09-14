@@ -8,8 +8,6 @@ using System.Linq;
 
 public class EmergentScenarioUI : MonoBehaviourPunCallbacks
 {
-    public static EmergentScenarioUI Instance { get; private set; }
-
     [SerializeField] private GameObject scenarioPanel;
     [SerializeField] private TextMeshProUGUI[] scenarioTexts;
     [SerializeField] private Button[] scenarioButtons;
@@ -17,29 +15,15 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI whatIfText;
     [SerializeField] private GameObject characterProfilePrefab;
-    [SerializeField] private float profileDisplayDelay = 0.5f;
+    [SerializeField] private float animationDuration = 0.5f;
+    [SerializeField] private Image backgroundImage;
+    [SerializeField] private EmergentScenarioNotification emergentScenarioNotification;
 
+    private Color hubColor;
     private Dictionary<int, List<CharacterProfileSimple>> scenarioProfiles = new Dictionary<int, List<CharacterProfileSimple>>();
     private Dictionary<string, int> playerVotes = new Dictionary<string, int>();
-    private List<string> pendingVotes = new List<string>();
     private float voteTimer = 30f;
     private bool isVoting = false;
-    private int totalVotes = 0;
-
-    private void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-        
-        scenarioPanel.SetActive(false);
-    }
 
     private void Start()
     {
@@ -48,44 +32,70 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
             int index = i;
             scenarioButtons[i].onClick.AddListener(() => OnScenarioSelected(index));
         }
+        scenarioPanel.SetActive(false);
     }
-
-    private void Update()
-    {
-    if (IsVoting)
-    {
-        voteTimer -= Time.deltaTime;
-        timerText.text = $"{Mathf.CeilToInt(voteTimer)}";
-
-        if (voteTimer <= 0)
-        {
-            EndVoting();
-        }
-    }
-    }
-
-    public bool IsVoting { get; private set; }
 
     public void DisplayScenarios(List<string> scenarios)
     {
+        hubColor = GameManager.Instance.GetCurrentHubColor();
         scenarioPanel.SetActive(true);
+        
+        backgroundImage.color = new Color(hubColor.r, hubColor.g, hubColor.b, 0.9f);
+
         for (int i = 0; i < scenarioTexts.Length; i++)
         {
             scenarioTexts[i].text = i < scenarios.Count ? scenarios[i] : "";
             scenarioButtons[i].gameObject.SetActive(i < scenarios.Count);
+            
+            Image panelImage = scenarioButtons[i].GetComponent<Image>();
+            panelImage.color = i == 1 ? DarkenColor(hubColor, 0.2f) : hubColor;
+            
+            StartCoroutine(AnimatePanelIn(scenarioButtons[i].GetComponent<RectTransform>(), i));
         }
+        
+        StartCoroutine(AnimateScaleIn(whatIfText.transform));
+        StartCoroutine(AnimateScaleIn(timerText.transform));
+        
         StartVoting();
+    }
+
+    private IEnumerator AnimatePanelIn(RectTransform rectTransform, int index)
+    {
+        float startY = index == 1 ? -1000 : 1000;
+        float endY = 0;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < animationDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float t = Mathf.SmoothStep(0, 1, elapsedTime / animationDuration);
+            float currentY = Mathf.Lerp(startY, endY, t);
+            rectTransform.anchoredPosition = new Vector2(0, currentY);
+            yield return null;
+        }
+
+        rectTransform.anchoredPosition = new Vector2(0, endY);
+    }
+
+    private IEnumerator AnimateScaleIn(Transform target)
+    {
+        target.localScale = Vector3.zero;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < animationDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float t = Mathf.SmoothStep(0, 1, elapsedTime / animationDuration);
+            target.localScale = Vector3.Lerp(Vector3.zero, Vector3.one, t);
+            yield return null;
+        }
+
+        target.localScale = Vector3.one;
     }
 
     private void StartVoting()
     {
         playerVotes.Clear();
-        pendingVotes.Clear();
-        totalVotes = 0;
-        for (int i = 0; i < profileContainers.Length; i++)
-        {
-            scenarioProfiles[i] = new List<CharacterProfileSimple>();
-        }
         voteTimer = 30f;
         isVoting = true;
         if (PhotonNetwork.IsMasterClient)
@@ -105,51 +115,51 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
     [PunRPC]
     private void RPC_SubmitVote(int scenarioIndex, string playerName)
     {
-        if (!playerVotes.ContainsKey(playerName) && !pendingVotes.Contains(playerName))
+        if (!playerVotes.ContainsKey(playerName))
         {
-            pendingVotes.Add(playerName);
-            totalVotes++;
-            if (PhotonNetwork.IsMasterClient)
-            {
-                StartCoroutine(DisplayVoteWithDelay(playerName, scenarioIndex));
-            }
+            playerVotes[playerName] = scenarioIndex;
+            DisplayVote(playerName, scenarioIndex);
         }
-    }
-
-    private IEnumerator DisplayVoteWithDelay(string playerName, int scenarioIndex)
-    {
-        yield return new WaitForSeconds(profileDisplayDelay);
-        photonView.RPC("RPC_DisplayVote", RpcTarget.All, playerName, scenarioIndex);
-    }
-
-    [PunRPC]
-    private void RPC_DisplayVote(string playerName, int scenarioIndex)
-    {
-        playerVotes[playerName] = scenarioIndex;
-        pendingVotes.Remove(playerName);
-        DisplayVote(playerName, scenarioIndex);
     }
 
     private void DisplayVote(string playerName, int scenarioIndex)
+{
+    UniversalCharacterController character = GameManager.Instance.GetCharacterByName(playerName);
+    if (character != null)
     {
-        UniversalCharacterController character = GameManager.Instance.GetCharacterByName(playerName);
-        if (character != null)
+        CharacterProfileSimple profile = Instantiate(characterProfilePrefab, profileContainers[scenarioIndex]).GetComponent<CharacterProfileSimple>();
+        profile.SetProfileInfo(playerName, character.GetCharacterColor(), !character.IsPlayerControlled, character.photonView.IsMine);
+        
+        StartCoroutine(AnimateScaleIn(profile.transform));
+
+        int voteCount = profileContainers[scenarioIndex].childCount;
+        ResizeProfileContainer(scenarioIndex, voteCount);
+    }
+}
+
+    private void ResizeProfileContainer(int scenarioIndex, int voteCount)
+{
+    if (profileContainers[scenarioIndex] != null)
+    {
+        RectTransform containerRect = profileContainers[scenarioIndex].GetComponent<RectTransform>();
+        GridLayoutGroup grid = profileContainers[scenarioIndex].GetComponent<GridLayoutGroup>();
+        
+        if (containerRect != null && grid != null)
         {
-            CharacterProfileSimple profile = Instantiate(characterProfilePrefab, profileContainers[scenarioIndex]).GetComponent<CharacterProfileSimple>();
-            profile.SetProfileInfo(playerName, character.characterColor, !character.IsPlayerControlled, character.photonView.IsMine);
-            scenarioProfiles[scenarioIndex].Add(profile);
+            int rows = Mathf.CeilToInt(voteCount / 5f);
+            float newHeight = rows * (grid.cellSize.y + grid.spacing.y);
+            containerRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, newHeight);
         }
     }
+}
 
     private IEnumerator SimulateAIVoting()
     {
         List<string> aiCharacters = GameManager.Instance.GetAICharacterNames();
-        float timePerVote = (voteTimer - 5f) / aiCharacters.Count; // Reserve 5 seconds at the end
-
         foreach (string aiName in aiCharacters)
         {
-            yield return new WaitForSeconds(Random.Range(0f, timePerVote));
-            if (isVoting && !playerVotes.ContainsKey(aiName) && !pendingVotes.Contains(aiName))
+            yield return new WaitForSeconds(Random.Range(1f, 5f));
+            if (isVoting && !playerVotes.ContainsKey(aiName))
             {
                 AIManager aiManager = GameManager.Instance.GetCharacterByName(aiName).GetComponent<AIManager>();
                 List<string> scenarioDescriptions = GetCurrentScenarios();
@@ -160,18 +170,124 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
         }
     }
 
-    private void EndVoting()
+    private void Update()
+    {
+        if (isVoting)
+        {
+            voteTimer -= Time.deltaTime;
+            timerText.text = $"{Mathf.CeilToInt(voteTimer)}";
+
+            if (voteTimer <= 0)
+            {
+                EndVoting();
+            }
+        }
+    }
+
+     private void EndVoting()
     {
         isVoting = false;
         int winningScenario = DetermineWinningScenario();
-        GameManager.Instance.UpdateGameState("SYSTEM", scenarioTexts[winningScenario].text, true);
-        StartCoroutine(HideScenarioPanelWithDelay());
+        string winningScenarioText = scenarioTexts[winningScenario].text;
+        
+        if (PhotonNetwork.IsMasterClient)
+        {
+            photonView.RPC("RPC_ImplementWinningScenario", RpcTarget.All, winningScenarioText);
+        }
     }
 
-    private IEnumerator HideScenarioPanelWithDelay()
+    [PunRPC]
+    private void RPC_ImplementWinningScenario(string winningScenarioText)
     {
-        yield return new WaitForSeconds(2f); // Give players time to see the final result
+        StartCoroutine(ImplementWinningScenarioSequence(winningScenarioText));
+    }
+
+    private IEnumerator ImplementWinningScenarioSequence(string winningScenarioText)
+    {
+        // Hide scenario panel
+        yield return StartCoroutine(HideScenarioPanel());
+
+        // Implement the winning scenario
+        GameManager.Instance.ImplementEmergentScenario(winningScenarioText);
+
+        // Wait for notification to complete
+        yield return new WaitForSeconds(emergentScenarioNotification.GetNotificationDuration());
+
+        // Reset player positions
+        GameManager.Instance.ResetPlayerPositions();
+
+        // End emergent scenario state
+        GameManager.Instance.EndEmergentScenario();
+    }
+
+    [PunRPC]
+    private void RPC_EndEmergentScenario(string winningScenarioText)
+    {
+        StartCoroutine(EndEmergentScenarioSequence(winningScenarioText));
+    }
+
+    private IEnumerator EndEmergentScenarioSequence(string winningScenarioText)
+    {
+        // Hide scenario panel
+        yield return StartCoroutine(HideScenarioPanel());
+
+        // Show notification
+        emergentScenarioNotification.DisplayNotification(winningScenarioText);
+        yield return new WaitForSeconds(emergentScenarioNotification.GetNotificationDuration());
+
+        // Update game state and respawn characters
+        GameManager.Instance.UpdateGameState("SYSTEM", winningScenarioText, true);
+        GameManager.Instance.ResetPlayerPositions();
+
+        // End emergent scenario state
+        GameManager.Instance.EndEmergentScenario();
+    }
+
+    private IEnumerator HideScenarioPanel()
+    {
+        for (int i = 0; i < scenarioButtons.Length; i++)
+        {
+            StartCoroutine(AnimatePanelOut(scenarioButtons[i].GetComponent<RectTransform>(), i));
+        }
+        
+        StartCoroutine(AnimateScaleOut(whatIfText.transform));
+        StartCoroutine(AnimateScaleOut(timerText.transform));
+        
+        yield return new WaitForSeconds(animationDuration);
         scenarioPanel.SetActive(false);
+    }
+
+    private IEnumerator AnimatePanelOut(RectTransform rectTransform, int index)
+    {
+        float startY = 0;
+        float endY = index == 1 ? -1000 : 1000;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < animationDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float t = Mathf.SmoothStep(0, 1, elapsedTime / animationDuration);
+            float currentY = Mathf.Lerp(startY, endY, t);
+            rectTransform.anchoredPosition = new Vector2(0, currentY);
+            yield return null;
+        }
+
+        rectTransform.anchoredPosition = new Vector2(0, endY);
+    }
+
+    private IEnumerator AnimateScaleOut(Transform target)
+    {
+        float elapsedTime = 0f;
+
+        while (elapsedTime < animationDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float t = Mathf.SmoothStep(0, 1, elapsedTime / animationDuration);
+            target.localScale = Vector3.Lerp(Vector3.one, Vector3.zero, t);
+            yield return null;
+        }
+
+        target.localScale = Vector3.zero;
     }
 
     private int DetermineWinningScenario()
@@ -187,15 +303,28 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
         }
 
         int maxVotes = voteCounts.Values.Max();
-        var winningScenarios = voteCounts.Where(kv => kv.Value == maxVotes)
-                                         .Select(kv => kv.Key)
-                                         .ToList();
+        var winningScenarios = new List<int>();
+        foreach (var kvp in voteCounts)
+        {
+            if (kvp.Value == maxVotes)
+                winningScenarios.Add(kvp.Key);
+        }
 
         return winningScenarios[Random.Range(0, winningScenarios.Count)];
     }
 
     private List<string> GetCurrentScenarios()
     {
-        return scenarioTexts.Select(text => text.text).ToList();
+        return new List<string>(scenarioTexts.Select(text => text.text));
+    }
+
+    private Color DarkenColor(Color color, float amount)
+    {
+        return new Color(
+            Mathf.Clamp01(color.r - amount),
+            Mathf.Clamp01(color.g - amount),
+            Mathf.Clamp01(color.b - amount),
+            color.a
+        );
     }
 }

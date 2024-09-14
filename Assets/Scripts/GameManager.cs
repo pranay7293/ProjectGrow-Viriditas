@@ -38,6 +38,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     private List<string> recentPlayerActions = new List<string>();
     private Dictionary<string, UniversalCharacterController> spawnedCharacters = new Dictionary<string, UniversalCharacterController>();
     private Dictionary<string, int> playerEurekas = new Dictionary<string, int>();
+    private bool isEmergentScenarioActive = false;
 
     private readonly Dictionary<string, string> characterLocations = new Dictionary<string, string>
     {
@@ -77,7 +78,7 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void Update()
     {
-        if (PhotonNetwork.IsMasterClient)
+        if (PhotonNetwork.IsMasterClient && !isEmergentScenarioActive)
         {
             UpdateGameTime();
             CheckForEmergentScenario();
@@ -86,11 +87,6 @@ public class GameManager : MonoBehaviourPunCallbacks
             {
                 EndChallenge();
             }
-        }
-
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            ToggleMilestonesDisplay();
         }
     }
 
@@ -369,7 +365,9 @@ public class GameManager : MonoBehaviourPunCallbacks
 
         Debug.Log($"TriggerEmergentScenario called at {Time.time}");
 
-        var scenarios = await scenarioGenerator.GenerateScenarios(currentChallenge.title, GetRecentPlayerActions());
+        isEmergentScenarioActive = true;
+        GameState currentState = GetCurrentGameState();
+        var scenarios = await scenarioGenerator.GenerateScenarios(currentState, GetRecentPlayerActions());
         if (scenarios != null && scenarios.Count > 0)
         {
             photonView.RPC("RPC_DisplayEmergentScenarios", RpcTarget.All, scenarios.Select(s => s.description).ToArray());
@@ -377,6 +375,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         else
         {
             Debug.LogError("Failed to generate scenarios.");
+            isEmergentScenarioActive = false;
         }
     }
 
@@ -397,6 +396,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         else
         {
             Debug.LogError("EmergentScenarioUI not found. Cannot display scenarios.");
+            isEmergentScenarioActive = false;
         }
     }
 
@@ -415,50 +415,64 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
    public void UpdateGameState(string characterName, string actionName, bool isEmergentScenario = false)
-{
-    if (string.IsNullOrEmpty(characterName) || string.IsNullOrEmpty(actionName))
     {
-        Debug.LogWarning("Invalid character name or action in UpdateGameState");
-        return;
-    }
-
-    if (isEmergentScenario)
-    {
-        Debug.Log($"Emergent Scenario: {actionName}");
-        photonView.RPC("RPC_ImplementEmergentScenario", RpcTarget.All, actionName);
-    }
-    else
-    {
-        Debug.Log($"{characterName} performed action: {actionName}");
-        AddPlayerAction(actionName);
-        ActionLogManager.Instance.LogAction(characterName, actionName);
-
-        UniversalCharacterController character = GetCharacterByName(characterName);
-        if (character != null && character.currentAction != null)
+        if (string.IsNullOrEmpty(characterName) || string.IsNullOrEmpty(actionName))
         {
-            int scoreChange = ScoreConstants.GetActionPoints(character.currentAction.duration);
-            List<string> actionTags = TagSystem.GetTagsForAction(actionName);
-            UpdatePlayerScore(characterName, scoreChange, actionName, actionTags);
-            UpdateMilestoneProgress(characterName, actionName, actionTags);
+            Debug.LogWarning("Invalid character name or action in UpdateGameState");
+            return;
+        }
 
-            // Only consider collaboration for AI characters not already performing an action
-            if (!character.IsPlayerControlled && !character.HasState(UniversalCharacterController.CharacterState.PerformingAction))
+        if (isEmergentScenario)
+        {
+            Debug.Log($"Emergent Scenario: {actionName}");
+            ActionLogManager.Instance.LogAction("SYSTEM", $"Emergent Scenario: {actionName}");
+        }
+        else
+        {
+            Debug.Log($"{characterName} performed action: {actionName}");
+            AddPlayerAction(actionName);
+            ActionLogManager.Instance.LogAction(characterName, actionName);
+
+            UniversalCharacterController character = GetCharacterByName(characterName);
+            if (character != null && character.currentAction != null)
             {
-                AIManager aiManager = character.GetComponent<AIManager>();
-                if (aiManager != null)
+                int scoreChange = ScoreConstants.GetActionPoints(character.currentAction.duration);
+                List<string> actionTags = TagSystem.GetTagsForAction(actionName);
+                UpdatePlayerScore(characterName, scoreChange, actionName, actionTags);
+                UpdateMilestoneProgress(characterName, actionName, actionTags);
+
+                if (!character.IsPlayerControlled && !character.HasState(UniversalCharacterController.CharacterState.PerformingAction))
                 {
-                    aiManager.ConsiderCollaboration(character.currentAction);
+                    AIManager aiManager = character.GetComponent<AIManager>();
+                    if (aiManager != null)
+                    {
+                        aiManager.ConsiderCollaboration(character.currentAction);
+                    }
                 }
             }
         }
     }
-}
+
+    public void ImplementEmergentScenario(string scenario)
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            photonView.RPC("RPC_ImplementEmergentScenario", RpcTarget.All, scenario);
+        }
+    }
 
     [PunRPC]
     private void RPC_ImplementEmergentScenario(string scenario)
     {
+        isEmergentScenarioActive = true;
+        
+        // Log the emergent scenario
         ActionLogManager.Instance.LogAction("SYSTEM", $"Emergent Scenario: {scenario}");
 
+        // Update game state based on the scenario
+        UpdateGameState("SYSTEM", scenario, true);
+
+        // Display notification
         if (emergentScenarioNotification != null)
         {
             emergentScenarioNotification.DisplayNotification(scenario);
@@ -467,8 +481,11 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             Debug.LogWarning("EmergentScenarioNotification is not assigned in GameManager");
         }
+    }
 
-        ResetPlayerPositions();
+    public void EndEmergentScenario()
+    {
+        isEmergentScenarioActive = false;
     }
 
     public void CompleteMilestone(string characterName, string milestone, int milestoneIndex)

@@ -29,11 +29,11 @@ public class EmergentScenarioNotification : MonoBehaviour
     }
 
     public void DisplayNotification(string description)
-{
-    gameObject.SetActive(true);  // Ensure the GameObject is active
-    StopAllCoroutines();
-    StartCoroutine(ShowNotificationCoroutine(description));
-}
+    {
+        gameObject.SetActive(true);
+        StopAllCoroutines();
+        StartCoroutine(ShowNotificationCoroutine(description));
+    }
 
     private IEnumerator ShowNotificationCoroutine(string description)
     {
@@ -64,5 +64,10 @@ public class EmergentScenarioNotification : MonoBehaviour
             descriptionText.alpha = alpha;
             yield return null;
         }
+    }
+
+    public float GetNotificationDuration()
+    {
+        return notificationDuration + fadeInDuration + fadeOutDuration;
     }
 }
