@@ -87,38 +87,47 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private void Awake()
     {
         InitializeComponents();
-        outlineController = gameObject.AddComponent<OutlineController>();
     }
 
     public void SetInteractable(bool interactable)
-{
-    isInteractable = interactable;
-    if (!isInteractable)
     {
-        outlineController.HideOutline();
+        isInteractable = interactable;
+        if (outlineController != null)
+        {
+            if (!isInteractable)
+            {
+                outlineController.HideOutline();
+            }
+            else
+            {
+                outlineController.ShowOutline();
+            }
+        }
     }
-}
 
-public bool IsInteractable()
-{
-    return isInteractable && 
-           !HasState(CharacterState.Chatting) && 
-           !HasState(CharacterState.Collaborating) && 
-           !HasState(CharacterState.PerformingAction);
-}
-
-public void ShowOutline()
-{
-    if (IsInteractable())
+    public bool IsInteractable()
     {
-        outlineController.ShowOutline();
+        return isInteractable && 
+               !HasState(CharacterState.Chatting) && 
+               !HasState(CharacterState.Collaborating) && 
+               !HasState(CharacterState.PerformingAction);
     }
-}
 
-public void HideOutline()
-{
-    outlineController.HideOutline();
-}
+    public void ShowOutline()
+    {
+        if (IsInteractable() && outlineController != null)
+        {
+            outlineController.ShowOutline();
+        }
+    }
+
+    public void HideOutline()
+    {
+        if (outlineController != null)
+        {
+            outlineController.HideOutline();
+        }
+    }
 
     private void InitializeComponents()
     {
@@ -144,6 +153,21 @@ public void HideOutline()
         }
 
         InitializeGuideTextBox();
+
+        outlineController = GetComponentInChildren<OutlineController>();
+        if (outlineController == null)
+        {
+            Debug.LogWarning($"OutlineController not found for {characterName}. Adding one.");
+            GameObject modelObject = transform.Find("Model")?.gameObject;
+            if (modelObject != null)
+            {
+                outlineController = modelObject.AddComponent<OutlineController>();
+            }
+            else
+            {
+                Debug.LogError($"Model object not found for {characterName}. Outline functionality will be disabled.");
+            }
+        }
     }
 
     private void InitializeGuideTextBox()
@@ -187,7 +211,6 @@ public void HideOutline()
             aiSettings.characterRole = isPlayerControlled ? "Player" : "Default AI";
         }
     }
-
     private IEnumerator DelayedAcclimation()
     {
         yield return new WaitForSeconds(initialDelay);

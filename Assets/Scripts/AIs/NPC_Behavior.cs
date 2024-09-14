@@ -71,16 +71,16 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     }
 
     public void UpdateInteractableState()
-{
-    if (characterController != null)
     {
-        bool isInteractable = !characterController.HasState(UniversalCharacterController.CharacterState.Chatting) &&
-                              !characterController.HasState(UniversalCharacterController.CharacterState.Collaborating) &&
-                              !characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction);
-        
-        characterController.SetInteractable(isInteractable);
+        if (characterController != null)
+        {
+            bool isInteractable = !characterController.HasState(UniversalCharacterController.CharacterState.Chatting) &&
+                                  !characterController.HasState(UniversalCharacterController.CharacterState.Collaborating) &&
+                                  !characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction);
+            
+            characterController.SetInteractable(isInteractable);
+        }
     }
-}
 
     public void UpdateBehavior()
     {
