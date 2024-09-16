@@ -600,7 +600,7 @@ MonoBehaviour:
   drawingMode: 1
   outlineLayer: 0
   outlineTargets:
-  - IsVisible: 0
+  - IsVisible: 1
     CutoutMask: 8
     edgeDilateAmount: 5
     frontEdgeDilateAmount: 5
@@ -1227,8 +1227,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 6439969073062462219}
   - {fileID: 6217223942639235353}
+  - {fileID: 6439969073062462219}
   - {fileID: 2748930741491851383}
   - {fileID: 831240332898128912}
   - {fileID: 6812391323375999649}

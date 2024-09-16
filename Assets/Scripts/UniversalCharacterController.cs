@@ -83,7 +83,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private float guideDisplayDuration = 2f;
     private float guideFadeDuration = 0.5f;
 
-    private Outlinable outlinable; // Outline component from EPOOutline
+    private Outlinable outlinable;
 
     private void Awake()
     {
@@ -136,7 +136,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
         InitializeGuideTextBox();
 
-        // Get the Outlinable component
         outlinable = GetComponentInChildren<Outlinable>();
         if (outlinable == null)
         {
@@ -154,12 +153,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
         if (outlinable != null)
         {
-            // Initialize the outline settings
-            outlinable.OutlineParameters.Color = new Color32(13, 134, 248, 255); // 0D86F8
-            outlinable.OutlineParameters.BlurShift = 0; // Set blur to 0
-            outlinable.OutlineParameters.DilateShift = 0.5f; // Adjust dilate to reduce fuzziness
-            outlinable.OutlineParameters.Enabled = true; // Ensure parameters are enabled
-            outlinable.enabled = false; // Disable outline by default
+            outlinable.OutlineParameters.Color = new Color32(13, 134, 248, 255);
+            outlinable.OutlineParameters.BlurShift = 0;
+            outlinable.OutlineParameters.DilateShift = 0.5f;
+            outlinable.OutlineParameters.Enabled = true;
+            outlinable.enabled = false;
         }
     }
 
@@ -221,6 +219,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         {
             characterMaterial.color = characterColor;
         }
+        
+        // Ensure the color is applied to the renderer
+        if (characterRenderer != null)
+        {
+            characterRenderer.material.color = characterColor;
+        }
     }
 
     private void SetupPlayerControlled()
@@ -237,9 +241,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         characterController.enabled = false;
     }
 
-    private Camera playerCamera; // Add this line
+    private Camera playerCamera;
 
-    public Camera PlayerCamera // Add this property
+    public Camera PlayerCamera
     {
         get { return playerCamera; }
     }
@@ -252,7 +256,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             cameraRigInstance = Instantiate(cameraRigPrefab, Vector3.zero, Quaternion.identity);
             ConfigureCameraController();
 
-            // Find the camera component
             playerCamera = cameraRigInstance.GetComponentInChildren<Camera>();
             if (playerCamera == null)
             {
@@ -260,14 +263,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             }
             else
             {
-                // Ensure the camera has the Outliner component
                 Outliner outliner = playerCamera.GetComponent<Outliner>();
                 if (outliner == null)
                 {
                     outliner = playerCamera.gameObject.AddComponent<Outliner>();
                 }
 
-                // Optionally, set the tag to "MainCamera"
                 playerCamera.tag = "MainCamera";
             }
         }
@@ -539,7 +540,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             }
             else
             {
-                // Handle solo action completion
                 GameManager.Instance.UpdateGameState(characterName, currentAction.actionName);
             }
         }
@@ -551,7 +551,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         currentAction = null;
         RemoveState(CharacterState.PerformingAction);
     }
-
 
     private void InitializePersonalGoals()
     {
@@ -816,10 +815,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
                 currentAction = action;
 
-                // Generate a unique collaboration ID
                 string collabID = System.Guid.NewGuid().ToString();
 
-                // Include the collabID in the RPC call
                 photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID, new int[] { collaborator.photonView.ViewID }, collabID);
             }
             else
@@ -837,7 +834,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         AddState(CharacterState.Collaborating);
     }
 
-    // Update JoinCollab method
     public void JoinCollab(string actionName, UniversalCharacterController initiator)
     {
         if (photonView.IsMine && !IsCollaborating)
@@ -847,10 +843,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             {
                 currentAction = action;
 
-                // Generate a unique collaboration ID
                 string collabID = System.Guid.NewGuid().ToString();
 
-                // Include the collabID in the RPC call
                 photonView.RPC("RPC_JoinCollab", RpcTarget.All, actionName, initiator.photonView.ViewID, new int[] { photonView.ViewID }, collabID);
             }
             else
@@ -867,7 +861,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         IsCollaborating = true;
         AddState(CharacterState.Collaborating);
     }
-
 
     public void EndCollab(string actionName)
     {
@@ -895,59 +888,65 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
-{
-    if (stream.IsWriting)
     {
-        stream.SendNext(transform.position);
-        stream.SendNext(transform.rotation);
-        stream.SendNext(activeStates.ToArray());
-        stream.SendNext(currentObjective);
-        stream.SendNext(actionIndicator.text);
-        stream.SendNext(characterColor);
-        stream.SendNext(PersonalProgress);
-        stream.SendNext(EurekaCount);
-        stream.SendNext(currentAction != null ? currentAction.actionName : "");
-        stream.SendNext(actionStartTime);
-        stream.SendNext(currentCollabID ?? "");
-    }
-    else
-    {
-        transform.position = (Vector3)stream.ReceiveNext();
-        transform.rotation = (Quaternion)stream.ReceiveNext();
-        activeStates = new HashSet<CharacterState>((CharacterState[])stream.ReceiveNext());
-        currentObjective = (string)stream.ReceiveNext();
-        actionIndicator.text = (string)stream.ReceiveNext();
-        Color receivedColor = (Color)stream.ReceiveNext();
-        PersonalProgress = (float[])stream.ReceiveNext();
-        EurekaCount = (int)stream.ReceiveNext();
-        string actionName = (string)stream.ReceiveNext();
-        actionStartTime = (float)stream.ReceiveNext();
-        currentCollabID = (string)stream.ReceiveNext();
-        if (string.IsNullOrEmpty(currentCollabID))
+        if (stream.IsWriting)
         {
-            currentCollabID = null;
+            stream.SendNext(transform.position);
+            stream.SendNext(transform.rotation);
+            stream.SendNext(activeStates.ToArray());
+            stream.SendNext(currentObjective);
+            stream.SendNext(actionIndicator.text);
+            stream.SendNext(characterColor);
+            stream.SendNext(PersonalProgress);
+            stream.SendNext(EurekaCount);
+            stream.SendNext(currentAction != null ? currentAction.actionName : "");
+            stream.SendNext(actionStartTime);
+            stream.SendNext(currentCollabID ?? "");
         }
-
-        if (!string.IsNullOrEmpty(actionName) && currentAction == null && currentLocation != null)
+        else
         {
-            LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
-            if (action != null)
+            transform.position = (Vector3)stream.ReceiveNext();
+            transform.rotation = (Quaternion)stream.ReceiveNext();
+            activeStates = new HashSet<CharacterState>((CharacterState[])stream.ReceiveNext());
+            currentObjective = (string)stream.ReceiveNext();
+            actionIndicator.text = (string)stream.ReceiveNext();
+            Color receivedColor = (Color)stream.ReceiveNext();
+            PersonalProgress = (float[])stream.ReceiveNext();
+            EurekaCount = (int)stream.ReceiveNext();
+            string actionName = (string)stream.ReceiveNext();
+            actionStartTime = (float)stream.ReceiveNext();
+            currentCollabID = (string)stream.ReceiveNext();
+            if (string.IsNullOrEmpty(currentCollabID))
             {
-                StartAction(action);
+                currentCollabID = null;
             }
-        }
 
-        if (characterMaterial != null && receivedColor != characterColor)
-        {
-            characterColor = receivedColor;
-            characterMaterial.color = characterColor;
-        }
+            if (!string.IsNullOrEmpty(actionName) && currentAction == null && currentLocation != null)
+            {
+                LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
+                if (action != null)
+                {
+                    StartAction(action);
+                }
+            }
 
-        UpdateProgressBarState();
+            if (characterMaterial != null && receivedColor != characterColor)
+            {
+                characterColor = receivedColor;
+                characterMaterial.color = characterColor;
+                
+                // Ensure the color is applied to the renderer
+                if (characterRenderer != null)
+                {
+                    characterRenderer.material.color = characterColor;
+                }
+            }
+
+            UpdateProgressBarState();
+        }
     }
-}
 
-     public override void OnDisable()
+    public override void OnDisable()
     {
         base.OnDisable();
         if (cameraRigInstance != null && photonView.IsMine)
