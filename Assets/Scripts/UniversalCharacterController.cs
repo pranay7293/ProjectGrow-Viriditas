@@ -4,6 +4,7 @@ using System.Collections;
 using TMPro;
 using System.Collections.Generic;
 using System.Linq;
+using EPOOutline;
 
 public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObservable
 {
@@ -26,7 +27,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public float walkSpeed = 5f;
     public float runSpeed = 8f;
     public float rotationSpeed = 120f;
-    public float interactionDistance = 3f;
+    public float interactionDistance = 5f;
 
     [Header("AI Settings")]
     public AISettings aiSettings;
@@ -47,8 +48,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private GameObject cameraRigInstance;
     private Renderer characterRenderer;
     private Material characterMaterial;
-    private OutlineController outlineController;
-    private bool isInteractable = false;
     private TextMeshPro actionIndicator;
 
     public LocationManager.LocationAction currentAction;
@@ -73,7 +72,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public bool IsCollaborating { get; private set; }
     public string currentCollabID;
-    
+
     private HashSet<CharacterState> activeStates = new HashSet<CharacterState>();
 
     private List<LocationManager.LocationAction> availableActions = new List<LocationManager.LocationAction>();
@@ -84,48 +83,31 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private float guideDisplayDuration = 2f;
     private float guideFadeDuration = 0.5f;
 
+    private Outlinable outlinable; // Outline component from EPOOutline
+
     private void Awake()
     {
         InitializeComponents();
     }
 
-    public void SetInteractable(bool interactable)
+    public bool IsInteractable(Vector3 playerPosition)
     {
-        isInteractable = interactable;
-        if (outlineController != null)
-        {
-            if (!isInteractable)
-            {
-                outlineController.HideOutline();
-            }
-            else
-            {
-                outlineController.ShowOutline();
-            }
-        }
-    }
-
-    public bool IsInteractable()
-    {
-        return isInteractable && 
-               !HasState(CharacterState.Chatting) && 
-               !HasState(CharacterState.Collaborating) && 
-               !HasState(CharacterState.PerformingAction);
+        return Vector3.Distance(transform.position, playerPosition) <= InputManager.Instance.interactionDistance;
     }
 
     public void ShowOutline()
     {
-        if (IsInteractable() && outlineController != null)
+        if (outlinable != null)
         {
-            outlineController.ShowOutline();
+            outlinable.enabled = true;
         }
     }
 
     public void HideOutline()
     {
-        if (outlineController != null)
+        if (outlinable != null)
         {
-            outlineController.HideOutline();
+            outlinable.enabled = false;
         }
     }
 
@@ -154,19 +136,30 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
         InitializeGuideTextBox();
 
-        outlineController = GetComponentInChildren<OutlineController>();
-        if (outlineController == null)
+        // Get the Outlinable component
+        outlinable = GetComponentInChildren<Outlinable>();
+        if (outlinable == null)
         {
-            Debug.LogWarning($"OutlineController not found for {characterName}. Adding one.");
+            Debug.LogWarning($"Outlinable component not found for {characterName}. Adding one.");
             GameObject modelObject = transform.Find("Model")?.gameObject;
             if (modelObject != null)
             {
-                outlineController = modelObject.AddComponent<OutlineController>();
+                outlinable = modelObject.AddComponent<Outlinable>();
             }
             else
             {
                 Debug.LogError($"Model object not found for {characterName}. Outline functionality will be disabled.");
             }
+        }
+
+        if (outlinable != null)
+        {
+            // Initialize the outline settings
+            outlinable.OutlineParameters.Color = new Color32(13, 134, 248, 255); // 0D86F8
+            outlinable.OutlineParameters.BlurShift = 0; // Set blur to 0
+            outlinable.OutlineParameters.DilateShift = 0.5f; // Adjust dilate to reduce fuzziness
+            outlinable.OutlineParameters.Enabled = true; // Ensure parameters are enabled
+            outlinable.enabled = false; // Disable outline by default
         }
     }
 
@@ -211,6 +204,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             aiSettings.characterRole = isPlayerControlled ? "Player" : "Default AI";
         }
     }
+
     private IEnumerator DelayedAcclimation()
     {
         yield return new WaitForSeconds(initialDelay);
@@ -243,6 +237,13 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         characterController.enabled = false;
     }
 
+    private Camera playerCamera; // Add this line
+
+    public Camera PlayerCamera // Add this property
+    {
+        get { return playerCamera; }
+    }
+
     private void SetupCamera()
     {
         GameObject cameraRigPrefab = Resources.Load<GameObject>("CameraRig");
@@ -250,6 +251,25 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         {
             cameraRigInstance = Instantiate(cameraRigPrefab, Vector3.zero, Quaternion.identity);
             ConfigureCameraController();
+
+            // Find the camera component
+            playerCamera = cameraRigInstance.GetComponentInChildren<Camera>();
+            if (playerCamera == null)
+            {
+                Debug.LogError("Camera component not found in CameraRig");
+            }
+            else
+            {
+                // Ensure the camera has the Outliner component
+                Outliner outliner = playerCamera.GetComponent<Outliner>();
+                if (outliner == null)
+                {
+                    outliner = playerCamera.gameObject.AddComponent<Outliner>();
+                }
+
+                // Optionally, set the tag to "MainCamera"
+                playerCamera.tag = "MainCamera";
+            }
         }
     }
 
@@ -348,16 +368,16 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     private void HandleAIMovement()
-{
-    if (HasState(CharacterState.Moving) || HasState(CharacterState.Idle))
     {
-        navMeshAgent.isStopped = false;
+        if (HasState(CharacterState.Moving) || HasState(CharacterState.Idle))
+        {
+            navMeshAgent.isStopped = false;
+        }
+        else
+        {
+            navMeshAgent.isStopped = true;
+        }
     }
-    else
-    {
-        navMeshAgent.isStopped = true;
-    }
-}
 
     public void TriggerDialogue()
     {
@@ -365,14 +385,14 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (Time.time - lastDialogueAttemptTime < DialogueCooldown) return;
 
         lastDialogueAttemptTime = Time.time;
-        UniversalCharacterController nearestNPC = FindNearestNPC();
-        if (nearestNPC != null && IsPlayerInRange(nearestNPC.transform))
+        UniversalCharacterController nearestCharacter = FindNearestCharacter();
+        if (nearestCharacter != null && IsPlayerInRange(nearestCharacter.transform))
         {
-            DialogueManager.Instance.InitiateDialogue(nearestNPC);
+            DialogueManager.Instance.InitiateDialogue(nearestCharacter);
         }
     }
 
-    private UniversalCharacterController FindNearestNPC()
+    private UniversalCharacterController FindNearestCharacter()
     {
         UniversalCharacterController[] characters = FindObjectsOfType<UniversalCharacterController>();
         UniversalCharacterController nearest = null;
@@ -380,7 +400,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
         foreach (UniversalCharacterController character in characters)
         {
-            if (!character.IsPlayerControlled && character != this)
+            if (character != this)
             {
                 float distance = Vector3.Distance(transform.position, character.transform.position);
                 if (distance < minDistance)
@@ -403,9 +423,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
     }
 
-    public bool IsPlayerInRange(Transform playerTransform)
+    public bool IsPlayerInRange(Transform targetTransform)
     {
-        return Vector3.Distance(transform.position, playerTransform.position) <= interactionDistance;
+        return Vector3.Distance(transform.position, targetTransform.position) <= interactionDistance;
     }
 
     [PunRPC]
@@ -927,7 +947,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 }
 
-    public override void OnDisable()
+     public override void OnDisable()
     {
         base.OnDisable();
         if (cameraRigInstance != null && photonView.IsMine)

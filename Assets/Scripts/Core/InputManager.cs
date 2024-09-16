@@ -14,7 +14,7 @@ public class InputManager : MonoBehaviourPunCallbacks
     [SerializeField] private KeyCode interactKey = KeyCode.E;
     [SerializeField] private KeyCode toggleChatLogKey = KeyCode.Tab;
     [SerializeField] private KeyCode endDialogueKey = KeyCode.Escape;
-    [SerializeField] private KeyCode toggleCustomInputKey = 
+    [SerializeField] private KeyCode toggleCustomInputKey =
         Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer
         ? KeyCode.LeftCommand
         : KeyCode.LeftControl;
@@ -26,7 +26,7 @@ public class InputManager : MonoBehaviourPunCallbacks
     [SerializeField] private KeyCode acceptDialogueRequestKey = KeyCode.Y;
     [SerializeField] private KeyCode declineDialogueRequestKey = KeyCode.N;
     [SerializeField] private EurekaLogUI eurekaLogUI;
-    [SerializeField] private float interactionDistance = 5f;
+    [SerializeField] public float interactionDistance = 5f;
 
     private UniversalCharacterController localPlayer;
     private bool wasUIActiveLastFrame;
@@ -138,36 +138,51 @@ public class InputManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private void CheckForInteractableCharacter()
+  private void CheckForInteractableCharacter()
+{
+    if (localPlayer == null)
     {
-        Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-        RaycastHit hit;
+        return;
+    }
 
-        if (Physics.Raycast(ray, out hit, interactionDistance))
+    // Ray origin slightly above player's head, ray cast in the direction the player is facing
+    Vector3 rayOrigin = localPlayer.transform.position + Vector3.up * 1.5f; // Adjust for character's height
+    Vector3 forwardDirection = localPlayer.transform.forward;
+    
+    Ray ray = new Ray(rayOrigin, forwardDirection);  // Cast ray forward from the player
+    Debug.DrawRay(ray.origin, ray.direction * interactionDistance, Color.red); // Draw the ray for visualization
+
+    RaycastHit hit;
+    if (Physics.Raycast(ray, out hit, interactionDistance))
+    {
+        UniversalCharacterController character = hit.collider.GetComponentInParent<UniversalCharacterController>();
+
+        if (character != null && character != localPlayer)
         {
-            UniversalCharacterController character = hit.collider.GetComponent<UniversalCharacterController>();
-            if (character != null && character.IsInteractable())
+            Vector3 directionToCharacter = (character.transform.position - localPlayer.transform.position).normalized;
+            float dotProduct = Vector3.Dot(localPlayer.transform.forward, directionToCharacter);
+
+            if (dotProduct > 0.2f) // Character is roughly within the player's forward view
             {
                 if (currentInteractableCharacter != character)
                 {
                     if (currentInteractableCharacter != null)
                     {
+                        Debug.Log("Hiding outline for: " + currentInteractableCharacter.name);
                         currentInteractableCharacter.HideOutline();
                     }
+                    
                     currentInteractableCharacter = character;
+                    Debug.Log("Showing outline for: " + character.name);
                     currentInteractableCharacter.ShowOutline();
                 }
+                return;
             }
-            else
-            {
-                ClearCurrentInteractableCharacter();
-            }
-        }
-        else
-        {
-            ClearCurrentInteractableCharacter();
         }
     }
+
+    ClearCurrentInteractableCharacter();
+}
 
     private void ClearCurrentInteractableCharacter()
     {
@@ -182,7 +197,20 @@ public class InputManager : MonoBehaviourPunCallbacks
     {
         if (currentInteractableCharacter != null)
         {
-            DialogueManager.Instance.InitiateDialogue(currentInteractableCharacter);
+            // Attempt interaction
+            if (currentInteractableCharacter.HasState(UniversalCharacterController.CharacterState.Chatting) ||
+                currentInteractableCharacter.HasState(UniversalCharacterController.CharacterState.Collaborating) ||
+                currentInteractableCharacter.HasState(UniversalCharacterController.CharacterState.PerformingAction))
+            {
+                // Character is busy
+                Debug.Log($"{currentInteractableCharacter.characterName} is currently busy.");
+                // Optionally, show a message to the player
+                // UIManager.Instance.ShowMessage($"{currentInteractableCharacter.characterName} is currently busy.");
+            }
+            else
+            {
+                DialogueManager.Instance.InitiateDialogue(currentInteractableCharacter);
+            }
         }
     }
 
@@ -227,7 +255,7 @@ public class InputManager : MonoBehaviourPunCallbacks
         IsUIActive = GameManager.Instance.IsMilestonesDisplayVisible();
         UpdateCursorState();
     }
-    
+
     private void TogglePersonalGoals()
     {
         // Implement this when personal goals UI is created
