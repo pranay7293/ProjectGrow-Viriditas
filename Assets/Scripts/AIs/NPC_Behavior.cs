@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Photon.Pun;
 using System.Threading.Tasks;
+using ProjectGrow.AI;
 
 public class NPC_Behavior : MonoBehaviourPunCallbacks
 {
@@ -69,13 +70,14 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     }
 
     public void UpdateBehavior()
-    {
-        if (isAcclimating || characterController == null || aiManager == null) return;
+{
+    if (isAcclimating || characterController == null || aiManager == null) return;
 
-        if (Time.time - lastDecisionTime > characterController.aiSettings.decisionInterval)
-        {
-            StartCoroutine(MakeDecisionCoroutine());
-        }
+    if (Time.time - lastDecisionTime > characterController.aiSettings.decisionInterval)
+    {
+        StartCoroutine(MakeDecisionCoroutine());
+        lastDecisionTime = Time.time;
+    }
 
         if (characterController.HasState(UniversalCharacterController.CharacterState.Moving))
         {
@@ -92,7 +94,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         }
     }
 
-    private void PerformBackgroundThinking()
+   private void PerformBackgroundThinking()
     {
         if (GameManager.Instance == null || npcData == null) return;
 
@@ -107,9 +109,12 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     {
         if (currentState.CurrentChallenge == null || npcData == null) return;
 
+        CharacterMentalModel mentalModel = npcData.GetMentalModel();
+
         foreach (var milestone in currentState.CurrentChallenge.milestones)
         {
-            npcData.UpdateKnowledge(milestone, currentState.MilestoneCompletion[milestone] ? "Completed" : "In Progress");
+            string status = currentState.MilestoneCompletion[milestone] ? "Completed" : "In Progress";
+            mentalModel.AddMemory($"Milestone '{milestone}' is {status}", 0.7f);
         }
 
         UpdateEmotionalState(currentState);
@@ -149,16 +154,17 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         characterController.InitiateCollab(actionName, collaborator);
     }
 
-    private void EvaluateObjectives(GameState currentState)
+     private void EvaluateObjectives(GameState currentState)
     {
         if (npcData == null || characterController == null) return;
 
         List<string> currentObjectives = GetCurrentObjectives();
-        string bestObjective = npcData.MakeDecision(currentObjectives, currentState);
+        string bestObjective = npcData.GetMentalModel().MakeDecision(currentObjectives, currentState);
 
         if (bestObjective != characterController.currentObjective)
         {
             SetNewObjective(bestObjective);
+            aiManager.RecordSignificantEvent($"Changed objective to: {bestObjective}", 0.8f);
         }
     }
 
@@ -205,6 +211,11 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
         npcData.UpdateEmotionalState(newState);
     }
+
+    private async Task<string> MakeDecisionWithMemory(List<string> options, GameState currentState)
+{
+    return await aiManager.MakeDecision(options, currentState);
+}
 
     private IEnumerator MakeDecisionCoroutine()
     {

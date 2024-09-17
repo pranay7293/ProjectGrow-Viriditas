@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using ProjectGrow.AI;
+using System.Linq;
 
 public class NPC_Data : MonoBehaviour
 {
@@ -23,13 +25,13 @@ public class NPC_Data : MonoBehaviour
 
     public void AddMemory(string memory)
     {
-        mentalModel.AddMemory(memory);
+        mentalModel.AddMemory(memory, 0.5f);
     }
 
     public List<string> GetMemories()
-    {
-        return mentalModel.Memories;
-    }
+{
+    return mentalModel.Memories.Select(m => m.Content).ToList();
+}
 
     public void UpdateRelationship(string characterName, float change)
     {

@@ -53,8 +53,13 @@ public class DialogueRequestUI : MonoBehaviour
 
     public void DeclineRequest()
     {
-        requestPanel.SetActive(false);
+        HideRequest();
         requestingNPC = null;
+    }
+
+    public void HideRequest()
+    {
+        requestPanel.SetActive(false);
     }
 
     public bool IsRequestActive()

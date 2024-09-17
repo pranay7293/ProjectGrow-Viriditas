@@ -1,8 +1,10 @@
 using UnityEngine;
 using Photon.Pun;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Threading.Tasks;
+using ProjectGrow.AI;
 
 public class AIManager : MonoBehaviourPunCallbacks
 {
@@ -11,10 +13,19 @@ public class AIManager : MonoBehaviourPunCallbacks
     private NPC_Data npcData;
     private AIDecisionMaker decisionMaker;
 
+    [SerializeField] private float memoryConsolidationInterval = 60f;
+    [SerializeField] private float reflectionInterval = 120f;
+
     private bool isInitialized = false;
 
     [SerializeField] private float dialogueInitiationCooldown = 300f; // 5 minutes
     private float lastDialogueInitiationTime = 0f;
+
+    private void Start()
+    {
+        StartCoroutine(PeriodicMemoryConsolidation());
+        StartCoroutine(PeriodicReflection());
+    }
 
     private void Awake()
     {
@@ -49,6 +60,24 @@ public class AIManager : MonoBehaviourPunCallbacks
         }
     }
 
+     public void InitiateDialogueWithPlayer(UniversalCharacterController player)
+    {
+        if (Time.time - lastDialogueInitiationTime < dialogueInitiationCooldown) return;
+
+        lastDialogueInitiationTime = Time.time;
+        photonView.RPC("RPC_RequestDialogueWithPlayer", RpcTarget.All, player.photonView.ViewID);
+    }
+
+    [PunRPC]
+    private void RPC_RequestDialogueWithPlayer(int playerViewID)
+    {
+        PhotonView playerView = PhotonView.Find(playerViewID);
+        if (playerView != null && playerView.IsMine)
+        {
+            GameManager.Instance.dialogueRequestUI.ShowRequest(characterController);
+        }
+    }
+
     public void UpdateKnowledge(string key, string value)
     {
         npcData.UpdateKnowledge(key, value);
@@ -66,16 +95,52 @@ public class AIManager : MonoBehaviourPunCallbacks
         }
     }
 
+    private IEnumerator PeriodicMemoryConsolidation()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(memoryConsolidationInterval);
+            if (npcData != null)
+            {
+                npcData.GetMentalModel().MemoryConsolidation();
+            }
+        }
+    }
+
+    private IEnumerator PeriodicReflection()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(reflectionInterval);
+            if (npcData != null)
+            {
+                string reflection = npcData.GetMentalModel().Reflect();
+                // Use this reflection (e.g., log it, update behavior, etc.)
+                Debug.Log($"{characterController.characterName} reflects: {reflection}");
+            }
+        }
+    }
+
+    public void RecordSignificantEvent(string eventDescription, float importance)
+    {
+        if (npcData != null)
+        {
+            npcData.GetMentalModel().AddMemory(eventDescription, importance);
+        }
+    }
+
     public void UpdateRelationship(string characterName, float change)
     {
         npcData.UpdateRelationship(characterName, change);
     }
 
-    public async Task<string> MakeDecision(List<string> options, GameState currentState)
-    {
-    options.Add("Idle");
-    return await decisionMaker.MakeDecision(this, options, currentState);
-    }
+    // Update the MakeDecision method call:
+public async Task<string> MakeDecision(List<string> options, GameState currentState)
+{
+    string memoryContext = string.Join(", ", npcData.GetMentalModel().RetrieveRelevantMemories(string.Join(" ", options)).Select(m => m.Content));
+    string reflection = npcData.GetMentalModel().Reflect();
+    return await decisionMaker.MakeDecision(this, options, currentState, memoryContext, reflection);
+}
 
     public void UpdateEmotionalState(EmotionalState newState)
     {
@@ -172,24 +237,6 @@ public class AIManager : MonoBehaviourPunCallbacks
         string decision = await MakeDecision(options, currentState);
 
         return decision == "Collaborate";
-    }
-
-    public void InitiateDialogueWithPlayer(UniversalCharacterController player)
-    {
-        if (Time.time - lastDialogueInitiationTime < dialogueInitiationCooldown) return;
-
-        lastDialogueInitiationTime = Time.time;
-        photonView.RPC("RPC_RequestDialogueWithPlayer", RpcTarget.All, player.photonView.ViewID);
-    }
-
-    [PunRPC]
-    private void RPC_RequestDialogueWithPlayer(int playerViewID)
-    {
-        PhotonView playerView = PhotonView.Find(playerViewID);
-        if (playerView != null && playerView.IsMine)
-        {
-            GameManager.Instance.dialogueRequestUI.ShowRequest(characterController);
-        }
     }
 
     public UniversalCharacterController GetCharacterController()

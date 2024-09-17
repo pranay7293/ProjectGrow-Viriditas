@@ -15,18 +15,13 @@ public class OpenAIService : MonoBehaviour
     public enum OpenAIModel
     {
         GPT4o,
-        GPT4oMini
+        GPT4oMini,
+        FineTunedNaturalDialog
     }
 
     [SerializeField] private string apiKey;
     [SerializeField] private OpenAIModel selectedModel = OpenAIModel.GPT4o;
     [SerializeField] private float apiCallCooldown = 1f;
-
-    public OpenAIModel CurrentModel
-    {
-        get => selectedModel;
-        set => selectedModel = value;
-    }
 
     private readonly HttpClient httpClient = new HttpClient();
     private float lastApiCallTime;
@@ -53,6 +48,8 @@ public class OpenAIService : MonoBehaviour
                 return "gpt-4o";
             case OpenAIModel.GPT4oMini:
                 return "gpt-4o-mini";
+            case OpenAIModel.FineTunedNaturalDialog:
+                return "ft:gpt-4o-2024-08-06:karyo-studios:naturaldialog3:A7A1XgRr";
             default:
                 return "gpt-4o";
         }
@@ -60,42 +57,71 @@ public class OpenAIService : MonoBehaviour
 
     public async Task<List<DialogueOption>> GetGenerativeChoices(string characterName, string context, AISettings aiSettings)
     {
-        if (Time.time - lastApiCallTime < apiCallCooldown)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
-        }
+        await EnforceApiCooldown();
 
-        List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
-        string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join(", ", recentEurekas)}" : "";
-
-        string prompt = $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n" +
-            $"Based on this context: {context}\n{eurekaContext}\n\n" +
-            "Generate 3 short, distinct responses (max 8 words each) that {characterName} might consider. " +
-            "These can be a mix of casual conversational responses and action choices. " +
-            "For action choices, use one of these categories: Ethical, Strategic, Emotional, Practical, Creative, Diplomatic, or Risk-Taking. " +
-            "For casual responses, use the Casual category. " +
-            "If there are recent breakthroughs, consider incorporating them into the choices. " +
-            "Format your response as follows:\n" +
-            "1. [Category]: [Response]\n" +
-            "2. [Category]: [Response]\n" +
-            "3. [Category]: [Response]";
-
-        string response = await GetChatCompletionAsync(prompt);
+        string prompt = GenerateGenerativeChoicesPrompt(characterName, context, aiSettings);
+        string response = await GetChatCompletionAsync(prompt, selectedModel);
 
         if (string.IsNullOrEmpty(response))
         {
-            return new List<DialogueOption>
-            {
-                new DialogueOption("Investigate the area", DialogueCategory.Practical),
-                new DialogueOption("Collaborate with a nearby character", DialogueCategory.Diplomatic),
-                new DialogueOption("Propose an innovative solution", DialogueCategory.Creative)
-            };
+            return GetDefaultDialogueOptions();
         }
 
         List<DialogueOption> choices = ParseDialogueOptions(response);
         lastApiCallTime = Time.time;
 
         return choices;
+    }
+
+    public async Task<string> GetNaturalDialogueResponse(string characterName, string playerInput, AISettings aiSettings)
+    {
+        await EnforceApiCooldown();
+
+        string prompt = GenerateNaturalDialoguePrompt(characterName, playerInput, aiSettings);
+        string response = await GetChatCompletionAsync(prompt, OpenAIModel.FineTunedNaturalDialog);
+
+        lastApiCallTime = Time.time;
+
+        return string.IsNullOrEmpty(response) ? "Hmm, I need to think about that..." : response.Trim();
+    }
+
+    private async Task EnforceApiCooldown()
+    {
+        if (Time.time - lastApiCallTime < apiCallCooldown)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
+        }
+    }
+
+    private string GenerateGenerativeChoicesPrompt(string characterName, string context, AISettings aiSettings)
+    {
+        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n" +
+            $"Based on this context: {context}\n\n" +
+            "Generate 3 short, distinct responses (max 8 words each) that {characterName} might consider. " +
+            "These can be a mix of casual conversational responses and action choices. " +
+            "For action choices, use one of these categories: Ethical, Strategic, Emotional, Practical, Creative, Diplomatic, or Risk-Taking. " +
+            "For casual responses, use the Casual category. " +
+            "Format your response as follows:\n" +
+            "1. [Category]: [Response]\n" +
+            "2. [Category]: [Response]\n" +
+            "3. [Category]: [Response]";
+    }
+
+    private string GenerateNaturalDialoguePrompt(string characterName, string playerInput, AISettings aiSettings)
+    {
+        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n" +
+               $"The player says: \"{playerInput}\"\n" +
+               "Respond naturally and in character.";
+    }
+
+    private List<DialogueOption> GetDefaultDialogueOptions()
+    {
+        return new List<DialogueOption>
+        {
+            new DialogueOption("Investigate the area", DialogueCategory.Practical),
+            new DialogueOption("Collaborate with a nearby character", DialogueCategory.Diplomatic),
+            new DialogueOption("Propose an innovative solution", DialogueCategory.Creative)
+        };
     }
 
     private List<DialogueOption> ParseDialogueOptions(string response)
@@ -111,7 +137,7 @@ public class OpenAIService : MonoBehaviour
                 string categoryStr = parts[0].Trim().Replace("1. ", "").Replace("2. ", "").Replace("3. ", "");
                 string choiceText = parts[1].Trim();
 
-                if (categoryStr.ToLower() == "casual")
+                if (categoryStr.Equals("Casual", StringComparison.OrdinalIgnoreCase))
                 {
                     options.Add(new DialogueOption(choiceText, DialogueCategory.Casual));
                 }
@@ -125,32 +151,29 @@ public class OpenAIService : MonoBehaviour
         return options;
     }
 
-    public async Task<string> GetResponse(string prompt, AISettings aiSettings)
+    public async Task<string> GetResponse(string prompt, AISettings aiSettings, string memoryContext = "", string reflection = "")
     {
-        if (Time.time - lastApiCallTime < apiCallCooldown)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
-        }
+        await EnforceApiCooldown();
 
         List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
         string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join(", ", recentEurekas)}" : "";
 
         string fullPrompt = aiSettings != null
-            ? $"You are a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n{eurekaContext}\n\n{prompt}\n\nRespond in character, keeping your response concise (max 20 words) and natural. If relevant, reference recent breakthroughs:"
+            ? $"You are a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n" +
+              $"Recent memories: {memoryContext}\n\n" +
+              $"Your current reflection: {reflection}\n\n" +
+              $"{eurekaContext}\n\n{prompt}\n\n" +
+              "Respond in character, keeping your response concise (max 20 words) and natural. Consider your memories and current reflection in your response:"
             : prompt;
 
-        string response = await GetChatCompletionAsync(fullPrompt);
+        string response = await GetChatCompletionAsync(fullPrompt, selectedModel);
         lastApiCallTime = Time.time;
 
         return string.IsNullOrEmpty(response) ? "Not sure how to respond to that..." : response;
     }
-
     public async Task<List<EmergentScenarioGenerator.ScenarioData>> GenerateScenarios(GameState gameState, List<string> recentPlayerActions)
     {
-        if (Time.time - lastApiCallTime < apiCallCooldown)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(apiCallCooldown - (Time.time - lastApiCallTime)));
-        }
+        await EnforceApiCooldown();
 
         string completedMilestones = string.Join(", ", gameState.MilestoneCompletion.Where(m => m.Value).Select(m => m.Key));
         string incompleteMilestones = string.Join(", ", gameState.MilestoneCompletion.Where(m => !m.Value).Select(m => m.Key));
@@ -177,7 +200,7 @@ Format the response as follows:
 ... [Scenario 2]
 ... [Scenario 3]";
 
-        string response = await GetChatCompletionAsync(prompt);
+        string response = await GetChatCompletionAsync(prompt, selectedModel);
         lastApiCallTime = Time.time;
 
         return ParseScenarioResponse(response);
@@ -212,11 +235,11 @@ Format the response as follows:
         return await GetResponse(prompt, null);
     }
 
-    private async Task<string> GetChatCompletionAsync(string prompt)
+   private async Task<string> GetChatCompletionAsync(string prompt, OpenAIModel model)
     {
         var requestBody = new
         {
-            model = ModelToString(selectedModel),
+            model = ModelToString(model),
             messages = new[]
             {
                 new { role = "user", content = prompt }
