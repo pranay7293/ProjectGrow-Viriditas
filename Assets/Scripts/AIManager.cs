@@ -1,7 +1,7 @@
 using UnityEngine;
 using Photon.Pun;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ProjectGrow.AI;
@@ -15,21 +15,20 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     [SerializeField] private float memoryConsolidationInterval = 60f;
     [SerializeField] private float reflectionInterval = 120f;
+    [SerializeField] private float dialogueInitiationCooldown = 300f; // 5 minutes
 
     private bool isInitialized = false;
-
-    [SerializeField] private float dialogueInitiationCooldown = 300f; // 5 minutes
     private float lastDialogueInitiationTime = 0f;
+
+    private void Awake()
+    {
+        decisionMaker = gameObject.AddComponent<AIDecisionMaker>();
+    }
 
     private void Start()
     {
         StartCoroutine(PeriodicMemoryConsolidation());
         StartCoroutine(PeriodicReflection());
-    }
-
-    private void Awake()
-    {
-        decisionMaker = gameObject.AddComponent<AIDecisionMaker>();
     }
 
     public void Initialize(UniversalCharacterController controller)
@@ -60,7 +59,7 @@ public class AIManager : MonoBehaviourPunCallbacks
         }
     }
 
-     public void InitiateDialogueWithPlayer(UniversalCharacterController player)
+    public void InitiateDialogueWithPlayer(UniversalCharacterController player)
     {
         if (Time.time - lastDialogueInitiationTime < dialogueInitiationCooldown) return;
 
@@ -115,7 +114,6 @@ public class AIManager : MonoBehaviourPunCallbacks
             if (npcData != null)
             {
                 string reflection = npcData.GetMentalModel().Reflect();
-                // Use this reflection (e.g., log it, update behavior, etc.)
                 Debug.Log($"{characterController.characterName} reflects: {reflection}");
             }
         }
@@ -134,13 +132,12 @@ public class AIManager : MonoBehaviourPunCallbacks
         npcData.UpdateRelationship(characterName, change);
     }
 
-    // Update the MakeDecision method call:
-public async Task<string> MakeDecision(List<string> options, GameState currentState)
-{
-    string memoryContext = string.Join(", ", npcData.GetMentalModel().RetrieveRelevantMemories(string.Join(" ", options)).Select(m => m.Content));
-    string reflection = npcData.GetMentalModel().Reflect();
-    return await decisionMaker.MakeDecision(this, options, currentState, memoryContext, reflection);
-}
+    public async Task<string> MakeDecision(List<string> options, GameState currentState)
+    {
+        string memoryContext = string.Join(", ", npcData.GetMentalModel().RetrieveRelevantMemories(string.Join(" ", options)).Select(m => m.Content));
+        string reflection = npcData.GetMentalModel().Reflect();
+        return await decisionMaker.MakeDecision(this, options, currentState, memoryContext, reflection);
+    }
 
     public void UpdateEmotionalState(EmotionalState newState)
     {

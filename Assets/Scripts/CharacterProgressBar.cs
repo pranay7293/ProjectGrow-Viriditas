@@ -185,6 +185,9 @@ public class CharacterProgressBar : MonoBehaviour
         case UniversalCharacterController.CharacterState.Collaborating:
             displayText = "Collabing";
             break;
+        case UniversalCharacterController.CharacterState.FormingGroup:
+            displayText = "Forming Group";
+            break;
     }
     
     keyStateText.text = showKeyState ? displayText : "";

@@ -8,18 +8,20 @@ using EPOOutline;
 
 public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObservable
 {
-    public enum CharacterState
-    {
-        None = 0,
-        Moving = 1,
-        Idle = 2,
-        Interacting = 3,
-        Acclimating = 4,
-        PerformingAction = 5,
-        Chatting = 6,
-        Collaborating = 7,
-        Cooldown = 8
-    }
+   public enum CharacterState
+{
+    None = 0,
+    Moving = 1,
+    Idle = 2,
+    Interacting = 3,
+    Acclimating = 4,
+    PerformingAction = 5,
+    Chatting = 6,
+    Collaborating = 7,
+    Cooldown = 8,
+    InGroup = 9,
+    FormingGroup = 10  // New state
+}
 
     [Header("Character Settings")]
     public string characterName;
@@ -84,6 +86,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private float guideFadeDuration = 0.5f;
 
     private Outlinable outlinable;
+
+    private string currentGroupId;
 
     private void Awake()
     {
@@ -220,7 +224,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             characterMaterial.color = characterColor;
         }
         
-        // Ensure the color is applied to the renderer
         if (characterRenderer != null)
         {
             characterRenderer.material.color = characterColor;
@@ -415,9 +418,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return nearest;
     }
 
-    public void SetDestination(Vector3 destination)
+    public void MoveTo(Vector3 destination)
     {
-        if (!IsPlayerControlled && navMeshAgent != null)
+        if (navMeshAgent != null && navMeshAgent.enabled)
         {
             navMeshAgent.SetDestination(destination);
             AddState(CharacterState.Moving);
@@ -887,6 +890,36 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         AddState(CharacterState.Cooldown);
     }
 
+    public void JoinGroup(string groupId)
+    {
+        if (currentGroupId != null)
+        {
+            LeaveGroup();
+        }
+        currentGroupId = groupId;
+        AddState(CharacterState.InGroup);
+    }
+
+    public void LeaveGroup()
+    {
+        if (currentGroupId != null)
+        {
+            GroupManager.Instance.DisbandGroup(currentGroupId);
+            currentGroupId = null;
+            RemoveState(CharacterState.InGroup);
+        }
+    }
+
+    public bool IsInGroup()
+    {
+        return currentGroupId != null;
+    }
+
+    public string GetCurrentGroupId()
+    {
+        return currentGroupId;
+    }
+
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
@@ -902,6 +935,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             stream.SendNext(currentAction != null ? currentAction.actionName : "");
             stream.SendNext(actionStartTime);
             stream.SendNext(currentCollabID ?? "");
+            stream.SendNext(currentGroupId ?? "");
         }
         else
         {
@@ -916,9 +950,16 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             string actionName = (string)stream.ReceiveNext();
             actionStartTime = (float)stream.ReceiveNext();
             currentCollabID = (string)stream.ReceiveNext();
+            currentGroupId = (string)stream.ReceiveNext();
+
             if (string.IsNullOrEmpty(currentCollabID))
             {
                 currentCollabID = null;
+            }
+
+            if (string.IsNullOrEmpty(currentGroupId))
+            {
+                currentGroupId = null;
             }
 
             if (!string.IsNullOrEmpty(actionName) && currentAction == null && currentLocation != null)
@@ -935,7 +976,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 characterColor = receivedColor;
                 characterMaterial.color = characterColor;
                 
-                // Ensure the color is applied to the renderer
                 if (characterRenderer != null)
                 {
                     characterRenderer.material.color = characterColor;

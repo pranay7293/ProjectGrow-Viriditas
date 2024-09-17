@@ -70,14 +70,13 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     }
 
     public void UpdateBehavior()
-{
-    if (isAcclimating || characterController == null || aiManager == null) return;
-
-    if (Time.time - lastDecisionTime > characterController.aiSettings.decisionInterval)
     {
-        StartCoroutine(MakeDecisionCoroutine());
-        lastDecisionTime = Time.time;
-    }
+        if (isAcclimating || characterController == null || aiManager == null) return;
+
+        if (Time.time - lastDecisionTime > characterController.aiSettings.decisionInterval)
+        {
+            StartCoroutine(MakeDecisionCoroutine());
+        }
 
         if (characterController.HasState(UniversalCharacterController.CharacterState.Moving))
         {
@@ -94,7 +93,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         }
     }
 
-   private void PerformBackgroundThinking()
+    private void PerformBackgroundThinking()
     {
         if (GameManager.Instance == null || npcData == null) return;
 
@@ -103,6 +102,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         UpdateMentalModelFromGameState(currentState);
         ConsiderCollaborations();
         EvaluateObjectives(currentState);
+        ConsiderGroupActions();
     }
 
     private void UpdateMentalModelFromGameState(GameState currentState)
@@ -154,7 +154,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         characterController.InitiateCollab(actionName, collaborator);
     }
 
-     private void EvaluateObjectives(GameState currentState)
+    private void EvaluateObjectives(GameState currentState)
     {
         if (npcData == null || characterController == null) return;
 
@@ -212,10 +212,102 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         npcData.UpdateEmotionalState(newState);
     }
 
-    private async Task<string> MakeDecisionWithMemory(List<string> options, GameState currentState)
+    private void ConsiderGroupActions()
+    {
+        if (characterController.IsInGroup())
+        {
+            // If in a group, consider group-based actions
+            EvaluateGroupObjectives();
+        }
+        else
+        {
+            // If not in a group, consider joining or forming a group
+            ConsiderJoiningGroup();
+        }
+    }
+
+    private void EvaluateGroupObjectives()
+    {
+        string groupId = characterController.GetCurrentGroupId();
+        if (string.IsNullOrEmpty(groupId)) return;
+
+        List<UniversalCharacterController> groupMembers = GroupManager.Instance.GetGroupMembers(groupId);
+        List<string> groupObjectives = GetGroupObjectives(groupMembers);
+
+        GameState currentState = GameManager.Instance.GetCurrentGameState();
+        string bestGroupObjective = npcData.GetMentalModel().MakeDecision(groupObjectives, currentState);
+
+        // Implement group objective here (e.g., move as a group to a new location)
+        MoveGroupToObjective(groupId, bestGroupObjective);
+    }
+
+    private List<string> GetGroupObjectives(List<UniversalCharacterController> groupMembers)
+    {
+        // Combine objectives from all group members
+        HashSet<string> groupObjectives = new HashSet<string>();
+        foreach (var member in groupMembers)
+        {
+            groupObjectives.UnionWith(GetCurrentObjectives());
+        }
+        return new List<string>(groupObjectives);
+    }
+
+    private void MoveGroupToObjective(string groupId, string objective)
+    {
+        // Implement logic to move the group towards the objective
+        // This could involve finding a suitable location and using GroupManager to move the group
+        LocationManager targetLocation = FindLocationForObjective(objective);
+        if (targetLocation != null)
+        {
+            GroupManager.Instance.MoveGroup(groupId, targetLocation.transform.position);
+        }
+    }
+
+    private LocationManager FindLocationForObjective(string objective)
 {
-    return await aiManager.MakeDecision(options, currentState);
+    return LocationManagerMaster.Instance.GetAllLocations()
+        .Select(locationName => LocationManagerMaster.Instance.GetLocation(locationName))
+        .FirstOrDefault(l => l != null && l.availableActions.Any(a => a.actionName.Contains(objective)));
 }
+
+    private void ConsiderJoiningGroup()
+    {
+        List<UniversalCharacterController> nearbyCharacters = GetNearbyCharacters();
+        UniversalCharacterController potentialGroupMember = nearbyCharacters.FirstOrDefault(c => c.IsInGroup());
+
+        if (potentialGroupMember != null && ShouldJoinGroup(potentialGroupMember))
+        {
+            string groupId = potentialGroupMember.GetCurrentGroupId();
+            if (!string.IsNullOrEmpty(groupId))
+            {
+                GroupManager.Instance.AddToGroup(groupId, characterController);
+            }
+        }
+        else if (nearbyCharacters.Count > 0 && ShouldFormGroup(nearbyCharacters))
+        {
+            List<UniversalCharacterController> groupMembers = new List<UniversalCharacterController> { characterController };
+            groupMembers.AddRange(nearbyCharacters.Take(2)); // Limit to 3 members total
+            GroupManager.Instance.FormGroup(groupMembers);
+        }
+    }
+
+    private bool ShouldJoinGroup(UniversalCharacterController groupMember)
+    {
+        // Implement logic to decide whether to join a group
+        float relationshipScore = npcData.GetRelationship(groupMember.characterName);
+        return relationshipScore > 0.6f && Random.value < 0.5f;
+    }
+
+    private bool ShouldFormGroup(List<UniversalCharacterController> nearbyCharacters)
+    {
+        // Implement logic to decide whether to form a new group
+        return nearbyCharacters.Count >= 2 && Random.value < 0.3f;
+    }
+
+    private async Task<string> MakeDecisionWithMemory(List<string> options, GameState currentState)
+    {
+        return await aiManager.MakeDecision(options, currentState);
+    }
 
     private IEnumerator MakeDecisionCoroutine()
     {
@@ -445,7 +537,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private void EnterIdleState()
     {
         characterController.AddState(UniversalCharacterController.CharacterState.Idle);
-        lastIdleMovementTime = Time.time - idleMovementInterval; // Trigger immediate idle movement
+        lastIdleMovementTime = Time.time - idleMovementInterval;
     }
 
     private void UpdateIdleMovement()

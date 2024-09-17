@@ -21,6 +21,15 @@ public class LocationManagerMaster : MonoBehaviour
         }
     }
 
+    public LocationManager GetLocation(string locationName)
+{
+    if (locations.TryGetValue(locationName, out LocationManager location))
+    {
+        return location;
+    }
+    return null;
+}
+
     public void RegisterLocation(LocationManager location)
     {
         if (!locations.ContainsKey(location.gameObject.name))

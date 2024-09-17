@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Photon.Pun;
 using System.Linq;
 using System.Threading.Tasks;
-using System; // Added to resolve 'Guid' usage
+using System;
 
 public class CollabManager : MonoBehaviourPunCallbacks
 {
@@ -13,7 +13,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
     [SerializeField] private float collabRadius = 5f;
     [SerializeField] private float collabCooldown = 45f;
     [SerializeField] private int maxCollaborators = 3;
-    [SerializeField] private float collabBonusMultiplier = 0.5f; // 50% bonus for collaborations
+    [SerializeField] private float collabBonusMultiplier = 0.5f;
 
     private Dictionary<string, List<UniversalCharacterController>> activeCollabs = new Dictionary<string, List<UniversalCharacterController>>();
     private Dictionary<string, float> collabCooldowns = new Dictionary<string, float>();
@@ -51,19 +51,22 @@ public class CollabManager : MonoBehaviourPunCallbacks
         List<UniversalCharacterController> eligibleCollaborators = new List<UniversalCharacterController>();
         if (initiator == null || initiator.currentLocation == null) return eligibleCollaborators;
 
+        string initiatorGroupId = initiator.GetCurrentGroupId();
+
         foreach (var character in GameManager.Instance.GetAllCharacters())
         {
             if (character != initiator &&
                 character.currentLocation == initiator.currentLocation &&
                 Vector3.Distance(initiator.transform.position, character.transform.position) <= collabRadius &&
                 !collabCooldowns.ContainsKey(character.characterName) &&
-                !character.HasState(UniversalCharacterController.CharacterState.PerformingAction))
+                !character.HasState(UniversalCharacterController.CharacterState.PerformingAction) &&
+                (string.IsNullOrEmpty(initiatorGroupId) || character.GetCurrentGroupId() == initiatorGroupId))
             {
                 eligibleCollaborators.Add(character);
             }
         }
 
-        return eligibleCollaborators.Take(maxCollaborators - 1).ToList(); // Subtract 1 for the initiator
+        return eligibleCollaborators.Take(maxCollaborators - 1).ToList();
     }
 
     [PunRPC]
@@ -105,10 +108,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
 
         if (decisionTask.Result)
         {
-            // Generate a unique collaboration ID
             string collabID = Guid.NewGuid().ToString();
-
-            // Initiate collaboration with the approved AI collaborator
             photonView.RPC("InitiateCollab", RpcTarget.All, actionName, initiatorViewID, new int[] { targetViewID }, collabID);
         }
     }
@@ -137,7 +137,6 @@ public class CollabManager : MonoBehaviourPunCallbacks
             }
         }
 
-        // Verify all collaborators are in the same location
         if (collaborators.Any(c => c.currentLocation != initiator.currentLocation))
         {
             Debug.LogWarning("Not all collaborators are in the same location");
@@ -151,16 +150,19 @@ public class CollabManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        // Store the collaboration
         activeCollabs[collabID] = collaborators;
 
-        // Set cooldowns and states
         foreach (var collaborator in collaborators)
         {
             SetCollabCooldown(collaborator.characterName);
             collaborator.AddState(UniversalCharacterController.CharacterState.Collaborating);
-            collaborator.currentCollabID = collabID; // Store the collabID
+            collaborator.currentCollabID = collabID;
             collaborator.StartAction(action);
+        }
+
+        if (collaborators.Count > 1 && !collaborators[0].IsInGroup())
+        {
+            GroupManager.Instance.FormGroup(collaborators);
         }
     }
 
@@ -173,10 +175,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
 
             foreach (var collaborator in collaborators)
             {
-                // Award points
                 GameManager.Instance.UpdatePlayerScore(collaborator.characterName, basePoints, $"Completed {collaborators.Count}-person collaboration", new List<string> { "Collaboration" });
-
-                // Collaboration bonus
                 GameManager.Instance.UpdatePlayerScore(collaborator.characterName, collabBonus, $"Collaboration bonus", new List<string> { "CollaborationBonus" });
 
                 collaborator.RemoveState(UniversalCharacterController.CharacterState.Collaborating);
@@ -186,16 +185,21 @@ public class CollabManager : MonoBehaviourPunCallbacks
 
             EurekaManager.Instance.CheckForEureka(collaborators, collabID);
             activeCollabs.Remove(collabID);
+
+            if (collaborators.Count > 1 && collaborators[0].IsInGroup())
+            {
+                string groupId = collaborators[0].GetCurrentGroupId();
+                if (!string.IsNullOrEmpty(groupId))
+                {
+                    GroupManager.Instance.DisbandGroup(groupId);
+                }
+            }
         }
     }
 
     public float GetCollabSuccessBonus(string collabID)
     {
-        if (activeCollabs.ContainsKey(collabID))
-        {
-            return collabBonusMultiplier;
-        }
-        return 0f;
+        return activeCollabs.ContainsKey(collabID) ? collabBonusMultiplier : 0f;
     }
 
     public float GetCollabCooldown()
