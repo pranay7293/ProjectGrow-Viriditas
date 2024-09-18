@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
 public class CollabPromptUI : MonoBehaviour
 {
@@ -10,10 +11,12 @@ public class CollabPromptUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI promptText;
     [SerializeField] private Button acceptButton;
     [SerializeField] private Button declineButton;
+    [SerializeField] private float timeoutDuration = 5f; // 5 seconds timeout
 
     private UniversalCharacterController initiatorCharacter;
     private UniversalCharacterController localCharacter;
     private string currentActionName;
+    private Coroutine timeoutCoroutine;
 
     private void Awake()
     {
@@ -42,16 +45,31 @@ public class CollabPromptUI : MonoBehaviour
         currentActionName = actionName;
         promptText.text = $"{initiator.characterName} wants to collab on {actionName}";
         promptPanel.SetActive(true);
+
+        // Start the timeout coroutine
+        if (timeoutCoroutine != null)
+        {
+            StopCoroutine(timeoutCoroutine);
+        }
+        timeoutCoroutine = StartCoroutine(RequestTimeout());
     }
 
     private void AcceptCollab()
     {
+        if (timeoutCoroutine != null)
+        {
+            StopCoroutine(timeoutCoroutine);
+        }
         localCharacter.JoinCollab(currentActionName, initiatorCharacter);
         HidePrompt();
     }
 
     private void DeclineCollab()
     {
+        if (timeoutCoroutine != null)
+        {
+            StopCoroutine(timeoutCoroutine);
+        }
         HidePrompt();
     }
 
@@ -61,5 +79,11 @@ public class CollabPromptUI : MonoBehaviour
         initiatorCharacter = null;
         localCharacter = null;
         currentActionName = null;
+    }
+
+    private IEnumerator RequestTimeout()
+    {
+        yield return new WaitForSeconds(timeoutDuration);
+        DeclineCollab();
     }
 }

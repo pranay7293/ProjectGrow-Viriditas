@@ -1,17 +1,20 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
 public class DialogueRequestUI : MonoBehaviour
 {
     public static DialogueRequestUI Instance { get; private set; }
 
-    [SerializeField] private GameObject requestPanel;
-    [SerializeField] private TextMeshProUGUI requestText;
+    [SerializeField] private GameObject promptPanel;
+    [SerializeField] private TextMeshProUGUI promptText;
     [SerializeField] private Button acceptButton;
     [SerializeField] private Button declineButton;
+    [SerializeField] private float timeoutDuration = 5f; // 5 seconds timeout
 
-    private UniversalCharacterController requestingNPC;
+    private UniversalCharacterController initiatorCharacter;
+    private Coroutine timeoutCoroutine;
 
     private void Awake()
     {
@@ -28,42 +31,62 @@ public class DialogueRequestUI : MonoBehaviour
 
     private void Start()
     {
-        requestPanel.SetActive(false);
+        promptPanel.SetActive(false);
         acceptButton.onClick.AddListener(AcceptRequest);
         declineButton.onClick.AddListener(DeclineRequest);
     }
 
-    public void ShowRequest(UniversalCharacterController npc)
+    public void ShowRequest(UniversalCharacterController initiator)
     {
-        requestingNPC = npc;
-        requestText.text = $"{npc.characterName} wants to talk to you. Do you accept?";
-        requestPanel.SetActive(true);
+        initiatorCharacter = initiator;
+        promptText.text = $"{initiator.characterName} wants to talk to you";
+        promptPanel.SetActive(true);
+
+        if (timeoutCoroutine != null)
+        {
+            StopCoroutine(timeoutCoroutine);
+        }
+        timeoutCoroutine = StartCoroutine(RequestTimeout());
     }
 
     public void AcceptRequest()
     {
-        requestPanel.SetActive(false);
-        if (requestingNPC != null)
+        if (timeoutCoroutine != null)
         {
-            requestingNPC.AddState(UniversalCharacterController.CharacterState.Chatting);
-            DialogueManager.Instance.InitiateDialogue(requestingNPC);
+            StopCoroutine(timeoutCoroutine);
         }
-        requestingNPC = null;
+        DialogueManager.Instance.InitiateDialogue(initiatorCharacter);
+        HidePrompt();
     }
 
     public void DeclineRequest()
     {
-        HideRequest();
-        requestingNPC = null;
+        if (timeoutCoroutine != null)
+        {
+            StopCoroutine(timeoutCoroutine);
+        }
+        HidePrompt();
     }
 
     public void HideRequest()
     {
-        requestPanel.SetActive(false);
+        HidePrompt();
+    }
+
+    private void HidePrompt()
+    {
+        promptPanel.SetActive(false);
+        initiatorCharacter = null;
+    }
+
+    private IEnumerator RequestTimeout()
+    {
+        yield return new WaitForSeconds(timeoutDuration);
+        DeclineRequest();
     }
 
     public bool IsRequestActive()
     {
-        return requestPanel != null && requestPanel.activeSelf;
+        return promptPanel.activeSelf;
     }
 }
