@@ -29,6 +29,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
         {
             Destroy(gameObject);
         }
+        
     }
 
     private void Update()
@@ -162,7 +163,14 @@ public class CollabManager : MonoBehaviourPunCallbacks
 
         if (collaborators.Count > 1 && !collaborators[0].IsInGroup())
         {
-            GroupManager.Instance.FormGroup(collaborators);
+            if (GroupManager.Instance != null)
+            {
+                GroupManager.Instance.FormGroup(collaborators);
+            }
+            else
+            {
+                Debug.LogWarning("CollabManager: GroupManager instance is null. Cannot form group.");
+            }
         }
     }
 

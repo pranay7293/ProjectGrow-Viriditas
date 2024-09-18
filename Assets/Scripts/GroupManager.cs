@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.AI;
+using System.Linq; // Ensure this namespace is included
 
 public class GroupManager : MonoBehaviour
 {
@@ -17,7 +18,11 @@ public class GroupManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // If this script is not attached to a GameObject in the scene, create one
+            if (transform.parent == null)
+            {
+                GameObject.DontDestroyOnLoad(gameObject);
+            }
         }
         else
         {
@@ -27,6 +32,15 @@ public class GroupManager : MonoBehaviour
 
     public void FormGroup(List<UniversalCharacterController> characters)
     {
+        // Exclude player-controlled characters
+        characters = characters.Where(c => !c.IsPlayerControlled).ToList();
+
+        if (characters.Count == 0)
+        {
+            Debug.LogWarning("FormGroup: No characters to form a group.");
+            return;
+        }
+
         string groupId = System.Guid.NewGuid().ToString();
         activeGroups[groupId] = characters;
 
@@ -53,6 +67,13 @@ public class GroupManager : MonoBehaviour
 
     public void AddToGroup(string groupId, UniversalCharacterController character)
     {
+        if (character.IsPlayerControlled)
+        {
+            // Skip adding player-controlled characters automatically
+            Debug.Log("AddToGroup: Player-controlled character cannot be added without consent.");
+            return;
+        }
+
         if (activeGroups.TryGetValue(groupId, out List<UniversalCharacterController> groupMembers))
         {
             if (!groupMembers.Contains(character))
@@ -69,7 +90,7 @@ public class GroupManager : MonoBehaviour
         {
             foreach (var character in characters)
             {
-                character.LeaveGroup();
+                character.LeaveGroup(false); // Prevent infinite recursion
             }
             activeGroups.Remove(groupId);
         }

@@ -273,7 +273,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private void ConsiderJoiningGroup()
     {
         List<UniversalCharacterController> nearbyCharacters = GetNearbyCharacters();
-        UniversalCharacterController potentialGroupMember = nearbyCharacters.FirstOrDefault(c => c.IsInGroup());
+        UniversalCharacterController potentialGroupMember = nearbyCharacters.FirstOrDefault(c => c.IsInGroup() && !c.IsPlayerControlled);
 
         if (potentialGroupMember != null && ShouldJoinGroup(potentialGroupMember))
         {
@@ -285,8 +285,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         }
         else if (nearbyCharacters.Count > 0 && ShouldFormGroup(nearbyCharacters))
         {
+            // Exclude player-controlled characters
             List<UniversalCharacterController> groupMembers = new List<UniversalCharacterController> { characterController };
-            groupMembers.AddRange(nearbyCharacters.Take(2)); // Limit to 3 members total
+            groupMembers.AddRange(nearbyCharacters.Where(c => !c.IsPlayerControlled).Take(2)); // Limit to 3 members total
             GroupManager.Instance.FormGroup(groupMembers);
         }
     }
@@ -300,6 +301,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
     private bool ShouldFormGroup(List<UniversalCharacterController> nearbyCharacters)
     {
+        // Exclude player-controlled characters
+        nearbyCharacters = nearbyCharacters.Where(c => !c.IsPlayerControlled).ToList();
+
         // Implement logic to decide whether to form a new group
         return nearbyCharacters.Count >= 2 && Random.value < 0.3f;
     }

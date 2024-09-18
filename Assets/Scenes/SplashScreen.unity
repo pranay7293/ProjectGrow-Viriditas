@@ -586,6 +586,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   backgroundMusic: {fileID: 8300000, guid: 8e825e4d8c71942799c2348f28883e30, type: 3}
   fadeOutDuration: 1
+  playMusicOnStart: 1
 --- !u!4 &561832340
 Transform:
   m_ObjectHideFlags: 0

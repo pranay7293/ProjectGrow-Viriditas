@@ -23,7 +23,11 @@ public class CollabPromptUI : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // Ensure the UI is part of the scene hierarchy
+            if (transform.parent == null)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
         }
         else
         {
@@ -33,20 +37,39 @@ public class CollabPromptUI : MonoBehaviour
 
     private void Start()
     {
+        if (promptPanel == null)
+        {
+            Debug.LogError("CollabPromptUI: PromptPanel is not assigned.");
+            return;
+        }
+
         promptPanel.SetActive(false);
-        acceptButton.onClick.AddListener(AcceptCollab);
-        declineButton.onClick.AddListener(DeclineCollab);
+
+        if (acceptButton != null)
+            acceptButton.onClick.AddListener(AcceptCollab);
+        else
+            Debug.LogError("CollabPromptUI: AcceptButton is not assigned.");
+
+        if (declineButton != null)
+            declineButton.onClick.AddListener(DeclineCollab);
+        else
+            Debug.LogError("CollabPromptUI: DeclineButton is not assigned.");
     }
 
     public void ShowPrompt(UniversalCharacterController initiator, UniversalCharacterController localPlayer, string actionName)
     {
+        if (promptPanel == null || promptText == null)
+        {
+            Debug.LogError("CollabPromptUI: UI elements are not assigned.");
+            return;
+        }
+
         initiatorCharacter = initiator;
         localCharacter = localPlayer;
         currentActionName = actionName;
-        promptText.text = $"{initiator.characterName} wants to collab on {actionName}";
+        promptText.text = $"{initiator.characterName} wants to collaborate on {actionName}. Do you accept?";
         promptPanel.SetActive(true);
 
-        // Start the timeout coroutine
         if (timeoutCoroutine != null)
         {
             StopCoroutine(timeoutCoroutine);
@@ -60,7 +83,16 @@ public class CollabPromptUI : MonoBehaviour
         {
             StopCoroutine(timeoutCoroutine);
         }
-        localCharacter.JoinCollab(currentActionName, initiatorCharacter);
+
+        if (localCharacter != null && initiatorCharacter != null)
+        {
+            localCharacter.JoinCollab(currentActionName, initiatorCharacter);
+        }
+        else
+        {
+            Debug.LogWarning("CollabPromptUI: Characters are not properly assigned.");
+        }
+
         HidePrompt();
     }
 

@@ -28,6 +28,10 @@ public class GameManager : MonoBehaviourPunCallbacks
     [SerializeField] private EmergentScenarioUI scenarioUI;
     [SerializeField] private Transform[] spawnPoints;
 
+    [Header("Audio")]
+    [SerializeField] private MusicManager musicManager;
+
+
     private float remainingTime;
     private float gameStartTime;
     private ChallengeData currentChallenge;
@@ -76,13 +80,16 @@ public class GameManager : MonoBehaviourPunCallbacks
         milestonesDisplay.SetActive(false);
     }
 
-    private void Update()
+    private bool hasPlayedFirstMusicCue = false;
+    private bool hasPlayedSecondMusicCue = false;
+
+     private void Update()
     {
         if (PhotonNetwork.IsMasterClient && !isEmergentScenarioActive)
         {
             UpdateGameTime();
+            CheckForMusicCues(); // Added method call
             CheckForEmergentScenario();
-
             if (ShouldEndGame())
             {
                 EndChallenge();
@@ -331,15 +338,41 @@ public class GameManager : MonoBehaviourPunCallbacks
     private bool hasTriggered5MinScenario = false;
     private bool hasTriggered10MinScenario = false;
 
+    private void CheckForMusicCues()
+    {
+        float gameTime = Time.time - gameStartTime;
+
+        if (!hasPlayedFirstMusicCue && gameTime >= 275f && gameTime < 276f)
+        {
+            if (musicManager != null)
+            {
+                musicManager.PlayMusic();
+                hasPlayedFirstMusicCue = true;
+            }
+        }
+        else if (!hasPlayedSecondMusicCue && gameTime >= 575f && gameTime < 576f)
+        {
+            if (musicManager != null)
+            {
+                musicManager.PlayMusic();
+                hasPlayedSecondMusicCue = true;
+            }
+        }
+    }
+
     private void CheckForEmergentScenario()
     {
         float gameTime = Time.time - gameStartTime;
-        
+
         if (!hasTriggered5MinScenario && gameTime >= 300f && gameTime < 301f)
         {
             if (PhotonNetwork.IsMasterClient)
             {
                 Debug.Log($"Triggering 5-minute scenario at {gameTime}");
+                if (musicManager != null)
+                {
+                    musicManager.StopMusic();
+                }
                 TriggerEmergentScenario();
                 hasTriggered5MinScenario = true;
             }
@@ -349,6 +382,10 @@ public class GameManager : MonoBehaviourPunCallbacks
             if (PhotonNetwork.IsMasterClient)
             {
                 Debug.Log($"Triggering 10-minute scenario at {gameTime}");
+                if (musicManager != null)
+                {
+                    musicManager.StopMusic();
+                }
                 TriggerEmergentScenario();
                 hasTriggered10MinScenario = true;
             }

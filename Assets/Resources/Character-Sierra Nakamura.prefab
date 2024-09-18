@@ -1274,6 +1274,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ed10f2d34fdf4a568d5d2358cc55553, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  memoryConsolidationInterval: 60
+  reflectionInterval: 120
   dialogueInitiationCooldown: 300
 --- !u!114 &3141336417960345523
 MonoBehaviour:

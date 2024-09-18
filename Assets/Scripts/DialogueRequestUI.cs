@@ -21,7 +21,11 @@ public class DialogueRequestUI : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // Ensure the UI is part of the scene hierarchy
+            if (transform.parent == null)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
         }
         else
         {
@@ -31,15 +35,35 @@ public class DialogueRequestUI : MonoBehaviour
 
     private void Start()
     {
+        if (promptPanel == null)
+        {
+            Debug.LogError("DialogueRequestUI: PromptPanel is not assigned.");
+            return;
+        }
+
         promptPanel.SetActive(false);
-        acceptButton.onClick.AddListener(AcceptRequest);
-        declineButton.onClick.AddListener(DeclineRequest);
+
+        if (acceptButton != null)
+            acceptButton.onClick.AddListener(AcceptRequest);
+        else
+            Debug.LogError("DialogueRequestUI: AcceptButton is not assigned.");
+
+        if (declineButton != null)
+            declineButton.onClick.AddListener(DeclineRequest);
+        else
+            Debug.LogError("DialogueRequestUI: DeclineButton is not assigned.");
     }
 
     public void ShowRequest(UniversalCharacterController initiator)
     {
+        if (promptPanel == null || promptText == null)
+        {
+            Debug.LogError("DialogueRequestUI: UI elements are not assigned.");
+            return;
+        }
+
         initiatorCharacter = initiator;
-        promptText.text = $"{initiator.characterName} wants to talk to you";
+        promptText.text = $"{initiator.characterName} wants to talk to you. Do you accept?";
         promptPanel.SetActive(true);
 
         if (timeoutCoroutine != null)
@@ -55,7 +79,16 @@ public class DialogueRequestUI : MonoBehaviour
         {
             StopCoroutine(timeoutCoroutine);
         }
-        DialogueManager.Instance.InitiateDialogue(initiatorCharacter);
+
+        if (initiatorCharacter != null)
+        {
+            DialogueManager.Instance.AcceptDialogueRequest(initiatorCharacter);
+        }
+        else
+        {
+            Debug.LogWarning("DialogueRequestUI: InitiatorCharacter is not assigned.");
+        }
+
         HidePrompt();
     }
 
@@ -65,6 +98,8 @@ public class DialogueRequestUI : MonoBehaviour
         {
             StopCoroutine(timeoutCoroutine);
         }
+
+        DialogueManager.Instance.DeclineDialogueRequest();
         HidePrompt();
     }
 
@@ -87,6 +122,6 @@ public class DialogueRequestUI : MonoBehaviour
 
     public bool IsRequestActive()
     {
-        return promptPanel.activeSelf;
+        return promptPanel != null && promptPanel.activeSelf;
     }
 }

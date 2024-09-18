@@ -820,7 +820,14 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
                 string collabID = System.Guid.NewGuid().ToString();
 
-                photonView.RPC("RPC_InitiateCollab", RpcTarget.All, actionName, photonView.ViewID, new int[] { collaborator.photonView.ViewID }, collabID);
+                if (CollabManager.Instance != null)
+                {
+                    CollabManager.Instance.RequestCollaboration(photonView.ViewID, new int[] { collaborator.photonView.ViewID }, actionName);
+                }
+                else
+                {
+                    Debug.LogWarning("InitiateCollab: CollabManager.Instance is null");
+                }
             }
             else
             {
@@ -894,17 +901,20 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         if (currentGroupId != null)
         {
-            LeaveGroup();
+            LeaveGroup(false); // Prevent infinite recursion
         }
         currentGroupId = groupId;
         AddState(CharacterState.InGroup);
     }
 
-    public void LeaveGroup()
+    public void LeaveGroup(bool shouldDisband = true)
     {
         if (currentGroupId != null)
         {
-            GroupManager.Instance.DisbandGroup(currentGroupId);
+            if (shouldDisband && GroupManager.Instance != null)
+            {
+                GroupManager.Instance.DisbandGroup(currentGroupId);
+            }
             currentGroupId = null;
             RemoveState(CharacterState.InGroup);
         }

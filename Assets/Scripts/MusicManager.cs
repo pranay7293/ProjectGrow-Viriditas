@@ -4,6 +4,7 @@ public class MusicManager : MonoBehaviour
 {
     [SerializeField] private AudioClip backgroundMusic;
     [SerializeField] private float fadeOutDuration = 1f;
+    [SerializeField] private bool playMusicOnStart = false;
 
     private AudioSource audioSource;
 
@@ -14,7 +15,23 @@ public class MusicManager : MonoBehaviour
 
     private void Start()
     {
-        PlayMusic();
+        if (playMusicOnStart)
+        {
+            PlayMusic();
+        }
+    }
+
+    public void PlayMusic()
+    {
+        if (audioSource != null && !audioSource.isPlaying)
+        {
+            audioSource.Play();
+        }
+    }
+
+    public void StopMusic()
+    {
+        StartCoroutine(AudioManager.Instance.FadeOutAudio(audioSource, fadeOutDuration));
     }
 
     private void SetupAudioSource()
@@ -28,18 +45,5 @@ public class MusicManager : MonoBehaviour
         audioSource.loop = true;
         audioSource.playOnAwake = false;
         audioSource.volume = 0.5f;
-    }
-
-    private void PlayMusic()
-    {
-        if (audioSource != null && !audioSource.isPlaying)
-        {
-            audioSource.Play();
-        }
-    }
-
-    public void StopMusic()
-    {
-        StartCoroutine(AudioManager.Instance.FadeOutAudio(audioSource, fadeOutDuration));
     }
 }

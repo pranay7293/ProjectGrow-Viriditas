@@ -57,7 +57,11 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // Ensure the UI is part of the scene hierarchy
+            if (transform.parent == null)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
             InitializeUI();
         }
         else
@@ -69,27 +73,57 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     private void InitializeUI()
     {
         // Initialize Dialogue Panel
-        dialoguePanel.SetActive(false);
-        loadingIndicator.SetActive(false);
-        submitCustomInputButton.onClick.AddListener(SubmitCustomInput);
-        endConversationButton.onClick.AddListener(EndConversation);
+        if (dialoguePanel != null)
+        {
+            dialoguePanel.SetActive(false);
+        }
+        else
+        {
+            Debug.LogError("DialogueManager: DialoguePanel is not assigned.");
+            return;
+        }
 
-        customInputField.onValueChanged.AddListener(OnCustomInputValueChanged);
-        customInputField.onEndEdit.AddListener(OnCustomInputEndEdit);
+        if (loadingIndicator != null)
+            loadingIndicator.SetActive(false);
+
+        if (submitCustomInputButton != null)
+            submitCustomInputButton.onClick.AddListener(SubmitCustomInput);
+
+        if (endConversationButton != null)
+            endConversationButton.onClick.AddListener(EndConversation);
+
+        if (customInputField != null)
+        {
+            customInputField.onValueChanged.AddListener(OnCustomInputValueChanged);
+            customInputField.onEndEdit.AddListener(OnCustomInputEndEdit);
+        }
 
         // Initialize Chat Log Panel
-        chatLogPanel.SetActive(false);
-        if (characterFilter != null)
+        if (chatLogPanel != null)
         {
-            characterFilter.ClearOptions();
-            characterFilter.AddOptions(new List<string> { "All Characters" });
-            characterFilter.onValueChanged.AddListener(FilterChatLog);
+            chatLogPanel.SetActive(false);
+            if (characterFilter != null)
+            {
+                characterFilter.ClearOptions();
+                characterFilter.AddOptions(new List<string> { "All Characters" });
+                characterFilter.onValueChanged.AddListener(FilterChatLog);
+            }
         }
 
         // Initialize Option Buttons
-        foreach (Button button in optionButtons)
+        if (optionButtons != null && optionTexts != null)
         {
-            button.gameObject.SetActive(false);
+            for (int i = 0; i < optionButtons.Length; i++)
+            {
+                if (optionButtons[i] != null)
+                {
+                    optionButtons[i].gameObject.SetActive(false);
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("DialogueManager: OptionButtons or OptionTexts are not assigned.");
         }
 
         // Initialize Chat Log Data Structures
@@ -98,10 +132,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void InitializeChatLog()
     {
-        // Optionally, prepopulate with known characters or leave empty
-        // Example:
-        // characterList.Add("Player");
-        // chatLog["Player"] = new List<ChatLogEntry>();
+        // Initialize chat log structures if needed
     }
 
     public async void InitiateDialogue(UniversalCharacterController npc)
@@ -141,6 +172,16 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         string context = GetCurrentContext();
         currentOptions = await OpenAIService.Instance.GetGenerativeChoices(currentNPC.characterName, context, currentNPC.aiSettings);
+
+        if (currentOptions == null || currentOptions.Count == 0)
+        {
+            Debug.LogWarning("DialogueManager: No dialogue options generated.");
+            currentOptions = new List<DialogueOption>
+            {
+                new DialogueOption("Sorry, I need to go.", DialogueCategory.Casual)
+            };
+        }
+
         UpdateDialogueOptions(currentOptions);
 
         ShowLoadingIndicator(false);
@@ -149,13 +190,13 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void UpdateDialogueOptions(List<DialogueOption> options)
     {
-        int optionsCount = Mathf.Max(options.Count, 3);
+        int optionsCount = Mathf.Min(options.Count, optionButtons.Length);
         for (int i = 0; i < optionButtons.Length; i++)
         {
-            if (i < optionsCount && optionButtons[i] != null)
+            if (i < optionsCount && optionButtons[i] != null && optionTexts[i] != null)
             {
-                string categoryText = i < options.Count ? options[i].Category.ToString().ToUpper() : "DEFAULT";
-                string optionText = i < options.Count ? options[i].Text : $"Default option {i + 1}";
+                string categoryText = options[i].Category.ToString().ToUpper();
+                string optionText = options[i].Text;
 
                 string colorHex = options[i].Category == DialogueCategory.Casual ? "#00BFFF" : "#FFD700";
                 optionTexts[i].text = $"<color={colorHex}>[{categoryText}]</color> {optionText}";
@@ -201,7 +242,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         }
         else
         {
-            Debug.LogWarning("DialogInputWindow is not assigned in the DialogueManager.");
+            Debug.LogWarning("DialogueManager: DialogInputWindow is not assigned.");
         }
 
         if (active && customInputField != null)
@@ -226,7 +267,8 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void OnCustomInputValueChanged(string newValue)
     {
-        submitCustomInputButton.interactable = !string.IsNullOrEmpty(newValue);
+        if (submitCustomInputButton != null)
+            submitCustomInputButton.interactable = !string.IsNullOrEmpty(newValue);
     }
 
     private void OnCustomInputEndEdit(string newValue)
@@ -295,11 +337,13 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         isProcessingInput = false;
         isGeneratingChoices = false;
         ShowLoadingIndicator(false);
+        InputManager.Instance.EndDialogue();
     }
 
     private void ShowLoadingIndicator(bool show)
     {
-        loadingIndicator.SetActive(show);
+        if (loadingIndicator != null)
+            loadingIndicator.SetActive(show);
     }
 
     private void SetDialogueState(DialogueState newState)
@@ -411,6 +455,12 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     public void ToggleChatLog()
     {
+        if (chatLogCanvasGroup == null)
+        {
+            Debug.LogError("DialogueManager: ChatLogCanvasGroup is not assigned.");
+            return;
+        }
+
         chatLogPanel.SetActive(!chatLogPanel.activeSelf);
         InputManager.Instance.SetUIActive(chatLogPanel.activeSelf);
         if (chatLogPanel.activeSelf)
@@ -463,7 +513,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         SetCustomInputActive(false);
 
-        AddToChatLog(currentNPC.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: \"{initialDialogue}\"");
+        AddToChatLog(currentNPC.characterName, dialogueText.text);
 
         SetDialogueState(DialogueState.GeneratingResponse);
         await GenerateAndDisplayChoices();
@@ -476,18 +526,17 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         PhotonView aiView = PhotonView.Find(aiCharacterViewID);
         if (aiView == null)
         {
-            Debug.LogWarning("AI character PhotonView not found for dialogue request.");
+            Debug.LogWarning("DialogueManager: AI character PhotonView not found for dialogue request.");
             return;
         }
 
         UniversalCharacterController aiNPC = aiView.GetComponent<UniversalCharacterController>();
         if (aiNPC == null)
         {
-            Debug.LogWarning("UniversalCharacterController not found on AI character for dialogue request.");
+            Debug.LogWarning("DialogueManager: UniversalCharacterController not found on AI character for dialogue request.");
             return;
         }
 
-        // Show DialogueRequestUI to the player
         DialogueRequestUI.Instance.ShowRequest(aiNPC);
     }
 
@@ -503,7 +552,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         currentNPC.AddState(UniversalCharacterController.CharacterState.Chatting);
         InputManager.Instance.StartDialogue();
 
-        // AI initiates the conversation
         string initialDialogue = await OpenAIService.Instance.GetNaturalDialogueResponse(currentNPC.characterName, "", currentNPC.aiSettings);
         dialogueText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: \"{initialDialogue}\"";
         dialoguePanel.SetActive(true);
@@ -511,7 +559,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         SetCustomInputActive(false);
 
-        AddToChatLog(currentNPC.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: \"{initialDialogue}\"");
+        AddToChatLog(currentNPC.characterName, dialogueText.text);
 
         SetDialogueState(DialogueState.GeneratingResponse);
         await GenerateAndDisplayChoices();
@@ -532,30 +580,20 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         public string Message;
     }
 
-    // New method to handle NPC-to-NPC dialogues
+    // Method to handle NPC-to-NPC dialogues (Optional)
     public async void TriggerNPCDialogue(UniversalCharacterController initiator, UniversalCharacterController target)
     {
         if (initiator == null || target == null)
         {
-            Debug.LogWarning("Invalid characters for NPC dialogue.");
+            Debug.LogWarning("DialogueManager: Invalid characters for NPC dialogue.");
             return;
         }
 
         string initialDialogue = await OpenAIService.Instance.GetNaturalDialogueResponse(initiator.characterName, $"Initiate a conversation with {target.characterName}", initiator.aiSettings);
         AddToChatLog(initiator.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(initiator.characterColor)}>{initiator.characterName}</color> says to {target.characterName}: \"{initialDialogue}\"");
 
-        // Simulate a back-and-forth conversation
-        for (int i = 0; i < 3; i++)
-        {
-            string response = await OpenAIService.Instance.GetNaturalDialogueResponse(target.characterName, initialDialogue, target.aiSettings);
-            AddToChatLog(target.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(target.characterColor)}>{target.characterName}</color> responds: \"{response}\"");
-
-            initialDialogue = await OpenAIService.Instance.GetNaturalDialogueResponse(initiator.characterName, response, initiator.aiSettings);
-            AddToChatLog(initiator.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(initiator.characterColor)}>{initiator.characterName}</color> says: \"{initialDialogue}\"");
-        }
-
-        // End the conversation
-        AddToChatLog("System", $"The conversation between {initiator.characterName} and {target.characterName} ends.");
+        string response = await OpenAIService.Instance.GetNaturalDialogueResponse(target.characterName, initialDialogue, target.aiSettings);
+        AddToChatLog(target.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(target.characterColor)}>{target.characterName}</color> responds: \"{response}\"");
     }
 }
 

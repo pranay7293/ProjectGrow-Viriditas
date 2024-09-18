@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 766148009835991541}
   - component: {fileID: 5022909418152838396}
   - component: {fileID: 609519602695795466}
+  - component: {fileID: 7850589160193944449}
   m_Layer: 0
   m_Name: CameraRig
   m_TagString: MainCamera
@@ -414,3 +415,11 @@ MonoBehaviour:
       enableFptlForForwardOpaque: 0
       enableBigTilePrepass: 0
       isFptlEnabled: 0
+--- !u!81 &7850589160193944449
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6833418751096155316}
+  m_Enabled: 1
