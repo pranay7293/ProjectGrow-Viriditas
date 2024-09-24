@@ -61,7 +61,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private GameObject cameraRigInstance;
     private Animator animator;
     private TextMeshPro actionIndicator;
-    private Cloth coatCloth;
 
     public LocationManager.LocationAction currentAction;
     private float actionStartTime;
@@ -112,12 +111,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         animator = GetComponentInChildren<Animator>();
         aiManager = GetComponent<AIManager>();
 
-        GameObject coatObject = transform.Find("ProjectGrow-CharacterModel (Rigged)/Retopo Coat")?.gameObject;
-        if (coatObject != null)
-        {
-            coatCloth = coatObject.GetComponent<Cloth>();
-        }
-
         actionIndicator = GetComponentInChildren<TextMeshPro>();
         if (actionIndicator == null)
         {
@@ -130,6 +123,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
 
         InitializeGuideTextBox();
+
+        InitializeMaterials();
 
         outlinable = GetComponentInChildren<Outlinable>();
         if (outlinable == null)
@@ -158,6 +153,38 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         SetupAnimator();
     }
 
+    private void InitializeMaterials()
+    {
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        foreach (Renderer renderer in renderers)
+        {
+            if (renderer.gameObject.name.Contains("Coat"))
+            {
+                coatMaterial = renderer.material;
+            }
+            else if (renderer.gameObject.name.Contains("Shirt"))
+            {
+                shirtMaterial = renderer.material;
+            }
+            else if (renderer.gameObject.name.Contains("Pants"))
+            {
+                pantsMaterial = renderer.material;
+            }
+            else if (renderer.gameObject.name.Contains("Sneakers"))
+            {
+                sneakersMaterial = renderer.material;
+            }
+            else if (renderer.gameObject.name.Contains("Logo"))
+            {
+                logoMaterial = renderer.material;
+            }
+            else if (renderer.gameObject.name.Contains("Base"))
+            {
+                baseMaterial = renderer.material;
+            }
+        }
+    }
+
     public void ShowOutline()
 {
     if (outlinable != null)
@@ -183,7 +210,7 @@ public void HideOutline()
             animator.applyRootMotion = false;
         }
     }
-    
+
     private void InitializeGuideTextBox()
     {
         if (guideTextBoxPrefab != null)
@@ -224,6 +251,9 @@ public void HideOutline()
             aiSettings = ScriptableObject.CreateInstance<AISettings>();
             aiSettings.characterRole = isPlayerControlled ? "Player" : "Default AI";
         }
+
+        // Apply character color immediately after initialization
+        UpdateCharacterColor();
     }
 
     private IEnumerator DelayedAcclimation()
@@ -237,8 +267,6 @@ public void HideOutline()
         characterName = name;
         IsPlayerControlled = isPlayerControlled;
         characterColor = color;
-
-        UpdateCharacterColor();
     }
 
     private void UpdateCharacterColor()
@@ -249,27 +277,27 @@ public void HideOutline()
 
         if (coatMaterial != null)
         {
-            coatMaterial.SetColor("_BaseColor", characterColor);
+            coatMaterial.color = characterColor;
         }
         if (shirtMaterial != null)
         {
-            shirtMaterial.SetColor("_BaseColor", whiteColor);
+            shirtMaterial.color = whiteColor;
         }
         if (pantsMaterial != null)
         {
-            pantsMaterial.SetColor("_BaseColor", whiteColor);
+            pantsMaterial.color = whiteColor;
         }
         if (sneakersMaterial != null)
         {
-            sneakersMaterial.SetColor("_BaseColor", characterColor);
+            sneakersMaterial.color = characterColor;
         }
         if (logoMaterial != null)
         {
-            logoMaterial.SetColor("_BaseColor", logoColor);
+            logoMaterial.color = logoColor;
         }
         if (baseMaterial != null)
         {
-            baseMaterial.SetColor("_BaseColor", baseColor);
+            baseMaterial.color = baseColor;
         }
     }
 
@@ -429,18 +457,24 @@ public void HideOutline()
     }
 
     private void UpdateAnimator()
+{
+    if (animator != null)
     {
-        if (animator != null)
-        {
-            bool isMoving = moveDirection.magnitude > 0.1f || (navMeshAgent != null && navMeshAgent.velocity.magnitude > 0.1f);
-            bool isRunning = InputManager.Instance.PlayerRunModifier;
+        bool isMoving = moveDirection.magnitude > 0.1f || (navMeshAgent != null && navMeshAgent.velocity.magnitude > 0.1f);
+        bool isRunning = InputManager.Instance.PlayerRunModifier;
 
-            animator.SetBool("IsMoving", isMoving);
-            animator.SetBool("IsRunning", isRunning);
-            animator.SetBool("IsTalking", HasState(CharacterState.Chatting) || HasState(CharacterState.Collaborating));
-            animator.SetBool("IsPerformingAction", HasState(CharacterState.PerformingAction));
+        animator.SetBool("IsMoving", isMoving);
+        animator.SetBool("IsRunning", isRunning);
+        animator.SetBool("IsTalking", HasState(CharacterState.Chatting) || HasState(CharacterState.Collaborating));
+        animator.SetBool("IsPerformingAction", HasState(CharacterState.PerformingAction));
+
+        // Ensure Idle state is triggered when not in other states
+        if (!isMoving && !isRunning && !animator.GetBool("IsTalking") && !animator.GetBool("IsPerformingAction"))
+        {
+            animator.SetTrigger("HappyIdle");
         }
     }
+}
 
     public void TriggerDialogue()
     {

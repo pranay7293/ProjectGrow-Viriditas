@@ -1042,7 +1042,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1423302142698512507
 Transform:
   m_ObjectHideFlags: 0
@@ -1187,7 +1187,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5da018abe0aac4681ad05bfb83a087da, type: 3}
   m_Name: 
@@ -1202,6 +1202,13 @@ MonoBehaviour:
   currentObjective: 
   acclimationTime: 10
   initialDelay: 10
+  hasWhiteLabCoat: 0
+  coatMaterial: {fileID: 0}
+  shirtMaterial: {fileID: 0}
+  pantsMaterial: {fileID: 0}
+  sneakersMaterial: {fileID: 0}
+  logoMaterial: {fileID: 0}
+  baseMaterial: {fileID: 0}
   currentLocation: {fileID: 0}
   currentAction:
     actionName: 
@@ -1253,7 +1260,7 @@ CharacterController:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Height: 2
   m_Radius: 0.5
@@ -1269,7 +1276,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7ed10f2d34fdf4a568d5d2358cc55553, type: 3}
   m_Name: 
@@ -1284,7 +1291,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6e726f43f7e3a49e4928040da9336870, type: 3}
   m_Name: 

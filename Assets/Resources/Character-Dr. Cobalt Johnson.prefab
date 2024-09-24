@@ -99,7 +99,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Dr. Eden Kapoor
+  m_text: Dr. Cobalt Johnson
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5e22c67c443164b66bca99c223111133, type: 2}
   m_sharedMaterial: {fileID: 116802541643450836, guid: 5e22c67c443164b66bca99c223111133, type: 2}
@@ -191,7 +191,7 @@ GameObject:
   - component: {fileID: -8581686133794132729}
   - component: {fileID: 3216075141410217654}
   m_Layer: 18
-  m_Name: Character-Dr. Eden Kapoor
+  m_Name: Character-Dr. Cobalt Johnson
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -341,13 +341,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5da018abe0aac4681ad05bfb83a087da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  characterName: Dr. Eden Kapoor
-  characterColor: {r: 0.050980393, g: 0.5254902, b: 0.972549, a: 0}
+  characterName: Dr. Cobalt Johnson
+  characterColor: {r: 0.93333334, g: 0.6313726, b: 0.10980392, a: 0}
   walkSpeed: 5
   runSpeed: 8
   rotationSpeed: 120
   interactionDistance: 3
-  aiSettings: {fileID: 11400000, guid: 8a1be5af3820149bb8a17e1ff30472fd, type: 2}
+  aiSettings: {fileID: 11400000, guid: b535d20ae57d04811a40e3ef009ba933, type: 2}
   currentObjective: 
   acclimationTime: 10
   initialDelay: 10
@@ -723,7 +723,7 @@ PrefabInstance:
       addedObject: {fileID: 4476744426325431350}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: cd59f81c587ed4d6f979221201eb34ed, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 3251708180804394218}
+      addedObject: {fileID: 1529497269432853938}
     - targetCorrespondingSourceObject: {fileID: -80800780153168050, guid: cd59f81c587ed4d6f979221201eb34ed, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8689280763896336340}
@@ -963,7 +963,7 @@ MonoBehaviour:
     cutoutTextureName: 
     DilateRenderingMode: 0
     cutoutTextureIndex: 0
-  - IsVisible: 0
+  - IsVisible: 1
     CutoutMask: 8
     edgeDilateAmount: 5
     frontEdgeDilateAmount: 5
@@ -1004,7 +1004,7 @@ MonoBehaviour:
     fillPass:
       shader: {fileID: 0}
       serializedProperties: []
---- !u!95 &3251708180804394218
+--- !u!95 &1529497269432853938
 Animator:
   serializedVersion: 5
   m_ObjectHideFlags: 0
