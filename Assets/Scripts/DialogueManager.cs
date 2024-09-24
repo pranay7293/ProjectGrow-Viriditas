@@ -146,14 +146,16 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         currentNPC.AddState(UniversalCharacterController.CharacterState.Chatting);
         InputManager.Instance.StartDialogue();
 
-        string initialDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: \"Hello!\"";
+        // Generate a dynamic greeting using OpenAIService
+        string greeting = await OpenAIService.Instance.GenerateGreetingResponse(currentNPC.characterName, currentNPC.aiSettings);
+        string initialDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: \"{greeting}\"";
         dialogueText.text = initialDialogue;
         dialoguePanel.SetActive(true);
         customInputField.text = "";
 
         SetCustomInputActive(false);
 
-        AddToChatLog(currentNPC.characterName, initialDialogue);
+        AddToChatLog(currentNPC.characterName, initialDialogue); // Dialogue-related log
 
         SetDialogueState(DialogueState.GeneratingResponse);
         await GenerateAndDisplayChoices();
@@ -220,7 +222,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         {
             string selectedOption = currentOptions[optionIndex].Text;
             ProcessPlayerChoice(selectedOption, isNaturalDialogue: false);
-            AddToChatLog("Player", $"<color=#FFD700>[{currentOptions[optionIndex].Category.ToString().ToUpper()}]</color> {selectedOption}");
+            AddToChatLog("Player", $"<color=#FFD700>[{currentOptions[optionIndex].Category.ToString().ToUpper()}]</color> {selectedOption}"); // Dialogue-related log
         }
         else
         {
@@ -261,7 +263,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             customInputField.text = "";
             SetCustomInputActive(false);
             ProcessPlayerChoice(playerInput, isNaturalDialogue: true);
-            AddToChatLog("Player", $"<color=#00BFFF>[Casual]</color> {playerInput}");
+            AddToChatLog("Player", $"<color=#00BFFF>[Casual]</color> {playerInput}"); // Dialogue-related log
         }
     }
 
@@ -292,7 +294,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         string playerDialogue = $"You say to <color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color>: \"{playerChoice}\"";
         dialogueText.text = playerDialogue;
-        AddToChatLog("Player", playerDialogue);
+        AddToChatLog("Player", playerDialogue); // Dialogue-related log
         GameManager.Instance.AddPlayerAction(playerChoice);
 
         string aiResponse;
@@ -307,7 +309,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         string npcDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: \"{aiResponse}\"";
         dialogueText.text = npcDialogue;
-        AddToChatLog(currentNPC.characterName, npcDialogue);
+        AddToChatLog(currentNPC.characterName, npcDialogue); // Dialogue-related log
         GameManager.Instance.UpdateGameState(currentNPC.characterName, aiResponse);
 
         SetDialogueState(DialogueState.GeneratingResponse);
@@ -513,7 +515,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         SetCustomInputActive(false);
 
-        AddToChatLog(currentNPC.characterName, dialogueText.text);
+        AddToChatLog(currentNPC.characterName, dialogueText.text); // Dialogue-related log
 
         SetDialogueState(DialogueState.GeneratingResponse);
         await GenerateAndDisplayChoices();
@@ -559,7 +561,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         SetCustomInputActive(false);
 
-        AddToChatLog(currentNPC.characterName, dialogueText.text);
+        AddToChatLog(currentNPC.characterName, dialogueText.text); // Dialogue-related log
 
         SetDialogueState(DialogueState.GeneratingResponse);
         await GenerateAndDisplayChoices();
@@ -580,7 +582,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         public string Message;
     }
 
-    // Method to handle NPC-to-NPC dialogues (Optional)
+    // Method to handle NPC-to-NPC dialogues
     public async void TriggerNPCDialogue(UniversalCharacterController initiator, UniversalCharacterController target)
     {
         if (initiator == null || target == null)
@@ -590,10 +592,10 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         }
 
         string initialDialogue = await OpenAIService.Instance.GetNaturalDialogueResponse(initiator.characterName, $"Initiate a conversation with {target.characterName}", initiator.aiSettings);
-        AddToChatLog(initiator.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(initiator.characterColor)}>{initiator.characterName}</color> says to {target.characterName}: \"{initialDialogue}\"");
+        AddToChatLog(initiator.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(initiator.characterColor)}>{initiator.characterName}</color> says to {target.characterName}: \"{initialDialogue}\""); // Dialogue-related log
 
         string response = await OpenAIService.Instance.GetNaturalDialogueResponse(target.characterName, initialDialogue, target.aiSettings);
-        AddToChatLog(target.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(target.characterColor)}>{target.characterName}</color> responds: \"{response}\"");
+        AddToChatLog(target.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(target.characterColor)}>{target.characterName}</color> responds: \"{response}\""); // Dialogue-related log
     }
 }
 

@@ -23,13 +23,13 @@ public class CollabManager : MonoBehaviourPunCallbacks
         if (Instance == null)
         {
             Instance = this;
+            // Ensure this object persists across scenes if necessary
             DontDestroyOnLoad(gameObject);
         }
         else
         {
             Destroy(gameObject);
         }
-        
     }
 
     private void Update()
@@ -103,27 +103,49 @@ public class CollabManager : MonoBehaviourPunCallbacks
     }
 
     private IEnumerator DecideOnCollaborationCoroutine(AIManager aiManager, string actionName, int initiatorViewID, int targetViewID)
-    {
-        Task<bool> decisionTask = aiManager.DecideOnCollaboration(actionName);
-        yield return new WaitUntil(() => decisionTask.IsCompleted);
+{
+    if (aiManager == null) yield break;
 
-        if (decisionTask.Result)
+    Task<bool> decisionTask = null;
+    try
+    {
+        decisionTask = aiManager.DecideOnCollaboration(actionName);
+    }
+    catch (System.Exception)
+    {
+        yield break;
+    }
+
+    if (decisionTask == null) yield break;
+
+    yield return new WaitUntil(() => decisionTask.IsCompleted);
+
+    if (decisionTask.Result)
+    {
+        string collabID = System.Guid.NewGuid().ToString();
+        if (photonView != null)
         {
-            string collabID = Guid.NewGuid().ToString();
             photonView.RPC("InitiateCollab", RpcTarget.All, actionName, initiatorViewID, new int[] { targetViewID }, collabID);
         }
     }
+}
 
     [PunRPC]
     public void InitiateCollab(string actionName, int initiatorViewID, int[] collaboratorViewIDs, string collabID)
     {
+        if (string.IsNullOrEmpty(actionName) || string.IsNullOrEmpty(collabID)) return;
+
+        List<UniversalCharacterController> collaborators = new List<UniversalCharacterController>();
+
         PhotonView initiatorView = PhotonView.Find(initiatorViewID);
-        if (initiatorView == null) return;
-
-        UniversalCharacterController initiator = initiatorView.GetComponent<UniversalCharacterController>();
-        if (initiator == null) return;
-
-        List<UniversalCharacterController> collaborators = new List<UniversalCharacterController> { initiator };
+        if (initiatorView != null)
+        {
+            UniversalCharacterController initiator = initiatorView.GetComponent<UniversalCharacterController>();
+            if (initiator != null)
+            {
+                collaborators.Add(initiator);
+            }
+        }
 
         foreach (int viewID in collaboratorViewIDs)
         {
@@ -138,27 +160,30 @@ public class CollabManager : MonoBehaviourPunCallbacks
             }
         }
 
-        if (collaborators.Any(c => c.currentLocation != initiator.currentLocation))
-        {
-            Debug.LogWarning("Not all collaborators are in the same location");
-            return;
-        }
+        if (collaborators.Count == 0) return;
 
-        LocationManager.LocationAction action = initiator.currentLocation.GetActionByName(actionName);
-        if (action == null)
-        {
-            Debug.LogWarning($"Action '{actionName}' not found in location '{initiator.currentLocation.locationName}'");
-            return;
-        }
+        UniversalCharacterController initiatorCharacter = collaborators[0];
+        if (initiatorCharacter == null || initiatorCharacter.currentLocation == null) return;
+
+        LocationManager location = initiatorCharacter.currentLocation;
+        if (location == null) return;
+
+        if (collaborators.Any(c => c.currentLocation != location)) return;
+
+        LocationManager.LocationAction action = location.GetActionByName(actionName);
+        if (action == null) return;
 
         activeCollabs[collabID] = collaborators;
 
         foreach (var collaborator in collaborators)
         {
-            SetCollabCooldown(collaborator.characterName);
-            collaborator.AddState(UniversalCharacterController.CharacterState.Collaborating);
-            collaborator.currentCollabID = collabID;
-            collaborator.StartAction(action);
+            if (collaborator != null)
+            {
+                SetCollabCooldown(collaborator.characterName);
+                collaborator.AddState(UniversalCharacterController.CharacterState.Collaborating);
+                collaborator.currentCollabID = collabID;
+                collaborator.StartAction(action);
+            }
         }
 
         if (collaborators.Count > 1 && !collaborators[0].IsInGroup())
@@ -167,18 +192,15 @@ public class CollabManager : MonoBehaviourPunCallbacks
             {
                 GroupManager.Instance.FormGroup(collaborators);
             }
-            else
-            {
-                Debug.LogWarning("CollabManager: GroupManager instance is null. Cannot form group.");
-            }
         }
     }
 
-    public void FinalizeCollaboration(string collabID, int actionDuration)
+    public void FinalizeCollaboration(string collabID, float actionDuration)
     {
         if (activeCollabs.TryGetValue(collabID, out List<UniversalCharacterController> collaborators))
         {
-            int basePoints = ScoreConstants.GetActionPoints(actionDuration);
+            int basePoints = ScoreConstants.GetActionPoints((int)actionDuration);
+
             int collabBonus = Mathf.RoundToInt(basePoints * collabBonusMultiplier);
 
             foreach (var collaborator in collaborators)
@@ -191,7 +213,16 @@ public class CollabManager : MonoBehaviourPunCallbacks
                 collaborator.currentCollabID = null;
             }
 
-            EurekaManager.Instance.CheckForEureka(collaborators, collabID);
+            // Check for Eureka immediately after collaboration completes
+            if (EurekaManager.Instance != null)
+            {
+                EurekaManager.Instance.CheckForEureka(collaborators, collabID);
+            }
+            else
+            {
+                Debug.LogWarning("FinalizeCollaboration: EurekaManager.Instance is null.");
+            }
+
             activeCollabs.Remove(collabID);
 
             if (collaborators.Count > 1 && collaborators[0].IsInGroup())
@@ -203,6 +234,19 @@ public class CollabManager : MonoBehaviourPunCallbacks
                 }
             }
         }
+        else
+        {
+            Debug.LogWarning($"FinalizeCollaboration: Collaboration ID '{collabID}' not found.");
+        }
+    }
+
+    public List<UniversalCharacterController> GetCollaborators(string collabID)
+    {
+        if (activeCollabs.TryGetValue(collabID, out List<UniversalCharacterController> collaborators))
+        {
+            return collaborators;
+        }
+        return new List<UniversalCharacterController>();
     }
 
     public float GetCollabSuccessBonus(string collabID)

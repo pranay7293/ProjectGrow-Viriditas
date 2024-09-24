@@ -43,6 +43,27 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
             outcome = Random.value < 0.3f ? "PARTIAL SUCCESS" : "SUCCESS";
             scoreChange = ScoreConstants.GetActionPoints(character.currentAction.duration);
             reason = $"{outcome} on {actionName}";
+
+            // Check for Eureka if collaborating
+            if (character.IsCollaborating && !string.IsNullOrEmpty(character.currentCollabID))
+            {
+                if (CollabManager.Instance != null)
+                {
+                    List<UniversalCharacterController> collaborators = CollabManager.Instance.GetCollaborators(character.currentCollabID);
+                    if (EurekaManager.Instance != null)
+                    {
+                        EurekaManager.Instance.CheckForEureka(collaborators, actionName);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("EvaluateActionOutcome: EurekaManager.Instance is null");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("EvaluateActionOutcome: CollabManager.Instance is null");
+                }
+            }
         }
         else
         {
@@ -62,7 +83,7 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
             }
             else
             {
-                Debug.LogWarning("ApplyActionOutcome: LocationActionUI.Instance is null");
+                Debug.LogWarning("EvaluateActionOutcome: LocationActionUI.Instance is null");
             }
         }
 
@@ -106,7 +127,7 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
         }
         else
         {
-            Debug.Log("CalculateSuccessRate: Character is not collaborating");
+            
         }
 
         return Mathf.Clamp01(baseRate + roleBonus + collabBonus);

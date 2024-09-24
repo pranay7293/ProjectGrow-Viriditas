@@ -1,13 +1,13 @@
 public static class ScoreConstants
 {
-    public const int SIMPLE_ACTION_POINTS = 5;
-    public const int MEDIUM_ACTION_POINTS = 10;
-    public const int COMPLEX_ACTION_POINTS = 15;
+    public const int SIMPLE_ACTION_POINTS = 3;
+    public const int MEDIUM_ACTION_POINTS = 5;
+    public const int COMPLEX_ACTION_POINTS = 7;
 
     public const int PERSONAL_GOAL_CONTRIBUTION = 10;
-    public const int PERSONAL_GOAL_COMPLETION = 20;
+    public const int PERSONAL_GOAL_COMPLETION = 10;
 
-    public const int KEY_MILESTONE_COMPLETION = 30;
+    public const int KEY_MILESTONE_COMPLETION = 15;
 
     public const int EUREKA_BONUS = 50;
 

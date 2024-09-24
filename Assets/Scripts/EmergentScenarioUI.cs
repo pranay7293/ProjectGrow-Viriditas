@@ -15,7 +15,6 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI whatIfText;
     [SerializeField] private GameObject characterProfilePrefab;
-    [SerializeField] private float animationDuration = 0.5f;
     [SerializeField] private Image backgroundImage;
     [SerializeField] private EmergentScenarioNotification emergentScenarioNotification;
 
@@ -49,48 +48,12 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
             
             Image panelImage = scenarioButtons[i].GetComponent<Image>();
             panelImage.color = i == 1 ? DarkenColor(hubColor, 0.2f) : hubColor;
-            
-            StartCoroutine(AnimatePanelIn(scenarioButtons[i].GetComponent<RectTransform>(), i));
         }
         
-        StartCoroutine(AnimateScaleIn(whatIfText.transform));
-        StartCoroutine(AnimateScaleIn(timerText.transform));
+        whatIfText.text = "What If...";
+        timerText.text = $"{Mathf.CeilToInt(voteTimer)}";
         
         StartVoting();
-    }
-
-    private IEnumerator AnimatePanelIn(RectTransform rectTransform, int index)
-    {
-        float startY = index == 1 ? -1000 : 1000;
-        float endY = 0;
-        float elapsedTime = 0f;
-
-        while (elapsedTime < animationDuration)
-        {
-            elapsedTime += Time.deltaTime;
-            float t = Mathf.SmoothStep(0, 1, elapsedTime / animationDuration);
-            float currentY = Mathf.Lerp(startY, endY, t);
-            rectTransform.anchoredPosition = new Vector2(0, currentY);
-            yield return null;
-        }
-
-        rectTransform.anchoredPosition = new Vector2(0, endY);
-    }
-
-    private IEnumerator AnimateScaleIn(Transform target)
-    {
-        target.localScale = Vector3.zero;
-        float elapsedTime = 0f;
-
-        while (elapsedTime < animationDuration)
-        {
-            elapsedTime += Time.deltaTime;
-            float t = Mathf.SmoothStep(0, 1, elapsedTime / animationDuration);
-            target.localScale = Vector3.Lerp(Vector3.zero, Vector3.one, t);
-            yield return null;
-        }
-
-        target.localScale = Vector3.one;
     }
 
     private void StartVoting()
@@ -123,35 +86,33 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
     }
 
     private void DisplayVote(string playerName, int scenarioIndex)
-{
-    UniversalCharacterController character = GameManager.Instance.GetCharacterByName(playerName);
-    if (character != null)
     {
-        CharacterProfileSimple profile = Instantiate(characterProfilePrefab, profileContainers[scenarioIndex]).GetComponent<CharacterProfileSimple>();
-        profile.SetProfileInfo(playerName, character.GetCharacterColor(), !character.IsPlayerControlled, character.photonView.IsMine);
-        
-        StartCoroutine(AnimateScaleIn(profile.transform));
-
-        int voteCount = profileContainers[scenarioIndex].childCount;
-        ResizeProfileContainer(scenarioIndex, voteCount);
-    }
-}
-
-    private void ResizeProfileContainer(int scenarioIndex, int voteCount)
-{
-    if (profileContainers[scenarioIndex] != null)
-    {
-        RectTransform containerRect = profileContainers[scenarioIndex].GetComponent<RectTransform>();
-        GridLayoutGroup grid = profileContainers[scenarioIndex].GetComponent<GridLayoutGroup>();
-        
-        if (containerRect != null && grid != null)
+        UniversalCharacterController character = GameManager.Instance.GetCharacterByName(playerName);
+        if (character != null)
         {
-            int rows = Mathf.CeilToInt(voteCount / 5f);
-            float newHeight = rows * (grid.cellSize.y + grid.spacing.y);
-            containerRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, newHeight);
+            CharacterProfileSimple profile = Instantiate(characterProfilePrefab, profileContainers[scenarioIndex]).GetComponent<CharacterProfileSimple>();
+            profile.SetProfileInfo(playerName, character.GetCharacterColor(), !character.IsPlayerControlled, character.photonView.IsMine);
+            
+            int voteCount = profileContainers[scenarioIndex].childCount;
+            ResizeProfileContainer(scenarioIndex, voteCount);
         }
     }
-}
+
+    private void ResizeProfileContainer(int scenarioIndex, int voteCount)
+    {
+        if (profileContainers[scenarioIndex] != null)
+        {
+            RectTransform containerRect = profileContainers[scenarioIndex].GetComponent<RectTransform>();
+            GridLayoutGroup grid = profileContainers[scenarioIndex].GetComponent<GridLayoutGroup>();
+            
+            if (containerRect != null && grid != null)
+            {
+                int rows = Mathf.CeilToInt(voteCount / 5f);
+                float newHeight = rows * (grid.cellSize.y + grid.spacing.y);
+                containerRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, newHeight);
+            }
+        }
+    }
 
     private IEnumerator SimulateAIVoting()
     {
@@ -184,7 +145,7 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
         }
     }
 
-     private void EndVoting()
+    private void EndVoting()
     {
         isVoting = false;
         int winningScenario = DetermineWinningScenario();
@@ -245,49 +206,8 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
 
     private IEnumerator HideScenarioPanel()
     {
-        for (int i = 0; i < scenarioButtons.Length; i++)
-        {
-            StartCoroutine(AnimatePanelOut(scenarioButtons[i].GetComponent<RectTransform>(), i));
-        }
-        
-        StartCoroutine(AnimateScaleOut(whatIfText.transform));
-        StartCoroutine(AnimateScaleOut(timerText.transform));
-        
-        yield return new WaitForSeconds(animationDuration);
         scenarioPanel.SetActive(false);
-    }
-
-    private IEnumerator AnimatePanelOut(RectTransform rectTransform, int index)
-    {
-        float startY = 0;
-        float endY = index == 1 ? -1000 : 1000;
-        float elapsedTime = 0f;
-
-        while (elapsedTime < animationDuration)
-        {
-            elapsedTime += Time.deltaTime;
-            float t = Mathf.SmoothStep(0, 1, elapsedTime / animationDuration);
-            float currentY = Mathf.Lerp(startY, endY, t);
-            rectTransform.anchoredPosition = new Vector2(0, currentY);
-            yield return null;
-        }
-
-        rectTransform.anchoredPosition = new Vector2(0, endY);
-    }
-
-    private IEnumerator AnimateScaleOut(Transform target)
-    {
-        float elapsedTime = 0f;
-
-        while (elapsedTime < animationDuration)
-        {
-            elapsedTime += Time.deltaTime;
-            float t = Mathf.SmoothStep(0, 1, elapsedTime / animationDuration);
-            target.localScale = Vector3.Lerp(Vector3.one, Vector3.zero, t);
-            yield return null;
-        }
-
-        target.localScale = Vector3.zero;
+        yield return null;
     }
 
     private int DetermineWinningScenario()

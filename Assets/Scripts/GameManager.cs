@@ -83,7 +83,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     private bool hasPlayedFirstMusicCue = false;
     private bool hasPlayedSecondMusicCue = false;
 
-     private void Update()
+    private void Update()
     {
         if (PhotonNetwork.IsMasterClient && !isEmergentScenarioActive)
         {
@@ -451,7 +451,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         return new List<string>(recentPlayerActions);
     }
 
-   public void UpdateGameState(string characterName, string actionName, bool isEmergentScenario = false)
+    public void UpdateGameState(string characterName, string actionName, bool isEmergentScenario = false)
     {
         if (string.IsNullOrEmpty(characterName) || string.IsNullOrEmpty(actionName))
         {
@@ -466,7 +466,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
         else
         {
-            Debug.Log($"{characterName} performed action: {actionName}");
+            // Debug.Log($"{characterName} performed action: {actionName}");
             AddPlayerAction(actionName);
             ActionLogManager.Instance.LogAction(characterName, actionName);
 
@@ -607,24 +607,20 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     private void UpdateProgress(string playerName, string tag, int score)
+{
+    float progressIncrement = (float)score / ScoreConstants.KEY_MILESTONE_COMPLETION; // e.g., 30 / 1000 = 0.03
+    
+    if (currentChallenge.milestoneTags.Contains(tag))
     {
-        float progressIncrement = (float)score / ScoreConstants.KEY_MILESTONE_COMPLETION;
-
-        if (currentChallenge.milestoneTags.Contains(tag))
+        int milestoneIndex = currentChallenge.milestoneTags.IndexOf(tag);
+        float currentProgress = challengeProgressUI.GetMilestoneProgress(milestoneIndex);
+        float newProgress = Mathf.Clamp01(currentProgress + progressIncrement);
+        challengeProgressUI.UpdateMilestoneProgress(new float[] { newProgress });
+        
+        if (newProgress >= 1f && !milestoneCompletion[tag])
         {
-            if (!milestoneCompletion.ContainsKey(tag))
-            {
-                milestoneCompletion[tag] = false;
-            }
-            int milestoneIndex = currentChallenge.milestoneTags.IndexOf(tag);
-            float currentProgress = challengeProgressUI.GetMilestoneProgress(milestoneIndex);
-            float newProgress = Mathf.Clamp01(currentProgress + progressIncrement);
-            challengeProgressUI.UpdateMilestoneProgress(new float[] { newProgress });
-
-            if (newProgress >= 1f && !milestoneCompletion[tag])
-            {
-                CompleteMilestone(playerName, tag, milestoneIndex);
-            }
+            CompleteMilestone(playerName, tag, milestoneIndex);
+        }
         }
         else
         {
@@ -651,33 +647,33 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     [PunRPC]
-private void SyncPlayerScore(string playerName, int totalScore, int scoreChange, string actionName)
-{
-    playerScores[playerName] = totalScore;
-
-    UniversalCharacterController character = GetCharacterByName(playerName);
-    if (character != null)
+    private void SyncPlayerScore(string playerName, int totalScore, int scoreChange, string actionName)
     {
-        // Update CharacterProgressBar
-        character.UpdateProgress(playerProgress[playerName]);
+        playerScores[playerName] = totalScore;
 
-        // Show floating text
-        Vector3 textPosition = character.transform.position + Vector3.up * 2f;
-        string scoreText = (scoreChange >= 0 ? "+" : "") + scoreChange;
-        FloatingTextType textType = scoreChange >= 0 ? FloatingTextType.Points : FloatingTextType.Failure;
-        FloatingTextManager.Instance.ShowFloatingText(scoreText, textPosition, textType);
+        UniversalCharacterController character = GetCharacterByName(playerName);
+        if (character != null)
+        {
+            // Update CharacterProgressBar
+            character.UpdateProgress(playerProgress[playerName]);
+
+            // Show floating text
+            Vector3 textPosition = character.transform.position + Vector3.up * 2f;
+            string scoreText = (scoreChange >= 0 ? "+" : "") + scoreChange;
+            FloatingTextType textType = scoreChange >= 0 ? FloatingTextType.Points : FloatingTextType.Failure;
+            FloatingTextManager.Instance.ShowFloatingText(scoreText, textPosition, textType);
+        }
+
+        // Update PlayerProfileUI
+        PlayerProfileManager.Instance.UpdatePlayerProfile(playerName, totalScore, playerProgress[playerName]);
+
+        // Trigger a sort in PlayerProfileManager
+        PlayerProfileManager.Instance.SortPlayersByScore();
+
+        // Log the score change
+        string logMessage = $"{playerName} {(scoreChange >= 0 ? "gained" : "lost")} {Mathf.Abs(scoreChange)} points. Action: {actionName}";
+        ActionLogManager.Instance.LogAction("SYSTEM", logMessage);
     }
-
-    // Update PlayerProfileUI
-    PlayerProfileManager.Instance.UpdatePlayerProfile(playerName, totalScore, playerProgress[playerName]);
-
-    // Trigger a sort in PlayerProfileManager
-    PlayerProfileManager.Instance.SortPlayersByScore();
-
-    // Log the score change
-    string logMessage = $"{playerName} {(scoreChange >= 0 ? "gained" : "lost")} {Mathf.Abs(scoreChange)} points. Action: {actionName}";
-    ActionLogManager.Instance.LogAction("SYSTEM", logMessage);
-}
 
     public void HandleActionFailure(string playerName, int duration)
     {
@@ -703,7 +699,7 @@ private void SyncPlayerScore(string playerName, int totalScore, int scoreChange,
         currentChallenge = ScriptableObject.CreateInstance<ChallengeData>();
         currentChallenge.title = serializableChallenge.title;
         currentChallenge.description = serializableChallenge.description;
-        currentChallenge.milestones = serializableChallenge.milestones;
+        currentChallenge.milestones = new List<string>(serializableChallenge.milestones);
         currentChallenge.goalScore = serializableChallenge.goalScore;
 
         remainingTime = time;
@@ -834,28 +830,28 @@ private void SyncPlayerScore(string playerName, int totalScore, int scoreChange,
     }
 
     public void UpdateMilestoneProgress(string characterName, string action, List<string> tags = null)
-{
-    float progressIncrement = 0.2f; // 20% progress per relevant action
-    float[] milestoneProgress = new float[currentChallenge.milestones.Count];
-
-    for (int i = 0; i < currentChallenge.milestones.Count; i++)
     {
-        if (currentChallenge.milestones[i].ToLower().Contains(action.ToLower()) || 
-            (tags != null && tags.Any(tag => currentChallenge.milestones[i].ToLower().Contains(tag.ToLower()))))
+        float progressIncrement = 0.05f; // Reduced to 5% progress per relevant action
+        float[] milestoneProgress = new float[currentChallenge.milestones.Count];
+
+        for (int i = 0; i < currentChallenge.milestones.Count; i++)
         {
-            milestoneProgress[i] = Mathf.Min(milestoneCompletion[currentChallenge.milestones[i]] ? 1f : milestoneProgress[i] + progressIncrement, 1f);
-            if (milestoneProgress[i] >= 1f && !milestoneCompletion[currentChallenge.milestones[i]])
+            if (currentChallenge.milestones[i].ToLower().Contains(action.ToLower()) || 
+                (tags != null && tags.Any(tag => currentChallenge.milestones[i].ToLower().Contains(tag.ToLower()))))
             {
-                CompleteMilestone(characterName, currentChallenge.milestones[i], i);
+                milestoneProgress[i] = Mathf.Min(milestoneCompletion[currentChallenge.milestones[i]] ? 1f : milestoneProgress[i] + progressIncrement, 1f);
+                if (milestoneProgress[i] >= 1f && !milestoneCompletion[currentChallenge.milestones[i]])
+                {
+                    CompleteMilestone(characterName, currentChallenge.milestones[i], i);
+                }
+            }
+            else
+            {
+                milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
             }
         }
-        else
-        {
-            milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
-        }
-    }
 
-    challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
-    UpdateScoreDisplay(); // Ensure all UI elements are updated
-}
+        challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
+        UpdateScoreDisplay(); // Ensure all UI elements are updated
+    }
 }

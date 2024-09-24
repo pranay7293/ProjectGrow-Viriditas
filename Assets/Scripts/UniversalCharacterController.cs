@@ -8,20 +8,20 @@ using EPOOutline;
 
 public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObservable
 {
-   public enum CharacterState
-{
-    None = 0,
-    Moving = 1,
-    Idle = 2,
-    Interacting = 3,
-    Acclimating = 4,
-    PerformingAction = 5,
-    Chatting = 6,
-    Collaborating = 7,
-    Cooldown = 8,
-    InGroup = 9,
-    FormingGroup = 10  // New state
-}
+    public enum CharacterState
+    {
+        None = 0,
+        Moving = 1,
+        Idle = 2,
+        Interacting = 3,
+        Acclimating = 4,
+        PerformingAction = 5,
+        Chatting = 6,
+        Collaborating = 7,
+        Cooldown = 8,
+        InGroup = 9,
+        FormingGroup = 10
+    }
 
     [Header("Character Settings")]
     public string characterName;
@@ -39,6 +39,17 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public float acclimationTime = 10f;
     public float initialDelay = 10f;
 
+    [Header("Special Character Settings")]
+    public bool hasWhiteLabCoat = false;
+
+    [Header("Character Materials")]
+    public Material coatMaterial;
+    public Material shirtMaterial;
+    public Material pantsMaterial;
+    public Material sneakersMaterial;
+    public Material logoMaterial;
+    public Material baseMaterial;
+
     [HideInInspector] public LocationManager currentLocation;
 
     private List<string> personalGoalTags = new List<string>();
@@ -48,9 +59,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private CharacterController characterController;
     private UnityEngine.AI.NavMeshAgent navMeshAgent;
     private GameObject cameraRigInstance;
-    private Renderer characterRenderer;
-    private Material characterMaterial;
+    private Animator animator;
     private TextMeshPro actionIndicator;
+    private Cloth coatCloth;
 
     public LocationManager.LocationAction currentAction;
     private float actionStartTime;
@@ -94,38 +105,18 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         InitializeComponents();
     }
 
-    public bool IsInteractable(Vector3 playerPosition)
-    {
-        return Vector3.Distance(transform.position, playerPosition) <= InputManager.Instance.interactionDistance;
-    }
-
-    public void ShowOutline()
-    {
-        if (outlinable != null)
-        {
-            outlinable.enabled = true;
-        }
-    }
-
-    public void HideOutline()
-    {
-        if (outlinable != null)
-        {
-            outlinable.enabled = false;
-        }
-    }
-
     private void InitializeComponents()
     {
         characterController = GetComponent<CharacterController>();
         navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-        characterRenderer = GetComponentInChildren<Renderer>();
-        if (characterRenderer != null)
-        {
-            characterMaterial = new Material(characterRenderer.material);
-            characterRenderer.material = characterMaterial;
-        }
+        animator = GetComponentInChildren<Animator>();
         aiManager = GetComponent<AIManager>();
+
+        GameObject coatObject = transform.Find("ProjectGrow-CharacterModel (Rigged)/Retopo Coat")?.gameObject;
+        if (coatObject != null)
+        {
+            coatCloth = coatObject.GetComponent<Cloth>();
+        }
 
         actionIndicator = GetComponentInChildren<TextMeshPro>();
         if (actionIndicator == null)
@@ -144,7 +135,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         if (outlinable == null)
         {
             Debug.LogWarning($"Outlinable component not found for {characterName}. Adding one.");
-            GameObject modelObject = transform.Find("Model")?.gameObject;
+            GameObject modelObject = transform.Find("ProjectGrow-CharacterModel (Rigged)")?.gameObject;
             if (modelObject != null)
             {
                 outlinable = modelObject.AddComponent<Outlinable>();
@@ -163,8 +154,36 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             outlinable.OutlineParameters.Enabled = true;
             outlinable.enabled = false;
         }
+
+        SetupAnimator();
     }
 
+    public void ShowOutline()
+{
+    if (outlinable != null)
+    {
+        outlinable.enabled = true;
+    }
+}
+
+public void HideOutline()
+{
+    if (outlinable != null)
+    {
+        outlinable.enabled = false;
+    }
+}
+
+    private void SetupAnimator()
+    {
+        if (animator != null)
+        {
+            animator.updateMode = AnimatorUpdateMode.Normal;
+            animator.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
+            animator.applyRootMotion = false;
+        }
+    }
+    
     private void InitializeGuideTextBox()
     {
         if (guideTextBoxPrefab != null)
@@ -219,14 +238,38 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         IsPlayerControlled = isPlayerControlled;
         characterColor = color;
 
-        if (characterMaterial != null)
+        UpdateCharacterColor();
+    }
+
+    private void UpdateCharacterColor()
+    {
+        Color baseColor = new Color(224f/255f, 224f/255f, 224f/255f); // #E0E0E0
+        Color whiteColor = Color.white;
+        Color logoColor = hasWhiteLabCoat ? Color.black : Color.white;
+
+        if (coatMaterial != null)
         {
-            characterMaterial.color = characterColor;
+            coatMaterial.SetColor("_BaseColor", characterColor);
         }
-        
-        if (characterRenderer != null)
+        if (shirtMaterial != null)
         {
-            characterRenderer.material.color = characterColor;
+            shirtMaterial.SetColor("_BaseColor", whiteColor);
+        }
+        if (pantsMaterial != null)
+        {
+            pantsMaterial.SetColor("_BaseColor", whiteColor);
+        }
+        if (sneakersMaterial != null)
+        {
+            sneakersMaterial.SetColor("_BaseColor", characterColor);
+        }
+        if (logoMaterial != null)
+        {
+            logoMaterial.SetColor("_BaseColor", logoColor);
+        }
+        if (baseMaterial != null)
+        {
+            baseMaterial.SetColor("_BaseColor", baseColor);
         }
     }
 
@@ -341,6 +384,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             {
                 UpdateAcclimation();
             }
+
+            UpdateAnimator();
         }
     }
 
@@ -380,6 +425,20 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         else
         {
             navMeshAgent.isStopped = true;
+        }
+    }
+
+    private void UpdateAnimator()
+    {
+        if (animator != null)
+        {
+            bool isMoving = moveDirection.magnitude > 0.1f || (navMeshAgent != null && navMeshAgent.velocity.magnitude > 0.1f);
+            bool isRunning = InputManager.Instance.PlayerRunModifier;
+
+            animator.SetBool("IsMoving", isMoving);
+            animator.SetBool("IsRunning", isRunning);
+            animator.SetBool("IsTalking", HasState(CharacterState.Chatting) || HasState(CharacterState.Collaborating));
+            animator.SetBool("IsPerformingAction", HasState(CharacterState.PerformingAction));
         }
     }
 
@@ -589,7 +648,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         {
             if (i < aiSettings.personalGoalTags.Count && actionName.ToLower().Contains(aiSettings.personalGoalTags[i].ToLower()))
             {
-                PersonalProgress[i] = Mathf.Min(PersonalProgress[i] + 0.25f, 1f);
+                PersonalProgress[i] = Mathf.Min(PersonalProgress[i] + 0.05f, 1f); // Reduced increment to 5%
             }
         }
 
@@ -704,12 +763,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                     npcBehavior.SetCurrentLocation(null);
                 }
             }
-            
+
             if (progressBar != null)
             {
                 progressBar.EndAcclimation();
             }
-            
+
             currentLocation = null;
             availableActions.Clear();
         }
@@ -811,27 +870,23 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void InitiateCollab(string actionName, UniversalCharacterController collaborator)
     {
-        if (photonView.IsMine && !IsCollaborating && currentLocation != null && !HasState(CharacterState.Acclimating))
+        if (!photonView.IsMine || IsCollaborating || currentLocation == null || 
+            HasState(CharacterState.Acclimating) || collaborator == null)
         {
-            if (IsActionAvailable(actionName))
-            {
-                LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
-                currentAction = action;
+            return;
+        }
 
-                string collabID = System.Guid.NewGuid().ToString();
+        if (IsActionAvailable(actionName))
+        {
+            LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
+            if (action != null)
+            {
+                currentAction = action;
 
                 if (CollabManager.Instance != null)
                 {
                     CollabManager.Instance.RequestCollaboration(photonView.ViewID, new int[] { collaborator.photonView.ViewID }, actionName);
                 }
-                else
-                {
-                    Debug.LogWarning("InitiateCollab: CollabManager.Instance is null");
-                }
-            }
-            else
-            {
-                Debug.LogWarning($"InitiateCollab: Action {actionName} not found for {characterName} in {currentLocation.locationName}");
             }
         }
     }
@@ -981,15 +1036,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 }
             }
 
-            if (characterMaterial != null && receivedColor != characterColor)
+            if (receivedColor != characterColor)
             {
                 characterColor = receivedColor;
-                characterMaterial.color = characterColor;
-                
-                if (characterRenderer != null)
-                {
-                    characterRenderer.material.color = characterColor;
-                }
+                UpdateCharacterColor();
             }
 
             UpdateProgressBarState();

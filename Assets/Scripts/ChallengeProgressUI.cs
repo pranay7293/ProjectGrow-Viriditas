@@ -27,12 +27,12 @@ public class ChallengeProgressUI : MonoBehaviour
             if (fillImage != null) fillImage.color = hubColor;
 
             slider.value = 0;
-            slider.maxValue = 1;
+            slider.maxValue = 1f; // Ensure maxValue is set to 1
             slider.wholeNumbers = false; // Changed to false for smooth progression
         }
     }
 
-        public float GetMilestoneProgress(int index)
+    public float GetMilestoneProgress(int index)
     {
         if (index >= 0 && index < milestoneProgressBars.Length)
         {

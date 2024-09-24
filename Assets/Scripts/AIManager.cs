@@ -221,20 +221,24 @@ public class AIManager : MonoBehaviourPunCallbacks
     }
 
     public async Task<bool> DecideOnCollaboration(string actionName)
+{
+    if (characterController == null || 
+        characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
+        characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction) ||
+        characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
     {
-        if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
-            characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction) ||
-            characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
-        {
-            return false;
-        }
-
-        List<string> options = new List<string> { "Collaborate", "Work alone" };
-        GameState currentState = GameManager.Instance.GetCurrentGameState();
-        string decision = await MakeDecision(options, currentState);
-
-        return decision == "Collaborate";
+        return false;
     }
+
+    List<string> options = new List<string> { "Collaborate", "Work alone" };
+    GameState currentState = GameManager.Instance != null ? GameManager.Instance.GetCurrentGameState() : default;
+    
+    // Since GameState is a struct, it can't be null. We'll check if it's the default value instead.
+    if (currentState.Equals(default(GameState))) return false;
+
+    string decision = await MakeDecision(options, currentState);
+    return decision == "Collaborate";
+}
 
     public UniversalCharacterController GetCharacterController()
     {

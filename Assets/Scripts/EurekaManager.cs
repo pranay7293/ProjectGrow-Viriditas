@@ -67,14 +67,10 @@ public class EurekaManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        float eurekaChance = 0.5f; // Adjusted for testing
-        if (Random.value < eurekaChance)
-        {
-            InitiateEureka(collaborators);
-        }
+        InitiateEureka(collaborators, actionName);
     }
 
-    public void InitiateEureka(List<UniversalCharacterController> collaborators)
+    public void InitiateEureka(List<UniversalCharacterController> collaborators, string actionName)
     {
         if (!isInitialized)
         {
@@ -85,12 +81,12 @@ public class EurekaManager : MonoBehaviourPunCallbacks
         if (PhotonNetwork.IsMasterClient && collaborators != null && collaborators.Count > 0)
         {
             int[] collaboratorViewIDs = collaborators.Select(c => c.photonView.ViewID).ToArray();
-            photonView.RPC("TriggerEureka", RpcTarget.All, new object[] { collaboratorViewIDs });
+            photonView.RPC("TriggerEureka", RpcTarget.All, collaboratorViewIDs, actionName);
         }
     }
 
     [PunRPC]
-    public async void TriggerEureka(int[] collaboratorViewIDs)
+    public async void TriggerEureka(int[] collaboratorViewIDs, string actionName)
     {
         List<UniversalCharacterController> collaborators = collaboratorViewIDs
             .Select(id => PhotonView.Find(id)?.GetComponent<UniversalCharacterController>())
@@ -103,7 +99,8 @@ public class EurekaManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        string eurekaDescription = await OpenAIService.Instance.GenerateEurekaDescription(collaborators, GameManager.Instance.GetCurrentGameState());
+        string eurekaDescription = await OpenAIService.Instance.GenerateEurekaDescription(collaborators, GameManager.Instance.GetCurrentGameState(), actionName);
+
         string completedMilestone = GameManager.Instance.CompleteRandomMilestone(eurekaDescription);
 
         EurekaUI.Instance.DisplayEurekaNotification(eurekaDescription);

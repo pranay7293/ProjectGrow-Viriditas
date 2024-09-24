@@ -98,7 +98,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (GameManager.Instance == null || npcData == null) return;
 
         GameState currentState = GameManager.Instance.GetCurrentGameState();
-        
+
         UpdateMentalModelFromGameState(currentState);
         ConsiderCollaborations();
         EvaluateObjectives(currentState);
@@ -264,11 +264,11 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     }
 
     private LocationManager FindLocationForObjective(string objective)
-{
-    return LocationManagerMaster.Instance.GetAllLocations()
-        .Select(locationName => LocationManagerMaster.Instance.GetLocation(locationName))
-        .FirstOrDefault(l => l != null && l.availableActions.Any(a => a.actionName.Contains(objective)));
-}
+    {
+        return LocationManagerMaster.Instance.GetAllLocations()
+            .Select(locationName => LocationManagerMaster.Instance.GetLocation(locationName))
+            .FirstOrDefault(l => l != null && l.availableActions.Any(a => a.actionName.Contains(objective)));
+    }
 
     private void ConsiderJoiningGroup()
     {
@@ -318,7 +318,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (characterController == null || aiManager == null || GameManager.Instance == null) yield break;
 
         lastDecisionTime = Time.time;
-        
+
         if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating))
         {
             yield break;
@@ -403,7 +403,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
         characterController.StartAction(action);
         characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
-        
         ActionLogManager.Instance?.LogAction(characterController.characterName, $"performing {action.actionName} at {currentLocationManager.locationName}");
     }
 
@@ -505,7 +504,8 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         characterController.StartAction(action);
         characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
 
-        DialogueManager.Instance?.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {action.description}");
+        // Removed non-dialogue logging
+        // DialogueManager.Instance?.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {action.description}");
     }
 
     private void PursuePersonalGoal()
@@ -514,9 +514,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
         List<string> personalGoalTags = aiManager.GetPersonalGoalTags();
         Dictionary<string, bool> personalGoalCompletion = aiManager.GetPersonalGoalCompletion();
-        
+
         string incompleteGoal = personalGoalTags.FirstOrDefault(goal => !personalGoalCompletion[goal]);
-        
+
         if (incompleteGoal != null)
         {
             LocationManager.LocationAction action = new LocationManager.LocationAction
@@ -530,7 +530,8 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             characterController.StartAction(action);
             characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
 
-            DialogueManager.Instance?.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {action.description}");
+            // Removed non-dialogue logging
+            // DialogueManager.Instance?.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {action.description}");
         }
         else
         {
