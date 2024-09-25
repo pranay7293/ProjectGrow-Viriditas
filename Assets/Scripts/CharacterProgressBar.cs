@@ -18,11 +18,13 @@ public class CharacterProgressBar : MonoBehaviour
     [SerializeField] private Color unfilledColor = new Color(0x4A / 255f, 0x4A / 255f, 0x4A / 255f, 1f);
     [SerializeField] private Color acclimationColor = new Color(0x18 / 255f, 0x18 / 255f, 0x18 / 255f, 1f);
     [SerializeField] private int personalGoalMaxScore = 100;
+    [SerializeField] private Vector3 offset = new Vector3(0, 2.25f, 0);
 
     private Camera mainCamera;
     private UniversalCharacterController characterController;
     private UniversalCharacterController.CharacterState currentKeyState = UniversalCharacterController.CharacterState.None;
     private float[] personalGoalProgress;
+
     public void Initialize(UniversalCharacterController controller)
     {
         characterController = controller;
@@ -32,7 +34,6 @@ public class CharacterProgressBar : MonoBehaviour
         SetupUIElements(controller.characterColor);
         ResetUIState();
 
-        // Initialize personal goal progress
         personalGoalProgress = new float[personalGoalSliders.Length];
     }
 
@@ -57,23 +58,19 @@ public class CharacterProgressBar : MonoBehaviour
         cooldownSlider.value = 0f;
     }
 
-    public void SetCooldown(float duration)
+    private void SetSliderColors(Slider slider, Color fillColor)
     {
-        cooldownSlider.gameObject.SetActive(true);
-        cooldownSlider.maxValue = duration;
-        cooldownSlider.value = duration;
-        StartCoroutine(UpdateCooldown());
-    }
-
-    private IEnumerator UpdateCooldown()
-    {
-        while (cooldownSlider.value > 0)
+        Image backgroundImage = slider.transform.Find("Background")?.GetComponent<Image>();
+        if (backgroundImage != null)
         {
-            cooldownSlider.value -= Time.deltaTime;
-            yield return null;
+            backgroundImage.color = unfilledColor;
         }
-        cooldownSlider.gameObject.SetActive(false);
-        UpdateKeyState(UniversalCharacterController.CharacterState.None);
+
+        Image fillImage = slider.fillRect.GetComponent<Image>();
+        if (fillImage != null)
+        {
+            fillImage.color = new Color(fillColor.r, fillColor.g, fillColor.b, 1f);
+        }
     }
 
     private void SetupKeyStateUI(Color characterColor)
@@ -101,25 +98,19 @@ public class CharacterProgressBar : MonoBehaviour
         if (locationAcclimationFill != null) locationAcclimationFill.gameObject.SetActive(false);
     }
 
-    private void SetSliderColors(Slider slider, Color fillColor)
-    {
-        Image backgroundImage = slider.transform.Find("Background")?.GetComponent<Image>();
-        if (backgroundImage != null)
-        {
-            backgroundImage.color = unfilledColor;
-        }
-
-        Image fillImage = slider.fillRect.GetComponent<Image>();
-        if (fillImage != null)
-        {
-            fillImage.color = new Color(fillColor.r, fillColor.g, fillColor.b, 1f);
-        }
-    }
-
     private void LateUpdate()
     {
+        UpdateProgressBarPosition();
         UpdateProgressBarOrientation();
         UpdatePersonalGoals();
+    }
+
+    private void UpdateProgressBarPosition()
+    {
+        if (characterController != null)
+        {
+            transform.position = characterController.transform.position + offset;
+        }
     }
 
     private void UpdateProgressBarOrientation()
@@ -168,43 +159,61 @@ public class CharacterProgressBar : MonoBehaviour
     }
 
     public void UpdateKeyState(UniversalCharacterController.CharacterState state)
-{
-    if (state == currentKeyState) return;
-
-    currentKeyState = state;
-    bool showKeyState = (int)state >= 4;
-    keyStateOverlay.gameObject.SetActive(showKeyState);
-    
-    // Add this switch statement to customize the display text
-    string displayText = state.ToString();
-    switch (state)
     {
-        case UniversalCharacterController.CharacterState.PerformingAction:
-            displayText = "Performing Action";
-            break;
-        case UniversalCharacterController.CharacterState.Collaborating:
-            displayText = "Collabing";
-            break;
-        case UniversalCharacterController.CharacterState.FormingGroup:
-            displayText = "Forming Group";
-            break;
-    }
-    
-    keyStateText.text = showKeyState ? displayText : "";
+        if (state == currentKeyState) return;
 
-    switch (state)
-    {
-        case UniversalCharacterController.CharacterState.Cooldown:
-            SetCooldown(collabCooldown);
-            break;
-        case UniversalCharacterController.CharacterState.Acclimating:
-            StartAcclimation();
-            break;
-        case UniversalCharacterController.CharacterState.None:
-            ResetUIState();
-            break;
+        currentKeyState = state;
+        bool showKeyState = (int)state >= 4;
+        keyStateOverlay.gameObject.SetActive(showKeyState);
+        
+        string displayText = state.ToString();
+        switch (state)
+        {
+            case UniversalCharacterController.CharacterState.PerformingAction:
+                displayText = "Performing Action";
+                break;
+            case UniversalCharacterController.CharacterState.Collaborating:
+                displayText = "Collabing";
+                break;
+            case UniversalCharacterController.CharacterState.FormingGroup:
+                displayText = "Forming Group";
+                break;
+        }
+        
+        keyStateText.text = showKeyState ? displayText : "";
+
+        switch (state)
+        {
+            case UniversalCharacterController.CharacterState.Cooldown:
+                SetCooldown(collabCooldown);
+                break;
+            case UniversalCharacterController.CharacterState.Acclimating:
+                StartAcclimation();
+                break;
+            case UniversalCharacterController.CharacterState.None:
+                ResetUIState();
+                break;
+        }
     }
-}
+
+    public void SetCooldown(float duration)
+    {
+        cooldownSlider.gameObject.SetActive(true);
+        cooldownSlider.maxValue = duration;
+        cooldownSlider.value = duration;
+        StartCoroutine(UpdateCooldown());
+    }
+
+    private IEnumerator UpdateCooldown()
+    {
+        while (cooldownSlider.value > 0)
+        {
+            cooldownSlider.value -= Time.deltaTime;
+            yield return null;
+        }
+        cooldownSlider.gameObject.SetActive(false);
+        UpdateKeyState(UniversalCharacterController.CharacterState.None);
+    }
 
     public void StartAcclimation()
     {

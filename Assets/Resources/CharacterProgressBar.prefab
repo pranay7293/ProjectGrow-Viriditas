@@ -1049,6 +1049,7 @@ MonoBehaviour:
   unfilledColor: {r: 0.2901961, g: 0.2901961, b: 0.2901961, a: 1}
   acclimationColor: {r: 0.09411765, g: 0.09411765, b: 0.09411765, a: 1}
   personalGoalMaxScore: 100
+  offset: {x: 0, y: 2.25, z: 0}
 --- !u!1 &5711759183997703402
 GameObject:
   m_ObjectHideFlags: 0
