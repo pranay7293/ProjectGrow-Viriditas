@@ -8,13 +8,9 @@ using System.Text;
 
 public class IntroNarrativeManager : MonoBehaviour
 {
-    [Header("Evolution Texts")]
-    public TextMeshProUGUI oldProjectText;
-    public TextMeshProUGUI newProjectText;
-    public Image arrowImage;
-
-    [Header("Contextual Line")]
-    public TextMeshProUGUI contextualLine;
+    [Header("Main Message")]
+    public TextMeshProUGUI numberText;
+    public TextMeshProUGUI wordText;
 
     [Header("Select Hub")]
     public TextMeshProUGUI selectHubText;
@@ -23,18 +19,18 @@ public class IntroNarrativeManager : MonoBehaviour
     public Button skipButton;
 
     [Header("Animation Settings")]
-    public float transitionDuration = 2.5f;
-    public float delayBetweenAnimations = 0.5f;
-    public float contextualLineDuration = 0.3f; // Faster duration for contextual lines
-    public float contextualLineDelay = 0.1f; // Shorter delay between contextual lines
+    public float messageDuration = 2.5f;
+    public float delayBetweenMessages = 1f;
+    public float selectHubFadeDuration = 1f;
+    public float finalFadeOutDuration = 1.25f;
+    public float characterFadeDuration = 0.25f;
 
-    [Header("Color Settings")]
-    public Color normalColor = Color.white;
-    public Color dimmedColor = new Color(0.7f, 0.7f, 0.7f, 1f);
-    public Color highlightColor = new Color(1f, 1f, 1f, 1f);
+    [Header("Scramble Settings")]
+    public string wideScrambleChars = "ABCDEFGHKLMNOPQRSTUVWXYZ";
+    public string narrowScrambleChars = "IJ";
 
     private bool isSkipped = false;
-    private string[] contextualTexts = { "10 GENIUSES", "1 EPIC MISSION", "1 LEGEND" };
+    private (string number, string word)[] messages = { ("10", "GENIUSES"), ("1", "MOONSHOT"), ("1", "LEGEND") };
 
     void Start()
     {
@@ -53,19 +49,10 @@ public class IntroNarrativeManager : MonoBehaviour
 
     void InitializeUI()
     {
-        oldProjectText.text = "LOS ALAMOS";
-        newProjectText.text = "MANHATTAN PROJECT";
-        SetElementsAlpha(0);
+        numberText.text = "";
+        wordText.text = "";
+        selectHubText.alpha = 0;
         skipButton.interactable = false;
-    }
-
-    void SetElementsAlpha(float alpha)
-    {
-        oldProjectText.alpha = alpha;
-        newProjectText.alpha = alpha;
-        arrowImage.color = new Color(1, 1, 1, alpha);
-        contextualLine.alpha = alpha;
-        selectHubText.alpha = alpha;
     }
 
     IEnumerator PlayIntro()
@@ -73,22 +60,14 @@ public class IntroNarrativeManager : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
         skipButton.interactable = true;
 
-        yield return StartCoroutine(FadeInElement(oldProjectText, transitionDuration / 2));
-        yield return StartCoroutine(FadeInElement(arrowImage, transitionDuration / 2));
-        yield return StartCoroutine(FadeInElement(newProjectText, transitionDuration / 2));
+        foreach (var message in messages)
+        {
+            numberText.text = message.number;
+            yield return StartCoroutine(ScrambleReveal(message.word));
+            yield return new WaitForSeconds(delayBetweenMessages);
+        }
 
-        yield return new WaitForSeconds(delayBetweenAnimations);
-
-        yield return StartCoroutine(TransitionEvolutionTexts());
-
-        yield return new WaitForSeconds(delayBetweenAnimations);
-
-        yield return StartCoroutine(ContextualLinesReveal());
-
-        yield return StartCoroutine(FadeInElement(selectHubText, transitionDuration / 2));
-        yield return StartCoroutine(ChangeTextColor(selectHubText, highlightColor));
-
-        yield return new WaitForSeconds(delayBetweenAnimations);
+        yield return StartCoroutine(FadeInElement(selectHubText, selectHubFadeDuration));
 
         if (!isSkipped)
         {
@@ -96,70 +75,71 @@ public class IntroNarrativeManager : MonoBehaviour
         }
     }
 
-    IEnumerator TransitionEvolutionTexts()
+    IEnumerator ScrambleReveal(string targetWord)
     {
-        yield return StartCoroutine(ShuffleAndTransitionText(oldProjectText, "LOS ALAMOS", "KARYO", 5));
-        yield return StartCoroutine(ShuffleAndTransitionText(newProjectText, "MANHATTAN PROJECT", "PROJECT GROW", 12));
-    }
+        int[] changeCount = new int[targetWord.Length];
+        char[][] scrambleSequence = new char[targetWord.Length][];
 
-    IEnumerator ShuffleAndTransitionText(TextMeshProUGUI textElement, string originalText, string targetText, int targetLength)
-    {
-        float shuffleDuration = transitionDuration / 2;
-        int shuffleSteps = 20;
-
-        for (int step = 0; step < shuffleSteps; step++)
+        // Define the number of changes and scramble sequence for each character
+        for (int i = 0; i < targetWord.Length; i++)
         {
-            StringBuilder shuffled = new StringBuilder(targetLength);
-            for (int i = 0; i < targetLength; i++)
+            changeCount[i] = i % 3 + 2; // 2, 3, or 4 changes in a repeating pattern
+            scrambleSequence[i] = new char[changeCount[i] + 1];
+            for (int j = 0; j < changeCount[i]; j++)
             {
-                shuffled.Append((char)Random.Range(65, 91));
+                scrambleSequence[i][j] = GetRandomChar(targetWord[i]);
             }
-            textElement.text = shuffled.ToString();
-            yield return new WaitForSeconds(shuffleDuration / shuffleSteps);
+            scrambleSequence[i][changeCount[i]] = targetWord[i];
         }
 
-        textElement.text = targetText;
+        float charDuration = messageDuration / targetWord.Length;
+
+        for (float elapsed = 0; elapsed < messageDuration; elapsed += Time.deltaTime)
+        {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < targetWord.Length; i++)
+            {
+                float charElapsed = elapsed - (i * charDuration / 2); // Stagger start times
+                if (charElapsed < 0)
+                {
+                    sb.Append("<color=#00000000>").Append(targetWord[i]).Append("</color>");
+                }
+                else if (charElapsed >= charDuration)
+                {
+                    sb.Append(targetWord[i]);
+                }
+                else
+                {
+                    int seqIndex = Mathf.Min(changeCount[i], Mathf.FloorToInt(charElapsed / charDuration * changeCount[i]));
+                    float alpha = Mathf.PingPong(charElapsed / characterFadeDuration, 1);
+                    string hexAlpha = Mathf.FloorToInt(alpha * 255).ToString("X2");
+                    sb.Append("<color=#FFFFFF").Append(hexAlpha).Append(">")
+                      .Append(scrambleSequence[i][seqIndex])
+                      .Append("</color>");
+                }
+            }
+            wordText.text = sb.ToString();
+            yield return null;
+        }
+
+        wordText.text = targetWord;
     }
 
-    IEnumerator ContextualLinesReveal()
+    char GetRandomChar(char targetChar)
     {
-        for (int i = 0; i < contextualTexts.Length; i++)
+        if (narrowScrambleChars.Contains(targetChar))
         {
-            contextualLine.text = contextualTexts[i];
-            yield return StartCoroutine(FadeInElement(contextualLine, contextualLineDuration / 2));
-            
-            if (i == contextualTexts.Length - 1) // For "1 LEGEND"
-            {
-                Color targetColor = new Color(0.05f, 0.53f, 0.97f); // #0D86F8
-                yield return contextualLine.DOColor(targetColor, contextualLineDuration).WaitForCompletion();
-            }
-            else
-            {
-                yield return new WaitForSeconds(contextualLineDuration);
-                yield return StartCoroutine(FadeOutElement(contextualLine, contextualLineDuration / 2));
-                yield return new WaitForSeconds(contextualLineDelay);
-            }
+            return narrowScrambleChars[Random.Range(0, narrowScrambleChars.Length)];
+        }
+        else
+        {
+            return wideScrambleChars[Random.Range(0, wideScrambleChars.Length)];
         }
     }
 
     IEnumerator FadeInElement(TextMeshProUGUI element, float duration)
     {
         yield return element.DOFade(1, duration).WaitForCompletion();
-    }
-
-    IEnumerator FadeInElement(Image element, float duration)
-    {
-        yield return element.DOFade(1, duration).WaitForCompletion();
-    }
-
-    IEnumerator FadeOutElement(TextMeshProUGUI element, float duration)
-    {
-        yield return element.DOFade(0, duration).WaitForCompletion();
-    }
-
-    IEnumerator ChangeTextColor(TextMeshProUGUI element, Color targetColor)
-    {
-        yield return element.DOColor(targetColor, transitionDuration / 2).WaitForCompletion();
     }
 
     void SkipIntro()
@@ -169,26 +149,22 @@ public class IntroNarrativeManager : MonoBehaviour
 
         StopAllCoroutines();
 
-        oldProjectText.text = "KARYO";
-        newProjectText.text = "PROJECT GROW";
-        arrowImage.color = Color.white;
-        contextualLine.text = "1 LEGEND";
-        contextualLine.alpha = 1;
-        contextualLine.color = new Color(0.05f, 0.53f, 0.97f); // #0D86F8
+        var lastMessage = messages[messages.Length - 1];
+        numberText.text = lastMessage.number;
+        wordText.text = lastMessage.word;
         selectHubText.alpha = 1;
-        selectHubText.color = highlightColor;
 
         StartCoroutine(FadeOutAndLoadNextScene());
     }
 
     IEnumerator FadeOutAndLoadNextScene()
     {
+        yield return new WaitForSeconds(1f);
+
         Sequence fadeOutSequence = DOTween.Sequence();
-        fadeOutSequence.Join(oldProjectText.DOFade(0, transitionDuration / 2));
-        fadeOutSequence.Join(newProjectText.DOFade(0, transitionDuration / 2));
-        fadeOutSequence.Join(arrowImage.DOFade(0, transitionDuration / 2));
-        fadeOutSequence.Join(contextualLine.DOFade(0, transitionDuration / 2));
-        fadeOutSequence.Join(selectHubText.DOFade(0, transitionDuration / 2));
+        fadeOutSequence.Join(numberText.DOFade(0, finalFadeOutDuration));
+        fadeOutSequence.Join(wordText.DOFade(0, finalFadeOutDuration));
+        fadeOutSequence.Join(selectHubText.DOFade(0, finalFadeOutDuration));
         yield return fadeOutSequence.WaitForCompletion();
 
         SceneManager.LoadScene("ChallengeLobby");
