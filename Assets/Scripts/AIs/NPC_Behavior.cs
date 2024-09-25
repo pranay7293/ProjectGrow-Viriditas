@@ -216,12 +216,10 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     {
         if (characterController.IsInGroup())
         {
-            // If in a group, consider group-based actions
             EvaluateGroupObjectives();
         }
         else
         {
-            // If not in a group, consider joining or forming a group
             ConsiderJoiningGroup();
         }
     }
@@ -237,13 +235,11 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         GameState currentState = GameManager.Instance.GetCurrentGameState();
         string bestGroupObjective = npcData.GetMentalModel().MakeDecision(groupObjectives, currentState);
 
-        // Implement group objective here (e.g., move as a group to a new location)
         MoveGroupToObjective(groupId, bestGroupObjective);
     }
 
     private List<string> GetGroupObjectives(List<UniversalCharacterController> groupMembers)
     {
-        // Combine objectives from all group members
         HashSet<string> groupObjectives = new HashSet<string>();
         foreach (var member in groupMembers)
         {
@@ -254,8 +250,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
     private void MoveGroupToObjective(string groupId, string objective)
     {
-        // Implement logic to move the group towards the objective
-        // This could involve finding a suitable location and using GroupManager to move the group
         LocationManager targetLocation = FindLocationForObjective(objective);
         if (targetLocation != null)
         {
@@ -285,26 +279,21 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         }
         else if (nearbyCharacters.Count > 0 && ShouldFormGroup(nearbyCharacters))
         {
-            // Exclude player-controlled characters
             List<UniversalCharacterController> groupMembers = new List<UniversalCharacterController> { characterController };
-            groupMembers.AddRange(nearbyCharacters.Where(c => !c.IsPlayerControlled).Take(2)); // Limit to 3 members total
+            groupMembers.AddRange(nearbyCharacters.Where(c => !c.IsPlayerControlled).Take(2));
             GroupManager.Instance.FormGroup(groupMembers);
         }
     }
 
     private bool ShouldJoinGroup(UniversalCharacterController groupMember)
     {
-        // Implement logic to decide whether to join a group
         float relationshipScore = npcData.GetRelationship(groupMember.characterName);
         return relationshipScore > 0.6f && Random.value < 0.5f;
     }
 
     private bool ShouldFormGroup(List<UniversalCharacterController> nearbyCharacters)
     {
-        // Exclude player-controlled characters
         nearbyCharacters = nearbyCharacters.Where(c => !c.IsPlayerControlled).ToList();
-
-        // Implement logic to decide whether to form a new group
         return nearbyCharacters.Count >= 2 && Random.value < 0.3f;
     }
 
@@ -503,9 +492,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
         characterController.StartAction(action);
         characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
-
-        // Removed non-dialogue logging
-        // DialogueManager.Instance?.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {action.description}");
     }
 
     private void PursuePersonalGoal()
@@ -529,9 +515,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
             characterController.StartAction(action);
             characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
-
-            // Removed non-dialogue logging
-            // DialogueManager.Instance?.AddToChatLog(characterController.characterName, $"{characterController.characterName} is {action.description}");
         }
         else
         {

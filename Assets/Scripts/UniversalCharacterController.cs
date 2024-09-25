@@ -31,6 +31,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public float rotationSpeed = 120f;
     public float interactionDistance = 5f;
 
+    [Header("Ground Check")]
+    public float groundCheckDistance = 0.2f;
+    private Vector3 groundNormal;
+    private bool isGrounded;
+
     [Header("AI Settings")]
     public AISettings aiSettings;
 
@@ -68,7 +73,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public string CurrentActionName => currentAction?.actionName ?? "";
 
     private Vector3 moveDirection;
-    private float rotationY;
+    private float currentSpeed;
+    private Quaternion targetRotation;
 
     public bool IsPlayerControlled { get; private set; }
 
@@ -123,34 +129,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
 
         InitializeGuideTextBox();
-
         InitializeMaterials();
-
-        outlinable = GetComponentInChildren<Outlinable>();
-        if (outlinable == null)
-        {
-            Debug.LogWarning($"Outlinable component not found for {characterName}. Adding one.");
-            GameObject modelObject = transform.Find("ProjectGrow-CharacterModel (Rigged)")?.gameObject;
-            if (modelObject != null)
-            {
-                outlinable = modelObject.AddComponent<Outlinable>();
-            }
-            else
-            {
-                Debug.LogError($"Model object not found for {characterName}. Outline functionality will be disabled.");
-            }
-        }
-
-        if (outlinable != null)
-        {
-            outlinable.OutlineParameters.Color = new Color32(13, 134, 248, 255);
-            outlinable.OutlineParameters.BlurShift = 0;
-            outlinable.OutlineParameters.DilateShift = 0.5f;
-            outlinable.OutlineParameters.Enabled = true;
-            outlinable.enabled = false;
-        }
-
-        SetupAnimator();
+        InitializeOutline();
     }
 
     private void InitializeMaterials()
@@ -185,29 +165,30 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
     }
 
-    public void ShowOutline()
-{
-    if (outlinable != null)
+    private void InitializeOutline()
     {
-        outlinable.enabled = true;
-    }
-}
-
-public void HideOutline()
-{
-    if (outlinable != null)
-    {
-        outlinable.enabled = false;
-    }
-}
-
-    private void SetupAnimator()
-    {
-        if (animator != null)
+        outlinable = GetComponentInChildren<Outlinable>();
+        if (outlinable == null)
         {
-            animator.updateMode = AnimatorUpdateMode.Normal;
-            animator.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
-            animator.applyRootMotion = false;
+            Debug.LogWarning($"Outlinable component not found for {characterName}. Adding one.");
+            GameObject modelObject = transform.Find("ProjectGrow-CharacterModel (Rigged)")?.gameObject;
+            if (modelObject != null)
+            {
+                outlinable = modelObject.AddComponent<Outlinable>();
+            }
+            else
+            {
+                Debug.LogError($"Model object not found for {characterName}. Outline functionality will be disabled.");
+            }
+        }
+
+        if (outlinable != null)
+        {
+            outlinable.OutlineParameters.Color = new Color32(13, 134, 248, 255);
+            outlinable.OutlineParameters.BlurShift = 0;
+            outlinable.OutlineParameters.DilateShift = 0.5f;
+            outlinable.OutlineParameters.Enabled = true;
+            outlinable.enabled = false;
         }
     }
 
@@ -252,7 +233,6 @@ public void HideOutline()
             aiSettings.characterRole = isPlayerControlled ? "Player" : "Default AI";
         }
 
-        // Apply character color immediately after initialization
         UpdateCharacterColor();
     }
 
@@ -275,30 +255,12 @@ public void HideOutline()
         Color whiteColor = Color.white;
         Color logoColor = hasWhiteLabCoat ? Color.black : Color.white;
 
-        if (coatMaterial != null)
-        {
-            coatMaterial.color = characterColor;
-        }
-        if (shirtMaterial != null)
-        {
-            shirtMaterial.color = whiteColor;
-        }
-        if (pantsMaterial != null)
-        {
-            pantsMaterial.color = whiteColor;
-        }
-        if (sneakersMaterial != null)
-        {
-            sneakersMaterial.color = characterColor;
-        }
-        if (logoMaterial != null)
-        {
-            logoMaterial.color = logoColor;
-        }
-        if (baseMaterial != null)
-        {
-            baseMaterial.color = baseColor;
-        }
+        if (coatMaterial != null) coatMaterial.color = characterColor;
+        if (shirtMaterial != null) shirtMaterial.color = whiteColor;
+        if (pantsMaterial != null) pantsMaterial.color = whiteColor;
+        if (sneakersMaterial != null) sneakersMaterial.color = characterColor;
+        if (logoMaterial != null) logoMaterial.color = logoColor;
+        if (baseMaterial != null) baseMaterial.color = baseColor;
     }
 
     private void SetupPlayerControlled()
@@ -398,10 +360,11 @@ public void HideOutline()
     {
         if (photonView.IsMine)
         {
+            CheckGround();
+
             if (IsPlayerControlled)
             {
-                HandlePlayerInput();
-                MovePlayer();
+                HandlePlayerMovement();
             }
             else if (!HasState(CharacterState.Interacting))
             {
@@ -414,67 +377,91 @@ public void HideOutline()
             }
 
             UpdateAnimator();
+            RotateCharacter();
         }
     }
 
-    private void HandlePlayerInput()
+    private void CheckGround()
+    {
+        UnityEngine.AI.NavMeshHit hit;
+        if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out hit, groundCheckDistance, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            isGrounded = true;
+            groundNormal = hit.normal;
+        }
+        else
+        {
+            isGrounded = false;
+            groundNormal = Vector3.up;
+        }
+    }
+
+    private void HandlePlayerMovement()
     {
         moveDirection = InputManager.Instance.PlayerRelativeMoveDirection;
-        rotationY += Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
-
-        if (Input.GetKeyDown(KeyCode.E))
+        currentSpeed = moveDirection.magnitude;
+        if (InputManager.Instance.PlayerRunModifier)
         {
-            TriggerDialogue();
+            currentSpeed *= 2f; // Double speed for running
         }
-    }
 
-    private void MovePlayer()
-    {
         Vector3 movement = transform.right * moveDirection.x + transform.forward * moveDirection.z;
-        float currentSpeed = InputManager.Instance.PlayerRunModifier ? runSpeed : walkSpeed;
-        characterController.Move(movement * currentSpeed * Time.deltaTime);
+        float speed = InputManager.Instance.PlayerRunModifier ? runSpeed : walkSpeed;
+
+        if (isGrounded)
+        {
+            // Project movement onto the ground plane
+            Vector3 projectedMovement = Vector3.ProjectOnPlane(movement, groundNormal);
+            characterController.Move(projectedMovement * speed * Time.deltaTime);
+        }
+        else
+        {
+            // Apply a downward force when not grounded
+            Vector3 gravity = Vector3.down * 9.81f * Time.deltaTime;
+            characterController.Move(movement * speed * Time.deltaTime + gravity);
+        }
 
         if (movement.magnitude > 0.1f)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(movement);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            targetRotation = Quaternion.LookRotation(movement);
         }
-
-        Quaternion cameraRotation = Quaternion.Euler(0, rotationY, 0);
-        transform.rotation = cameraRotation;
     }
 
     private void HandleAIMovement()
     {
         if (HasState(CharacterState.Moving) || HasState(CharacterState.Idle))
         {
-            navMeshAgent.isStopped = false;
+            if (navMeshAgent.hasPath)
+            {
+                currentSpeed = navMeshAgent.velocity.magnitude / runSpeed;
+                moveDirection = navMeshAgent.desiredVelocity.normalized;
+                targetRotation = Quaternion.LookRotation(moveDirection);
+            }
+            else
+            {
+                currentSpeed = 0f;
+                moveDirection = Vector3.zero;
+            }
         }
-        else
+    }
+
+    private void RotateCharacter()
+    {
+        if (targetRotation != Quaternion.identity)
         {
-            navMeshAgent.isStopped = true;
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
     }
 
     private void UpdateAnimator()
-{
-    if (animator != null)
     {
-        bool isMoving = moveDirection.magnitude > 0.1f || (navMeshAgent != null && navMeshAgent.velocity.magnitude > 0.1f);
-        bool isRunning = InputManager.Instance.PlayerRunModifier;
-
-        animator.SetBool("IsMoving", isMoving);
-        animator.SetBool("IsRunning", isRunning);
-        animator.SetBool("IsTalking", HasState(CharacterState.Chatting) || HasState(CharacterState.Collaborating));
-        animator.SetBool("IsPerformingAction", HasState(CharacterState.PerformingAction));
-
-        // Ensure Idle state is triggered when not in other states
-        if (!isMoving && !isRunning && !animator.GetBool("IsTalking") && !animator.GetBool("IsPerformingAction"))
+        if (animator != null)
         {
-            animator.SetTrigger("HappyIdle");
+            animator.SetFloat("Speed", currentSpeed);
+            animator.SetBool("IsTalking", HasState(CharacterState.Chatting) || HasState(CharacterState.Collaborating));
+            animator.SetBool("IsPerformingAction", HasState(CharacterState.PerformingAction));
         }
     }
-}
 
     public void TriggerDialogue()
     {
@@ -682,7 +669,7 @@ public void HideOutline()
         {
             if (i < aiSettings.personalGoalTags.Count && actionName.ToLower().Contains(aiSettings.personalGoalTags[i].ToLower()))
             {
-                PersonalProgress[i] = Mathf.Min(PersonalProgress[i] + 0.05f, 1f); // Reduced increment to 5%
+                PersonalProgress[i] = Mathf.Min(PersonalProgress[i] + 0.05f, 1f);
             }
         }
 
@@ -990,7 +977,7 @@ public void HideOutline()
     {
         if (currentGroupId != null)
         {
-            LeaveGroup(false); // Prevent infinite recursion
+            LeaveGroup(false);
         }
         currentGroupId = groupId;
         AddState(CharacterState.InGroup);
@@ -1019,66 +1006,77 @@ public void HideOutline()
         return currentGroupId;
     }
 
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+   public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+{
+    if (stream.IsWriting)
     {
-        if (stream.IsWriting)
-        {
-            stream.SendNext(transform.position);
-            stream.SendNext(transform.rotation);
-            stream.SendNext(activeStates.ToArray());
-            stream.SendNext(currentObjective);
-            stream.SendNext(actionIndicator.text);
-            stream.SendNext(characterColor);
-            stream.SendNext(PersonalProgress);
-            stream.SendNext(EurekaCount);
-            stream.SendNext(currentAction != null ? currentAction.actionName : "");
-            stream.SendNext(actionStartTime);
-            stream.SendNext(currentCollabID ?? "");
-            stream.SendNext(currentGroupId ?? "");
-        }
-        else
-        {
-            transform.position = (Vector3)stream.ReceiveNext();
-            transform.rotation = (Quaternion)stream.ReceiveNext();
-            activeStates = new HashSet<CharacterState>((CharacterState[])stream.ReceiveNext());
-            currentObjective = (string)stream.ReceiveNext();
-            actionIndicator.text = (string)stream.ReceiveNext();
-            Color receivedColor = (Color)stream.ReceiveNext();
-            PersonalProgress = (float[])stream.ReceiveNext();
-            EurekaCount = (int)stream.ReceiveNext();
-            string actionName = (string)stream.ReceiveNext();
-            actionStartTime = (float)stream.ReceiveNext();
-            currentCollabID = (string)stream.ReceiveNext();
-            currentGroupId = (string)stream.ReceiveNext();
-
-            if (string.IsNullOrEmpty(currentCollabID))
-            {
-                currentCollabID = null;
-            }
-
-            if (string.IsNullOrEmpty(currentGroupId))
-            {
-                currentGroupId = null;
-            }
-
-            if (!string.IsNullOrEmpty(actionName) && currentAction == null && currentLocation != null)
-            {
-                LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
-                if (action != null)
-                {
-                    StartAction(action);
-                }
-            }
-
-            if (receivedColor != characterColor)
-            {
-                characterColor = receivedColor;
-                UpdateCharacterColor();
-            }
-
-            UpdateProgressBarState();
-        }
+        // Sending data
+        stream.SendNext(transform.position);
+        stream.SendNext(transform.rotation);
+        stream.SendNext(activeStates.ToArray());
+        stream.SendNext(currentObjective);
+        stream.SendNext(actionIndicator.text);
+        stream.SendNext(characterColor);
+        stream.SendNext(PersonalProgress);
+        stream.SendNext(EurekaCount);
+        stream.SendNext(currentAction != null ? currentAction.actionName : "");
+        stream.SendNext(actionStartTime);
+        stream.SendNext(currentCollabID ?? "");
+        stream.SendNext(currentGroupId ?? "");
+        stream.SendNext(currentSpeed);
+        stream.SendNext(moveDirection);
+        stream.SendNext(isGrounded);
+        stream.SendNext(groundNormal);
     }
+    else
+    {
+        // Receiving data
+        transform.position = (Vector3)stream.ReceiveNext();
+        transform.rotation = (Quaternion)stream.ReceiveNext();
+        activeStates = new HashSet<CharacterState>((CharacterState[])stream.ReceiveNext());
+        currentObjective = (string)stream.ReceiveNext();
+        actionIndicator.text = (string)stream.ReceiveNext();
+        Color receivedColor = (Color)stream.ReceiveNext();
+        PersonalProgress = (float[])stream.ReceiveNext();
+        EurekaCount = (int)stream.ReceiveNext();
+        string actionName = (string)stream.ReceiveNext();
+        actionStartTime = (float)stream.ReceiveNext();
+        currentCollabID = (string)stream.ReceiveNext();
+        currentGroupId = (string)stream.ReceiveNext();
+        currentSpeed = (float)stream.ReceiveNext();
+        moveDirection = (Vector3)stream.ReceiveNext();
+        isGrounded = (bool)stream.ReceiveNext();
+        groundNormal = (Vector3)stream.ReceiveNext();
+
+        if (string.IsNullOrEmpty(currentCollabID))
+        {
+            currentCollabID = null;
+        }
+
+        if (string.IsNullOrEmpty(currentGroupId))
+        {
+            currentGroupId = null;
+        }
+
+        if (!string.IsNullOrEmpty(actionName) && currentAction == null && currentLocation != null)
+        {
+            LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
+            if (action != null)
+            {
+                StartAction(action);
+            }
+        }
+
+        if (receivedColor != characterColor)
+        {
+            characterColor = receivedColor;
+            UpdateCharacterColor();
+        }
+
+        UpdateProgressBarState();
+        UpdateAnimator();
+    }
+}
 
     public override void OnDisable()
     {
@@ -1097,6 +1095,22 @@ public void HideOutline()
             Vector3 pushDirection = (transform.position - collision.transform.position).normalized;
             pushDirection.y = 0;
             navMeshAgent.Move(pushDirection * Time.deltaTime * 2f);
+        }
+    }
+
+    public void ShowOutline()
+    {
+        if (outlinable != null)
+        {
+            outlinable.enabled = true;
+        }
+    }
+
+    public void HideOutline()
+    {
+        if (outlinable != null)
+        {
+            outlinable.enabled = false;
         }
     }
 }

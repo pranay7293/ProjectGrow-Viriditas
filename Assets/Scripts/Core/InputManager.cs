@@ -51,13 +51,7 @@ public class InputManager : MonoBehaviourPunCallbacks
         {
             if (IsInDialogue || IsPointerOverUIElement()) return Vector3.zero;
 
-            var moveVector = Vector3.zero;
-
-            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) moveVector.z += 1;
-            if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) moveVector.z -= 1;
-            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) moveVector.x += 1;
-            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) moveVector.x -= 1;
-
+            Vector3 moveVector = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
             return moveVector.normalized;
         }
     }
@@ -138,51 +132,48 @@ public class InputManager : MonoBehaviourPunCallbacks
         }
     }
 
-  private void CheckForInteractableCharacter()
-{
-    if (localPlayer == null)
+    private void CheckForInteractableCharacter()
     {
-        return;
-    }
-
-    // Ray origin slightly above player's head, ray cast in the direction the player is facing
-    Vector3 rayOrigin = localPlayer.transform.position + Vector3.up * 1.5f; // Adjust for character's height
-    Vector3 forwardDirection = localPlayer.transform.forward;
-    
-    Ray ray = new Ray(rayOrigin, forwardDirection);  // Cast ray forward from the player
-    Debug.DrawRay(ray.origin, ray.direction * interactionDistance, Color.red); // Draw the ray for visualization
-
-    RaycastHit hit;
-    if (Physics.Raycast(ray, out hit, interactionDistance))
-    {
-        UniversalCharacterController character = hit.collider.GetComponentInParent<UniversalCharacterController>();
-
-        if (character != null && character != localPlayer)
+        if (localPlayer == null)
         {
-            Vector3 directionToCharacter = (character.transform.position - localPlayer.transform.position).normalized;
-            float dotProduct = Vector3.Dot(localPlayer.transform.forward, directionToCharacter);
+            return;
+        }
 
-            if (dotProduct > 0.2f) // Character is roughly within the player's forward view
+        Vector3 rayOrigin = localPlayer.transform.position + Vector3.up * 1.5f;
+        Vector3 forwardDirection = localPlayer.transform.forward;
+        
+        Ray ray = new Ray(rayOrigin, forwardDirection);
+        Debug.DrawRay(ray.origin, ray.direction * interactionDistance, Color.red);
+
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit, interactionDistance))
+        {
+            UniversalCharacterController character = hit.collider.GetComponentInParent<UniversalCharacterController>();
+
+            if (character != null && character != localPlayer)
             {
-                if (currentInteractableCharacter != character)
+                Vector3 directionToCharacter = (character.transform.position - localPlayer.transform.position).normalized;
+                float dotProduct = Vector3.Dot(localPlayer.transform.forward, directionToCharacter);
+
+                if (dotProduct > 0.2f)
                 {
-                    if (currentInteractableCharacter != null)
+                    if (currentInteractableCharacter != character)
                     {
-                        Debug.Log("Hiding outline for: " + currentInteractableCharacter.name);
-                        currentInteractableCharacter.HideOutline();
+                        if (currentInteractableCharacter != null)
+                        {
+                            currentInteractableCharacter.HideOutline();
+                        }
+                        
+                        currentInteractableCharacter = character;
+                        currentInteractableCharacter.ShowOutline();
                     }
-                    
-                    currentInteractableCharacter = character;
-                    Debug.Log("Showing outline for: " + character.name);
-                    currentInteractableCharacter.ShowOutline();
+                    return;
                 }
-                return;
             }
         }
-    }
 
-    ClearCurrentInteractableCharacter();
-}
+        ClearCurrentInteractableCharacter();
+    }
 
     private void ClearCurrentInteractableCharacter()
     {
@@ -197,15 +188,11 @@ public class InputManager : MonoBehaviourPunCallbacks
     {
         if (currentInteractableCharacter != null)
         {
-            // Attempt interaction
             if (currentInteractableCharacter.HasState(UniversalCharacterController.CharacterState.Chatting) ||
                 currentInteractableCharacter.HasState(UniversalCharacterController.CharacterState.Collaborating) ||
                 currentInteractableCharacter.HasState(UniversalCharacterController.CharacterState.PerformingAction))
             {
-                // Character is busy
                 Debug.Log($"{currentInteractableCharacter.characterName} is currently busy.");
-                // Optionally, show a message to the player
-                // UIManager.Instance.ShowMessage($"{currentInteractableCharacter.characterName} is currently busy.");
             }
             else
             {
@@ -258,7 +245,6 @@ public class InputManager : MonoBehaviourPunCallbacks
 
     private void TogglePersonalGoals()
     {
-        // Implement this when personal goals UI is created
         Debug.Log("Toggle Personal Goals - Not yet implemented");
     }
 
