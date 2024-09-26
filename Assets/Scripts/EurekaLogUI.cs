@@ -14,6 +14,24 @@ public class EurekaLogUI : MonoBehaviour
         eurekaLogPanel.SetActive(false);
     }
 
+     private void OnEnable()
+    {
+        EurekaLogManager.Instance.OnEurekaLogEntryAdded += OnEurekaLogEntryAdded;
+    }
+
+    private void OnDisable()
+    {
+        EurekaLogManager.Instance.OnEurekaLogEntryAdded -= OnEurekaLogEntryAdded;
+    }
+
+    private void OnEurekaLogEntryAdded(EurekaLogManager.EurekaLogEntry entry)
+    {
+        if (eurekaLogPanel.activeSelf)
+        {
+            CreateEurekaEntry(entry);
+        }
+    }
+
     public void ToggleEurekaLog()
     {
         bool isVisible = !eurekaLogPanel.activeSelf;
@@ -29,14 +47,17 @@ public class EurekaLogUI : MonoBehaviour
         return eurekaLogPanel.activeSelf;
     }
 
-    private void RefreshEurekaLog()
+     public void RefreshEurekaLog()
     {
-        ClearEntries();
-        List<EurekaLogManager.EurekaLogEntry> entries = EurekaLogManager.Instance.GetEurekaLog();
-        
-        foreach (var entry in entries)
+        if (eurekaLogPanel.activeSelf)
         {
-            CreateEurekaEntry(entry);
+            ClearEntries();
+            List<EurekaLogManager.EurekaLogEntry> entries = EurekaLogManager.Instance.GetEurekaLog();
+            
+            foreach (var entry in entries)
+            {
+                CreateEurekaEntry(entry);
+            }
         }
     }
 

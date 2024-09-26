@@ -27,14 +27,15 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     [Header("Character Settings")]
     public string characterName;
     public Color characterColor = Color.white;
-    public float walkSpeed = 5f;
-    public float runSpeed = 8f;
-    public float rotationSpeed = 5f;
-    public float interactionDistance = 3f;
+    public float walkSpeed = 2f;
+    public float runSpeed = 5f;
+    public float rotationSpeed = 10f;
+    public float interactionDistance = 5f;
 
     [Header("Movement Settings")]
     public float accelerationTime = 0.1f;
     public float decelerationTime = 0.1f;
+    public float rotationSmoothTime = 0.1f;
 
     [Header("AI Settings")]
     public AISettings aiSettings;
@@ -63,7 +64,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private AIManager aiManager;
     private CharacterController characterController;
     private NavMeshAgent navMeshAgent;
-    private GameObject cameraRigInstance;
     private Animator animator;
     private TextMeshPro actionIndicator;
 
@@ -76,6 +76,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private float currentSpeed;
     private float targetSpeed;
     private Quaternion targetRotation;
+    private Vector3 smoothDampVelocity;
+    private float currentRotationVelocity;
 
     public bool IsPlayerControlled { get; private set; }
 
@@ -105,6 +107,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private Outlinable outlinable;
 
     private string currentGroupId;
+    private GameObject cameraRigInstance;
 
     private void Awake()
     {
@@ -367,7 +370,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         {
             UpdateMovement();
             UpdateAnimator();
-            RotateCharacter();
+            UpdateRotation();
 
             if (isAcclimating)
             {
@@ -394,11 +397,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         bool isRunning = InputManager.Instance.PlayerRunModifier;
 
         targetSpeed = input.magnitude > 0.1f ? (isRunning ? runSpeed : walkSpeed) : 0f;
-        currentSpeed = Mathf.SmoothDamp(currentSpeed, targetSpeed, ref moveDirection.y, accelerationTime);
+        currentSpeed = Mathf.SmoothDamp(currentSpeed, targetSpeed, ref smoothDampVelocity.y, accelerationTime);
 
         if (input.magnitude > 0.1f)
         {
-            moveDirection = transform.TransformDirection(input).normalized;
+            moveDirection = PlayerCamera.transform.TransformDirection(input).normalized;
+            moveDirection.y = 0;
             targetRotation = Quaternion.LookRotation(moveDirection);
         }
 
@@ -445,7 +449,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
     }
 
-    private void RotateCharacter()
+    private void UpdateRotation()
     {
         if (targetRotation != Quaternion.identity)
         {
@@ -454,14 +458,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     private void UpdateAnimator()
-{
-    float normalizedSpeed = currentSpeed / runSpeed;
-    animator.SetFloat("Speed", normalizedSpeed);
-    
-    // Adjust this multiplier as needed
-    float speedMultiplier = 1.1f;  // Example value, adjust based on testing
-    animator.SetFloat("MotionSpeed", normalizedSpeed * speedMultiplier);
-}
+    {
+        float normalizedSpeed = currentSpeed / runSpeed;
+        animator.SetFloat("Speed", normalizedSpeed);
+        animator.SetFloat("MotionSpeed", normalizedSpeed);
+    }
 
     private void OnAnimatorMove()
     {
@@ -902,7 +903,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public void InitiateCollab(string actionName, UniversalCharacterController collaborator)
     {
         if (!photonView.IsMine || IsCollaborating || currentLocation == null || 
-            HasState(CharacterState.Acclimating) || collaborator == null)
+            HasState(CharacterState.Acclimating) || collaborator == null || HasState(CharacterState.Cooldown))
         {
             return;
         }
@@ -950,7 +951,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
     }
 
-   [PunRPC]
+    [PunRPC]
     private void RPC_JoinCollab(string actionName, int initiatorViewID, int[] collaboratorViewIDs, string collabID)
     {
         CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, collaboratorViewIDs, collabID);

@@ -195,12 +195,11 @@ public class CollabManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public void FinalizeCollaboration(string collabID, float actionDuration)
+   public void FinalizeCollaboration(string collabID, float actionDuration)
     {
         if (activeCollabs.TryGetValue(collabID, out List<UniversalCharacterController> collaborators))
         {
             int basePoints = ScoreConstants.GetActionPoints((int)actionDuration);
-
             int collabBonus = Mathf.RoundToInt(basePoints * collabBonusMultiplier);
 
             foreach (var collaborator in collaborators)
@@ -213,10 +212,11 @@ public class CollabManager : MonoBehaviourPunCallbacks
                 collaborator.currentCollabID = null;
             }
 
-            // Check for Eureka immediately after collaboration completes
+            // Trigger Eureka moment
             if (EurekaManager.Instance != null)
             {
-                EurekaManager.Instance.CheckForEureka(collaborators, collabID);
+                string actionName = collaborators[0].CurrentActionName; // Get the action name from the first collaborator
+                EurekaManager.Instance.TriggerEureka(collaborators, actionName);
             }
             else
             {

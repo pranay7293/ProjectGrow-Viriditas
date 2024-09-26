@@ -349,6 +349,7 @@ MonoBehaviour:
   interactionDistance: 3
   accelerationTime: 0.1
   decelerationTime: 0.1
+  rotationSmoothTime: 0.1
   aiSettings: {fileID: 11400000, guid: 93472c388af6c49c8b8ede9e9360d0aa, type: 2}
   currentObjective: 
   acclimationTime: 10

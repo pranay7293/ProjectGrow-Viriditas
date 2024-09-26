@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
 
@@ -97,14 +98,17 @@ public class LocationManager : MonoBehaviourPunCallbacks
             Destroy(activeEurekaEffect);
         }
 
-        Renderer locationRenderer = GetComponent<Renderer>();
-        Vector3 center = locationRenderer != null 
-            ? locationRenderer.bounds.center 
-            : transform.position;
+        Vector3 effectPosition = transform.position + Vector3.up * 2f;
+        activeEurekaEffect = Instantiate(eurekaEffectPrefab, effectPosition, Quaternion.identity);
+        StartCoroutine(DestroyEurekaEffectAfterDelay(5f));
+    }
 
-        center += Vector3.up * 1f;
-
-        activeEurekaEffect = Instantiate(eurekaEffectPrefab, center, Quaternion.identity);
-        Destroy(activeEurekaEffect, 5f);
+    private IEnumerator DestroyEurekaEffectAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (activeEurekaEffect != null)
+        {
+            Destroy(activeEurekaEffect);
+        }
     }
 }

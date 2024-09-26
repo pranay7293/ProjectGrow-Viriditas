@@ -44,26 +44,25 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
             scoreChange = ScoreConstants.GetActionPoints(character.currentAction.duration);
             reason = $"{outcome} on {actionName}";
 
-            // Check for Eureka if collaborating
             if (character.IsCollaborating && !string.IsNullOrEmpty(character.currentCollabID))
+        {
+            if (CollabManager.Instance != null)
             {
-                if (CollabManager.Instance != null)
+                List<UniversalCharacterController> collaborators = CollabManager.Instance.GetCollaborators(character.currentCollabID);
+                if (EurekaManager.Instance != null)
                 {
-                    List<UniversalCharacterController> collaborators = CollabManager.Instance.GetCollaborators(character.currentCollabID);
-                    if (EurekaManager.Instance != null)
-                    {
-                        EurekaManager.Instance.CheckForEureka(collaborators, actionName);
-                    }
-                    else
-                    {
-                        Debug.LogWarning("EvaluateActionOutcome: EurekaManager.Instance is null");
-                    }
+                    EurekaManager.Instance.TriggerEureka(collaborators, actionName);
                 }
                 else
                 {
-                    Debug.LogWarning("EvaluateActionOutcome: CollabManager.Instance is null");
+                    Debug.LogWarning("EvaluateActionOutcome: EurekaManager.Instance is null");
                 }
             }
+            else
+            {
+                Debug.LogWarning("EvaluateActionOutcome: CollabManager.Instance is null");
+            }
+        }
         }
         else
         {
@@ -127,7 +126,7 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
         }
         else
         {
-            
+
         }
 
         return Mathf.Clamp01(baseRate + roleBonus + collabBonus);

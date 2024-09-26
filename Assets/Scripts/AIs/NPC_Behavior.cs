@@ -46,29 +46,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         lastIdleMovementTime = Time.time;
     }
 
-    private void Update()
-    {
-        if (!photonView.IsMine) return;
-        if (characterController == null || aiManager == null) return;
-
-        if (!characterController.HasState(UniversalCharacterController.CharacterState.Chatting) &&
-            !characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
-        {
-            UpdateBehavior();
-        }
-
-        if (Time.time - lastBackgroundThinkingTime > backgroundThinkingInterval)
-        {
-            PerformBackgroundThinking();
-            lastBackgroundThinkingTime = Time.time;
-        }
-
-        if (characterController.HasState(UniversalCharacterController.CharacterState.Idle))
-        {
-            UpdateIdleMovement();
-        }
-    }
-
     public void UpdateBehavior()
     {
         if (isAcclimating || characterController == null || aiManager == null) return;
@@ -91,6 +68,17 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         {
             AttemptInteraction();
         }
+
+        if (Time.time - lastBackgroundThinkingTime > backgroundThinkingInterval)
+        {
+            PerformBackgroundThinking();
+            lastBackgroundThinkingTime = Time.time;
+        }
+
+        if (characterController.HasState(UniversalCharacterController.CharacterState.Idle))
+        {
+            UpdateIdleMovement();
+        }
     }
 
     private void PerformBackgroundThinking()
@@ -100,7 +88,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         GameState currentState = GameManager.Instance.GetCurrentGameState();
 
         UpdateMentalModelFromGameState(currentState);
-        ConsiderCollaborations();
         EvaluateObjectives(currentState);
         ConsiderGroupActions();
     }
@@ -118,40 +105,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         }
 
         UpdateEmotionalState(currentState);
-    }
-
-    private void ConsiderCollaborations()
-    {
-        if (CollabManager.Instance == null || characterController == null) return;
-
-        if (CollabManager.Instance.CanInitiateCollab(characterController))
-        {
-            List<UniversalCharacterController> potentialCollaborators = CollabManager.Instance.GetEligibleCollaborators(characterController);
-            foreach (var collaborator in potentialCollaborators)
-            {
-                if (collaborator != null && ShouldInitiateCollabWith(collaborator))
-                {
-                    InitiateCollaboration(collaborator);
-                    break;
-                }
-            }
-        }
-    }
-
-    private bool ShouldInitiateCollabWith(UniversalCharacterController collaborator)
-    {
-        if (npcData == null || collaborator == null) return false;
-
-        float relationshipScore = npcData.GetRelationship(collaborator.characterName);
-        return relationshipScore > 0.5f && Random.value < 0.3f;
-    }
-
-    private void InitiateCollaboration(UniversalCharacterController collaborator)
-    {
-        if (GameManager.Instance == null || characterController == null || collaborator == null) return;
-
-        string actionName = "Collaborate on " + GameManager.Instance.GetCurrentChallenge().title;
-        characterController.InitiateCollab(actionName, collaborator);
     }
 
     private void EvaluateObjectives(GameState currentState)
@@ -297,11 +250,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         return nearbyCharacters.Count >= 2 && Random.value < 0.3f;
     }
 
-    private async Task<string> MakeDecisionWithMemory(List<string> options, GameState currentState)
-    {
-        return await aiManager.MakeDecision(options, currentState);
-    }
-
     private IEnumerator MakeDecisionCoroutine()
     {
         if (characterController == null || aiManager == null || GameManager.Instance == null) yield break;
@@ -380,7 +328,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (availableActions.Count == 0) return;
 
         LocationManager.LocationAction selectedAction = ChooseBestAction(availableActions);
-        aiManager.ConsiderCollaboration(selectedAction);
         ExecuteAction(selectedAction);
     }
 

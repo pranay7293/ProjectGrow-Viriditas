@@ -59,34 +59,23 @@ public class EurekaManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public void CheckForEureka(List<UniversalCharacterController> collaborators, string actionName)
+ public void TriggerEureka(List<UniversalCharacterController> collaborators, string actionName)
     {
         if (!isInitialized)
         {
-            Debug.LogWarning("EurekaManager not initialized. Skipping Eureka check.");
-            return;
-        }
-
-        InitiateEureka(collaborators, actionName);
-    }
-
-    public void InitiateEureka(List<UniversalCharacterController> collaborators, string actionName)
-    {
-        if (!isInitialized)
-        {
-            Debug.LogWarning("EurekaManager not initialized. Skipping Eureka initiation.");
+            Debug.LogWarning("EurekaManager not initialized. Skipping Eureka trigger.");
             return;
         }
 
         if (PhotonNetwork.IsMasterClient && collaborators != null && collaborators.Count > 0)
         {
             int[] collaboratorViewIDs = collaborators.Select(c => c.photonView.ViewID).ToArray();
-            photonView.RPC("TriggerEureka", RpcTarget.All, collaboratorViewIDs, actionName);
+            photonView.RPC("RPC_TriggerEureka", RpcTarget.All, collaboratorViewIDs, actionName);
         }
     }
 
     [PunRPC]
-    public async void TriggerEureka(int[] collaboratorViewIDs, string actionName)
+    private async void RPC_TriggerEureka(int[] collaboratorViewIDs, string actionName)
     {
         List<UniversalCharacterController> collaborators = collaboratorViewIDs
             .Select(id => PhotonView.Find(id)?.GetComponent<UniversalCharacterController>())

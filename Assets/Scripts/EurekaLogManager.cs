@@ -17,6 +17,8 @@ public class EurekaLogManager : MonoBehaviour
     private List<EurekaLogEntry> eurekaLog = new List<EurekaLogEntry>();
     private const int MaxLogEntries = 10;
 
+    public event Action<EurekaLogEntry> OnEurekaLogEntryAdded;
+
     private void Awake()
     {
         if (Instance == null)
@@ -39,12 +41,14 @@ public class EurekaLogManager : MonoBehaviour
             timestamp = DateTime.Now.ToString("HH:mm:ss")
         };
 
-        eurekaLog.Insert(0, entry); // Add new entries at the beginning
+        eurekaLog.Insert(0, entry);
 
         if (eurekaLog.Count > MaxLogEntries)
         {
             eurekaLog.RemoveAt(eurekaLog.Count - 1);
         }
+
+        OnEurekaLogEntryAdded?.Invoke(entry);
     }
 
     public List<EurekaLogEntry> GetEurekaLog()
