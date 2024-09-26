@@ -132,7 +132,7 @@ public class InputManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private void CheckForInteractableCharacter()
+private void CheckForInteractableCharacter()
     {
         if (localPlayer == null)
         {

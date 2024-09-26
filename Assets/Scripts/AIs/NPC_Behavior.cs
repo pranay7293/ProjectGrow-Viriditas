@@ -362,14 +362,12 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
     private void MoveToLocation(string location)
     {
-        if (LocationManagerMaster.Instance == null || navMeshAgent == null || characterController == null) return;
+        if (LocationManagerMaster.Instance == null || characterController == null) return;
 
         Vector3 destination = LocationManagerMaster.Instance.GetLocationPosition(location);
         if (destination != Vector3.zero)
         {
-            navMeshAgent.SetDestination(destination);
-            characterController.AddState(UniversalCharacterController.CharacterState.Moving);
-            characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
+            characterController.MoveTo(destination);
             Debug.Log($"{characterController.characterName} is moving to {location}");
         }
     }
@@ -391,7 +389,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (characterController == null || currentLocationManager == null) return;
 
         characterController.StartAction(action);
-        characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
         ActionLogManager.Instance?.LogAction(characterController.characterName, $"performing {action.actionName} at {currentLocationManager.locationName}");
     }
 
@@ -466,7 +463,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (target == null || aiManager == null) return;
 
         lastInteractionTime = Time.time;
-        characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
         if (target.IsPlayerControlled)
         {
             aiManager.InitiateDialogueWithPlayer(target);
@@ -491,7 +487,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         };
 
         characterController.StartAction(action);
-        characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
     }
 
     private void PursuePersonalGoal()
@@ -514,7 +509,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             };
 
             characterController.StartAction(action);
-            characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
         }
         else
         {
@@ -538,7 +532,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             NavMesh.SamplePosition(randomDirection, out hit, idleMovementRadius, 1);
             Vector3 finalPosition = hit.position;
 
-            navMeshAgent.SetDestination(finalPosition);
+            characterController.MoveTo(finalPosition);
             lastIdleMovementTime = Time.time;
         }
     }

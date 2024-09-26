@@ -181,10 +181,10 @@ GameObject:
   m_Component:
   - component: {fileID: 1423302142698512507}
   - component: {fileID: 3609376687421678756}
+  - component: {fileID: 5944958737743392496}
   - component: {fileID: 1155668115854012151}
   - component: {fileID: 1554460725892305595}
   - component: {fileID: -9078543048310780754}
-  - component: {fileID: 5944958737743392496}
   - component: {fileID: 4096835321216489299}
   - component: {fileID: -6563856029195856982}
   - component: {fileID: -7099667293148506940}
@@ -237,6 +237,48 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &5944958737743392496
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4834720715969533062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5da018abe0aac4681ad05bfb83a087da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterName: Aspen Rodriguez
+  characterColor: {r: 0.3882353, g: 0.3882353, b: 0.3882353, a: 0}
+  walkSpeed: 5
+  runSpeed: 8
+  rotationSpeed: 5
+  interactionDistance: 3
+  accelerationTime: 0.1
+  decelerationTime: 0.1
+  aiSettings: {fileID: 11400000, guid: 1e4091980d9da4e75a78517616f233a5, type: 2}
+  currentObjective: 
+  acclimationTime: 10
+  initialDelay: 10
+  hasWhiteLabCoat: 0
+  coatMaterial: {fileID: 2100000, guid: f5545f721073d444686b4d936407549d, type: 2}
+  shirtMaterial: {fileID: 2100000, guid: c4908d94e993248e1ac8ea96e9c8a629, type: 2}
+  pantsMaterial: {fileID: 2100000, guid: 471080027697f4634ae2195b0cfd3e20, type: 2}
+  sneakersMaterial: {fileID: 2100000, guid: 1862c20587d2f48e0853b888f1e01756, type: 2}
+  logoMaterial: {fileID: 2100000, guid: 19d54fb6433ba43da9f17abac954018d, type: 2}
+  baseMaterial: {fileID: 2100000, guid: d9d85df797543453bb9cda48d460b615, type: 2}
+  currentLocation: {fileID: 0}
+  currentAction:
+    actionName: 
+    description: 
+    baseSuccessRate: 0
+    duration: 0
+    requiredRole: 
+    actionIcon: {fileID: 0}
+    tags: []
+  currentCollabID: 
+  guideTextBoxPrefab: {fileID: 7059216339600709800, guid: 261c8e0ab39b041ac8094519ea7b08fe, type: 3}
 --- !u!136 &1155668115854012151
 CapsuleCollider:
   m_ObjectHideFlags: 8
@@ -329,48 +371,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 1
---- !u!114 &5944958737743392496
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4834720715969533062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5da018abe0aac4681ad05bfb83a087da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  characterName: Aspen Rodriguez
-  characterColor: {r: 0.3882353, g: 0.3882353, b: 0.3882353, a: 0}
-  walkSpeed: 5
-  runSpeed: 8
-  rotationSpeed: 5
-  interactionDistance: 3
-  accelerationTime: 0.1
-  decelerationTime: 0.1
-  aiSettings: {fileID: 11400000, guid: 1e4091980d9da4e75a78517616f233a5, type: 2}
-  currentObjective: 
-  acclimationTime: 10
-  initialDelay: 10
-  hasWhiteLabCoat: 0
-  coatMaterial: {fileID: 2100000, guid: f5545f721073d444686b4d936407549d, type: 2}
-  shirtMaterial: {fileID: 2100000, guid: c4908d94e993248e1ac8ea96e9c8a629, type: 2}
-  pantsMaterial: {fileID: 2100000, guid: 471080027697f4634ae2195b0cfd3e20, type: 2}
-  sneakersMaterial: {fileID: 2100000, guid: 1862c20587d2f48e0853b888f1e01756, type: 2}
-  logoMaterial: {fileID: 2100000, guid: 19d54fb6433ba43da9f17abac954018d, type: 2}
-  baseMaterial: {fileID: 2100000, guid: d9d85df797543453bb9cda48d460b615, type: 2}
-  currentLocation: {fileID: 0}
-  currentAction:
-    actionName: 
-    description: 
-    baseSuccessRate: 0
-    duration: 0
-    requiredRole: 
-    actionIcon: {fileID: 0}
-    tags: []
-  currentCollabID: 
-  guideTextBoxPrefab: {fileID: 7059216339600709800, guid: 261c8e0ab39b041ac8094519ea7b08fe, type: 3}
 --- !u!114 &4096835321216489299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -885,7 +885,7 @@ MonoBehaviour:
   drawingMode: 1
   outlineLayer: 0
   outlineTargets:
-  - IsVisible: 0
+  - IsVisible: 1
     CutoutMask: 8
     edgeDilateAmount: 5
     frontEdgeDilateAmount: 5
@@ -901,7 +901,7 @@ MonoBehaviour:
     cutoutTextureName: 
     DilateRenderingMode: 0
     cutoutTextureIndex: 0
-  - IsVisible: 0
+  - IsVisible: 1
     CutoutMask: 8
     edgeDilateAmount: 5
     frontEdgeDilateAmount: 5
@@ -917,7 +917,7 @@ MonoBehaviour:
     cutoutTextureName: 
     DilateRenderingMode: 0
     cutoutTextureIndex: 0
-  - IsVisible: 0
+  - IsVisible: 1
     CutoutMask: 8
     edgeDilateAmount: 5
     frontEdgeDilateAmount: 5
@@ -933,7 +933,7 @@ MonoBehaviour:
     cutoutTextureName: 
     DilateRenderingMode: 0
     cutoutTextureIndex: 0
-  - IsVisible: 0
+  - IsVisible: 1
     CutoutMask: 8
     edgeDilateAmount: 5
     frontEdgeDilateAmount: 5
@@ -949,7 +949,7 @@ MonoBehaviour:
     cutoutTextureName: 
     DilateRenderingMode: 0
     cutoutTextureIndex: 0
-  - IsVisible: 0
+  - IsVisible: 1
     CutoutMask: 8
     edgeDilateAmount: 5
     frontEdgeDilateAmount: 5
@@ -965,7 +965,7 @@ MonoBehaviour:
     cutoutTextureName: 
     DilateRenderingMode: 0
     cutoutTextureIndex: 0
-  - IsVisible: 0
+  - IsVisible: 1
     CutoutMask: 8
     edgeDilateAmount: 5
     frontEdgeDilateAmount: 5

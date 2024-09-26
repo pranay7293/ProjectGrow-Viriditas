@@ -29,9 +29,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public Color characterColor = Color.white;
     public float walkSpeed = 5f;
     public float runSpeed = 8f;
-    private float animationSpeedMultiplier = 1f;
-    public float rotationSpeed = 10f;
-    public float interactionDistance = 5f;
+    public float rotationSpeed = 5f;
+    public float interactionDistance = 3f;
 
     [Header("Movement Settings")]
     public float accelerationTime = 0.1f;
@@ -272,16 +271,16 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         characterController.enabled = true;
     }
 
-  private void SetupAIControlled()
-{
-    aiManager.Initialize(this);
-    navMeshAgent.enabled = true;
-    characterController.enabled = false;
+    private void SetupAIControlled()
+    {
+        aiManager.Initialize(this);
+        navMeshAgent.enabled = true;
+        characterController.enabled = false;
 
-    navMeshAgent.speed = walkSpeed;
-    navMeshAgent.acceleration = 8f;
-    navMeshAgent.angularSpeed = rotationSpeed * 10;
-}
+        navMeshAgent.speed = walkSpeed;
+        navMeshAgent.acceleration = 8f;
+        navMeshAgent.angularSpeed = rotationSpeed * 10;
+    }
 
     private Camera playerCamera;
 
@@ -362,69 +361,62 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         progressBar.Initialize(this);
     }
 
-   private void Update()
+    private void Update()
     {
         if (photonView.IsMine)
         {
-            if (IsPlayerControlled)
-            {
-                HandlePlayerMovement();
-            }
-            else if (!HasState(CharacterState.Interacting))
-            {
-                HandleAIMovement();
-            }
+            UpdateMovement();
+            UpdateAnimator();
+            RotateCharacter();
 
             if (isAcclimating)
             {
                 UpdateAcclimation();
             }
+        }
+    }
 
-            UpdateAnimator();
-            RotateCharacter();
+    private void UpdateMovement()
+    {
+        if (IsPlayerControlled)
+        {
+            HandlePlayerMovement();
+        }
+        else if (!HasState(CharacterState.Interacting))
+        {
+            HandleAIMovement();
         }
     }
 
     private void HandlePlayerMovement()
-{
-    moveDirection = InputManager.Instance.PlayerRelativeMoveDirection;
-    float inputMagnitude = moveDirection.magnitude;
-    
-    // Determine current speed
-    float currentSpeed = InputManager.Instance.PlayerRunModifier ? runSpeed : walkSpeed;
-
-    // Set the Speed and IsMoving parameters in the Animator
-    animator.SetFloat("Speed", inputMagnitude);
-    animator.SetBool("IsMoving", inputMagnitude > 0.1f);
-
-    // Adjust animation speed to match movement speed
-    animationSpeedMultiplier = currentSpeed / walkSpeed;
-    animator.SetFloat("MotionSpeed", animationSpeedMultiplier);
-
-    if (inputMagnitude > 0.1f)
     {
-        targetRotation = Quaternion.LookRotation(moveDirection);
-    }
+        Vector3 input = InputManager.Instance.PlayerRelativeMoveDirection;
+        bool isRunning = InputManager.Instance.PlayerRunModifier;
 
-    // Apply movement
-    if (characterController.enabled)
-    {
-        Vector3 motion = transform.TransformDirection(moveDirection) * currentSpeed;
-        characterController.Move(motion * Time.deltaTime);
-    }
-}
+        targetSpeed = input.magnitude > 0.1f ? (isRunning ? runSpeed : walkSpeed) : 0f;
+        currentSpeed = Mathf.SmoothDamp(currentSpeed, targetSpeed, ref moveDirection.y, accelerationTime);
 
-private void HandleAIMovement()
-{
-    if (HasState(CharacterState.Moving) || HasState(CharacterState.Idle))
-    {
-        if (navMeshAgent.hasPath)
+        if (input.magnitude > 0.1f)
         {
+            moveDirection = transform.TransformDirection(input).normalized;
+            targetRotation = Quaternion.LookRotation(moveDirection);
+        }
+
+        if (characterController.enabled)
+        {
+            Vector3 motion = moveDirection * currentSpeed;
+            characterController.Move(motion * Time.deltaTime);
+        }
+
+        UpdateMovementState();
+    }
+
+    private void HandleAIMovement()
+    {
+        if (navMeshAgent.enabled && navMeshAgent.hasPath)
+        {
+            currentSpeed = navMeshAgent.velocity.magnitude;
             moveDirection = navMeshAgent.desiredVelocity.normalized;
-            float speed = navMeshAgent.desiredVelocity.magnitude / walkSpeed;
-            animator.SetFloat("Speed", speed);
-            animator.SetFloat("MotionSpeed", speed);
-            animator.SetBool("IsMoving", speed > 0.1f);
 
             if (moveDirection != Vector3.zero)
             {
@@ -433,12 +425,25 @@ private void HandleAIMovement()
         }
         else
         {
-            animator.SetFloat("Speed", 0f);
-            animator.SetFloat("MotionSpeed", 1f);
-            animator.SetBool("IsMoving", false);
+            currentSpeed = 0f;
+        }
+
+        UpdateMovementState();
+    }
+
+    private void UpdateMovementState()
+    {
+        if (currentSpeed > 0.1f)
+        {
+            AddState(CharacterState.Moving);
+            RemoveState(CharacterState.Idle);
+        }
+        else
+        {
+            RemoveState(CharacterState.Moving);
+            AddState(CharacterState.Idle);
         }
     }
-}
 
     private void RotateCharacter()
     {
@@ -449,24 +454,23 @@ private void HandleAIMovement()
     }
 
     private void UpdateAnimator()
-    {
-        animator.SetBool("IsTalking", HasState(CharacterState.Chatting) || HasState(CharacterState.Collaborating));
-        animator.SetBool("IsPerformingAction", HasState(CharacterState.PerformingAction));
+{
+    float normalizedSpeed = currentSpeed / runSpeed;
+    animator.SetFloat("Speed", normalizedSpeed);
+    
+    // Adjust this multiplier as needed
+    float speedMultiplier = 1.1f;  // Example value, adjust based on testing
+    animator.SetFloat("MotionSpeed", normalizedSpeed * speedMultiplier);
+}
 
-        if (HasState(CharacterState.PerformingAction) && currentAction != null)
-        {
-            float progress = (Time.time - actionStartTime) / currentAction.duration;
-            animator.SetFloat("ActionProgress", progress);
-        }
-        else
-        {
-            animator.SetFloat("ActionProgress", 0f);
-        }
-    }
-
- private void OnAnimatorMove()
+    private void OnAnimatorMove()
     {
-        // Root motion is not needed for this setup
+        if (animator.applyRootMotion)
+        {
+            Vector3 position = animator.rootPosition;
+            position.y = transform.position.y;
+            transform.position = position;
+        }
     }
 
     public void TriggerDialogue()
@@ -926,7 +930,7 @@ private void HandleAIMovement()
         AddState(CharacterState.Collaborating);
     }
 
-  public void JoinCollab(string actionName, UniversalCharacterController initiator)
+    public void JoinCollab(string actionName, UniversalCharacterController initiator)
     {
         if (photonView.IsMine && !IsCollaborating)
         {
@@ -946,7 +950,7 @@ private void HandleAIMovement()
         }
     }
 
-    [PunRPC]
+   [PunRPC]
     private void RPC_JoinCollab(string actionName, int initiatorViewID, int[] collaboratorViewIDs, string collabID)
     {
         CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, collaboratorViewIDs, collabID);
@@ -1089,7 +1093,7 @@ private void HandleAIMovement()
         }
     }
 
-   private void OnCollisionStay(Collision collision)
+    private void OnCollisionStay(Collision collision)
     {
         UniversalCharacterController otherCharacter = collision.gameObject.GetComponent<UniversalCharacterController>();
         if (otherCharacter != null)
