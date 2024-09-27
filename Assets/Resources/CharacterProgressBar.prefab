@@ -481,6 +481,7 @@ GameObject:
   - component: {fileID: 2725332552770227459}
   - component: {fileID: 671523573313975834}
   - component: {fileID: 8851563765948243348}
+  - component: {fileID: 6936007299499576096}
   m_Layer: 0
   m_Name: KeyStateOverlay
   m_TagString: Untagged
@@ -506,7 +507,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: -3.84}
-  m_SizeDelta: {x: 160, y: 26}
+  m_SizeDelta: {x: 158, y: 23}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &671523573313975834
 CanvasRenderer:
@@ -546,6 +547,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &6936007299499576096
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3411784958678042534}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EffectColor: {r: 1, g: 1, b: 1, a: 0.5}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 1
 --- !u!1 &3546411591188526298
 GameObject:
   m_ObjectHideFlags: 0

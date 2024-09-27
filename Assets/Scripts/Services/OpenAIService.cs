@@ -178,7 +178,7 @@ Based on this game state, generate three distinct, high-stakes 'What If...?' sce
 3. Relate to the current challenge and game state
 4. Have potential for both positive and negative outcomes
 5. Encourage strategic thinking and collaboration
-6. Be concise but impactful (max 20 words)
+6. Be concise but impactful (max 15 words)
 
 Format the response as follows:
 ... [Scenario 1]

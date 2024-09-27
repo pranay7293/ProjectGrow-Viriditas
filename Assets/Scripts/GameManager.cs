@@ -471,22 +471,22 @@ public class GameManager : MonoBehaviourPunCallbacks
             ActionLogManager.Instance.LogAction(characterName, actionName);
 
             UniversalCharacterController character = GetCharacterByName(characterName);
-            if (character != null && character.currentAction != null)
-            {
-                int scoreChange = ScoreConstants.GetActionPoints(character.currentAction.duration);
-                List<string> actionTags = TagSystem.GetTagsForAction(actionName);
-                UpdatePlayerScore(characterName, scoreChange, actionName, actionTags);
-                UpdateMilestoneProgress(characterName, actionName, actionTags);
+    if (character != null && character.currentAction != null)
+    {
+        int scoreChange = ScoreConstants.GetActionPoints(character.currentAction.duration);
+        List<string> actionTags = TagSystem.GetTagsForAction(actionName);
+        UpdatePlayerScore(characterName, scoreChange, actionName, actionTags);
+        UpdateMilestoneProgress(characterName, actionName, actionTags);
 
-                if (!character.IsPlayerControlled && !character.HasState(UniversalCharacterController.CharacterState.PerformingAction))
-                {
-                    AIManager aiManager = character.GetComponent<AIManager>();
-                    if (aiManager != null)
-                    {
-                        aiManager.ConsiderCollaboration(character.currentAction);
-                    }
-                }
+        if (!character.IsPlayerControlled && !character.HasState(UniversalCharacterController.CharacterState.PerformingAction))
+        {
+            AIManager aiManager = character.GetComponent<AIManager>();
+            if (aiManager != null)
+            {
+                aiManager.ConsiderCollaboration();
             }
+        }
+    }   
         }
     }
 

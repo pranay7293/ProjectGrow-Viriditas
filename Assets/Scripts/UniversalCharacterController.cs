@@ -42,7 +42,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     [Header("Gameplay")]
     public string currentObjective;
-    public float acclimationTime = 10f;
+    public float acclimationTime = 5f;
     public float initialDelay = 10f;
 
     [Header("Special Character Settings")]

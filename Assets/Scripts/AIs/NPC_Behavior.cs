@@ -46,6 +46,29 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         lastIdleMovementTime = Time.time;
     }
 
+    private void Update()
+    {
+        if (!photonView.IsMine) return;
+        if (characterController == null || aiManager == null) return;
+
+        if (!characterController.HasState(UniversalCharacterController.CharacterState.Chatting) &&
+            !characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
+        {
+            UpdateBehavior();
+        }
+
+        if (Time.time - lastBackgroundThinkingTime > backgroundThinkingInterval)
+        {
+            PerformBackgroundThinking();
+            lastBackgroundThinkingTime = Time.time;
+        }
+
+        if (characterController.HasState(UniversalCharacterController.CharacterState.Idle))
+        {
+            UpdateIdleMovement();
+        }
+    }
+
     public void UpdateBehavior()
     {
         if (isAcclimating || characterController == null || aiManager == null) return;
@@ -67,17 +90,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (Time.time - lastInteractionTime > interactionCooldown)
         {
             AttemptInteraction();
-        }
-
-        if (Time.time - lastBackgroundThinkingTime > backgroundThinkingInterval)
-        {
-            PerformBackgroundThinking();
-            lastBackgroundThinkingTime = Time.time;
-        }
-
-        if (characterController.HasState(UniversalCharacterController.CharacterState.Idle))
-        {
-            UpdateIdleMovement();
         }
     }
 
@@ -248,6 +260,11 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     {
         nearbyCharacters = nearbyCharacters.Where(c => !c.IsPlayerControlled).ToList();
         return nearbyCharacters.Count >= 2 && Random.value < 0.3f;
+    }
+
+    private async Task<string> MakeDecisionWithMemory(List<string> options, GameState currentState)
+    {
+        return await aiManager.MakeDecision(options, currentState);
     }
 
     private IEnumerator MakeDecisionCoroutine()

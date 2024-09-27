@@ -352,7 +352,7 @@ MonoBehaviour:
   rotationSmoothTime: 0.1
   aiSettings: {fileID: 11400000, guid: 5fdd7e146b2dd457eb3025262514a580, type: 2}
   currentObjective: 
-  acclimationTime: 10
+  acclimationTime: 5
   initialDelay: 10
   hasWhiteLabCoat: 0
   coatMaterial: {fileID: 2100000, guid: f5545f721073d444686b4d936407549d, type: 2}
@@ -436,6 +436,7 @@ MonoBehaviour:
   memoryConsolidationInterval: 60
   reflectionInterval: 120
   dialogueInitiationCooldown: 300
+  collabConsiderationInterval: 30
 --- !u!114 &-8581686133794132729
 MonoBehaviour:
   m_ObjectHideFlags: 0
