@@ -19,7 +19,14 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private float lastInteractionTime;
     private float interactionDistance = 5f;
 
+    [SerializeField] private float interactionCheckInterval = 2f;
+    private float lastInteractionCheckTime = 0f;
+    [SerializeField] private float waypointPauseTime = 2f;
+    private bool isPausedAtWaypoint = false;
+
     private LocationManager currentLocationManager;
+    [SerializeField] private float locationChangeCooldown = 60f;
+    private float lastLocationChangeTime = 0f;
     private bool isAcclimating = false;
 
     private float backgroundThinkingInterval = 5f;
@@ -325,15 +332,59 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         MoveToLocation(newLocation);
     }
 
-    private void MoveToLocation(string location)
+    public void MoveToPosition(Vector3 position)
     {
-        if (LocationManagerMaster.Instance == null || characterController == null) return;
+        if (navMeshAgent != null && navMeshAgent.enabled)
+        {
+            navMeshAgent.SetDestination(position);
+            characterController.AddState(UniversalCharacterController.CharacterState.Moving);
+            StartCoroutine(CheckWaypointArrival());
+        }
+    }
 
-        Vector3 destination = LocationManagerMaster.Instance.GetLocationPosition(location);
+    private IEnumerator CheckWaypointArrival()
+    {
+        while (characterController.HasState(UniversalCharacterController.CharacterState.Moving))
+        {
+            if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
+            {
+                if (WaypointsManager.Instance.IsNearWaypoint(transform.position) && !isPausedAtWaypoint)
+                {
+                    yield return StartCoroutine(PauseAtWaypoint());
+                }
+                else
+                {
+                    characterController.RemoveState(UniversalCharacterController.CharacterState.Moving);
+                    characterController.AddState(UniversalCharacterController.CharacterState.Idle);
+                    break;
+                }
+            }
+            yield return null;
+        }
+    }
+
+    private IEnumerator PauseAtWaypoint()
+    {
+        isPausedAtWaypoint = true;
+        navMeshAgent.isStopped = true;
+        characterController.RemoveState(UniversalCharacterController.CharacterState.Moving);
+        characterController.AddState(UniversalCharacterController.CharacterState.Idle);
+
+        yield return new WaitForSeconds(waypointPauseTime);
+
+        navMeshAgent.isStopped = false;
+        characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
+        characterController.AddState(UniversalCharacterController.CharacterState.Moving);
+        isPausedAtWaypoint = false;
+    }
+
+    public void MoveToLocation(string locationName)
+    {
+        Vector3 destination = LocationManagerMaster.Instance.GetLocationPosition(locationName);
         if (destination != Vector3.zero)
         {
-            characterController.MoveTo(destination);
-            Debug.Log($"{characterController.characterName} is moving to {location}");
+            MoveToPosition(destination);
+            Debug.Log($"{characterController.characterName} is moving to {locationName}");
         }
     }
 
@@ -392,18 +443,54 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         return score;
     }
 
-    private void AttemptInteraction()
+   private void AttemptInteraction()
+{
+    List<UniversalCharacterController> nearbyCharacters = GetNearbyCharacters();
+    if (nearbyCharacters.Count > 0)
     {
-        List<UniversalCharacterController> nearbyCharacters = GetNearbyCharacters();
-        if (nearbyCharacters.Count > 0)
+        UniversalCharacterController target = ChooseInteractionTarget(nearbyCharacters);
+        if (target != null)
         {
-            UniversalCharacterController target = ChooseInteractionTarget(nearbyCharacters);
-            if (target != null)
+            if (ShouldAttemptCollaboration(target))
+            {
+                InitiateCollaboration(target);
+            }
+            else
             {
                 InitiateInteraction(target);
             }
         }
     }
+}
+
+private bool ShouldAttemptCollaboration(UniversalCharacterController target)
+{
+    // Simple check for prototype: random chance or based on shared location
+    return Random.value > 0.5f || target.currentLocation == characterController.currentLocation;
+}
+
+private void InitiateCollaboration(UniversalCharacterController target)
+{
+    if (CollabManager.Instance.CanInitiateCollab(characterController))
+    {
+        string actionName = ChooseCollaborationAction(target);
+        if (!string.IsNullOrEmpty(actionName))
+        {
+            characterController.InitiateCollab(actionName, target);
+        }
+    }
+}
+
+private string ChooseCollaborationAction(UniversalCharacterController target)
+{
+    if (currentLocationManager == null) return null;
+
+    List<LocationManager.LocationAction> availableActions = currentLocationManager.GetAvailableActions(characterController.aiSettings.characterRole);
+    List<LocationManager.LocationAction> targetActions = currentLocationManager.GetAvailableActions(target.aiSettings.characterRole);
+
+    var commonActions = availableActions.Intersect(targetActions, new LocationActionComparer());
+    return commonActions.Any() ? commonActions.First().actionName : null;
+}
 
     private List<UniversalCharacterController> GetNearbyCharacters()
     {

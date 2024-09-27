@@ -17,7 +17,10 @@ public class AIManager : MonoBehaviourPunCallbacks
     [SerializeField] private float memoryConsolidationInterval = 60f;
     [SerializeField] private float reflectionInterval = 120f;
     [SerializeField] private float dialogueInitiationCooldown = 300f;
-    [SerializeField] private float collabConsiderationInterval = 30f;
+    [SerializeField] private float collabConsiderationInterval = 15f;
+    [SerializeField] private float movementConsiderationInterval = 10f;
+    [SerializeField] private float explorationProbability = 0.2f;
+    private float lastMovementConsiderationTime = 0f;
 
     private bool isInitialized = false;
     private float lastDialogueInitiationTime = 0f;
@@ -36,17 +39,61 @@ public class AIManager : MonoBehaviourPunCallbacks
         StartCoroutine(PeriodicReflection());
     }
 
-    private void Update()
+     private void Update()
     {
         if (!photonView.IsMine || !isInitialized) return;
 
-        if (!characterController.HasState(UniversalCharacterController.CharacterState.Chatting))
+        if (!characterController.HasState(UniversalCharacterController.CharacterState.Chatting) &&
+            !characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
         {
             npcBehavior.UpdateBehavior();
+            ConsiderMovement();
             ConsiderCollaboration();
         }
     }
     #endregion
+
+    private void ConsiderMovement()
+    {
+        if (Time.time - lastMovementConsiderationTime < movementConsiderationInterval) return;
+
+        lastMovementConsiderationTime = Time.time;
+
+        if (characterController.HasState(UniversalCharacterController.CharacterState.Moving) ||
+            characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
+            characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction))
+        {
+            return;
+        }
+
+        if (Random.value < explorationProbability)
+        {
+            ExploreRandomWaypoint();
+        }
+        else
+        {
+            ConsiderMovingToNewLocation();
+        }
+    }
+
+    private void ExploreRandomWaypoint()
+    {
+        Vector3 randomWaypoint = WaypointsManager.Instance.GetRandomWaypoint();
+        if (randomWaypoint != Vector3.zero)
+        {
+            npcBehavior.MoveToPosition(randomWaypoint);
+        }
+    }
+
+    private void ConsiderMovingToNewLocation()
+    {
+        string bestLocation = EvaluateBestLocation();
+        if (bestLocation != characterController.currentLocation.locationName)
+        {
+            Vector3 waypointNearLocation = WaypointsManager.Instance.GetWaypointNearLocation(bestLocation);
+            npcBehavior.MoveToPosition(waypointNearLocation);
+        }
+    }
 
     #region Initialization
     public void Initialize(UniversalCharacterController controller)
@@ -69,29 +116,72 @@ public class AIManager : MonoBehaviourPunCallbacks
     #endregion
 
     #region Collaboration Logic
-    public void ConsiderCollaboration()
-{
-    if (Time.time - lastCollabConsiderationTime < collabConsiderationInterval) return;
-
-    lastCollabConsiderationTime = Time.time;
-
-    if (characterController.HasState(UniversalCharacterController.CharacterState.Cooldown) ||
-        characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
-        characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction) ||
-        characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
+   public void ConsiderCollaboration()
     {
-        return;
-    }
+        if (Time.time - lastCollabConsiderationTime < collabConsiderationInterval) return;
 
-    if (CollabManager.Instance.CanInitiateCollab(characterController))
-    {
+        lastCollabConsiderationTime = Time.time;
+
+        if (characterController.HasState(UniversalCharacterController.CharacterState.Cooldown) ||
+            characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
+            characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction) ||
+            characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
+        {
+            return;
+        }
+
         List<UniversalCharacterController> eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(characterController);
         if (eligibleCollaborators.Count > 0)
         {
             StartCoroutine(EvaluateCollaborationOpportunityCoroutine(eligibleCollaborators));
         }
+        else
+        {
+            ConsiderMovingToNewLocation();
+        }
     }
-}
+
+    private string EvaluateBestLocation()
+    {
+        Dictionary<string, float> locationScores = new Dictionary<string, float>();
+        List<string> allLocations = LocationManagerMaster.Instance.GetAllLocations();
+
+        foreach (string location in allLocations)
+        {
+            float score = 0f;
+
+            // Check for relevant actions
+            List<LocationManager.LocationAction> actions = LocationManagerMaster.Instance.GetLocationActions(location, characterController.aiSettings.characterRole);
+            foreach (var action in actions)
+            {
+                if (action.actionName.ToLower().Contains(characterController.currentObjective.ToLower()))
+                {
+                    score += 2f;
+                }
+                if (npcData.GetMentalModel().GoalImportance.TryGetValue(action.actionName, out float importance))
+                {
+                    score += importance;
+                }
+            }
+
+            // Check for potential collaborators
+            List<UniversalCharacterController> charactersAtLocation = GameManager.Instance.GetAllCharacters().Where(c => c.currentLocation.locationName == location).ToList();
+            foreach (var character in charactersAtLocation)
+            {
+                if (npcData.GetMentalModel().Relationships.TryGetValue(character.characterName, out float relationship))
+                {
+                    score += relationship * 0.5f;
+                }
+            }
+
+            // Add a small random factor
+            score += Random.Range(0f, 0.5f);
+
+            locationScores[location] = score;
+        }
+
+        return locationScores.OrderByDescending(kvp => kvp.Value).First().Key;
+    }
 
 private IEnumerator EvaluateCollaborationOpportunityCoroutine(List<UniversalCharacterController> eligibleCollaborators)
 {

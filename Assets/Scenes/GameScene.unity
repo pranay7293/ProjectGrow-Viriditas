@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 5.883796, g: 3.6945882, b: 2.3938222, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1914,6 +1914,37 @@ MonoBehaviour:
   m_maxWorldHeight: 31.806747
   m_baseTerrainStamperSettings: {fileID: 1364262241}
   m_stamperSettingsList: []
+--- !u!1 &163371292
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 163371293}
+  m_Layer: 0
+  m_Name: Waypoint_2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &163371293
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 163371292}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 16.5, y: 0, z: -8.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &168730762
 GameObject:
   m_ObjectHideFlags: 0
@@ -3204,7 +3235,7 @@ MonoBehaviour:
   - actionName: Model
     description: Create economic simulations
     baseSuccessRate: 50
-    duration: 15
+    duration: 5
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -3214,7 +3245,7 @@ MonoBehaviour:
   - actionName: Forecast
     description: Predict market trends
     baseSuccessRate: 50
-    duration: 30
+    duration: 10
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -3224,7 +3255,7 @@ MonoBehaviour:
   - actionName: Trade
     description: Engage in virtual market exchanges
     baseSuccessRate: 50
-    duration: 45
+    duration: 20
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -4983,7 +5014,7 @@ MonoBehaviour:
   - actionName: Create
     description: Produce bio-infused artworks
     baseSuccessRate: 50
-    duration: 15
+    duration: 5
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -4993,7 +5024,7 @@ MonoBehaviour:
   - actionName: Exhibit
     description: Showcase artistic creations
     baseSuccessRate: 50
-    duration: 30
+    duration: 10
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -5003,7 +5034,7 @@ MonoBehaviour:
   - actionName: Critique
     description: Analyze and discuss art pieces
     baseSuccessRate: 50
-    duration: 45
+    duration: 20
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -6175,6 +6206,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 439706366}
   m_CullTransparentMesh: 1
+--- !u!1 &448792826
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 448792827}
+  m_Layer: 0
+  m_Name: Waypoint_11
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &448792827
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 448792826}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 20.8, y: 0, z: -39.2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &460621679
 GameObject:
   m_ObjectHideFlags: 0
@@ -6790,7 +6852,7 @@ MonoBehaviour:
   - actionName: Simulate
     description: Run space environment tests
     baseSuccessRate: 50
-    duration: 15
+    duration: 5
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -6800,7 +6862,7 @@ MonoBehaviour:
   - actionName: Innovate
     description: Develop space technologies
     baseSuccessRate: 50
-    duration: 30
+    duration: 10
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -6810,7 +6872,7 @@ MonoBehaviour:
   - actionName: Explore
     description: Study extraterrestrial biology
     baseSuccessRate: 50
-    duration: 45
+    duration: 20
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -8142,6 +8204,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 578636522}
   m_CullTransparentMesh: 1
+--- !u!1 &583349324
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 583349325}
+  m_Layer: 0
+  m_Name: Waypoint_13
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &583349325
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 583349324}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 12.2, y: 0, z: 3.6}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &595093794
 GameObject:
   m_ObjectHideFlags: 0
@@ -9210,7 +9303,7 @@ MonoBehaviour:
   - actionName: Debate
     description: Engage in ethical discussions
     baseSuccessRate: 50
-    duration: 15
+    duration: 5
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -9219,7 +9312,7 @@ MonoBehaviour:
   - actionName: Strategize
     description: Develop ethical guidelines
     baseSuccessRate: 50
-    duration: 30
+    duration: 10
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -9229,7 +9322,7 @@ MonoBehaviour:
   - actionName: Philosophize
     description: Explore moral implications
     baseSuccessRate: 50
-    duration: 45
+    duration: 20
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -11178,7 +11271,7 @@ MonoBehaviour:
   - actionName: Tinker
     description: Work on DIY inventions
     baseSuccessRate: 50
-    duration: 15
+    duration: 5
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -11188,7 +11281,7 @@ MonoBehaviour:
   - actionName: Fabricate
     description: Create physical prototypes
     baseSuccessRate: 50
-    duration: 30
+    duration: 10
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -11198,7 +11291,7 @@ MonoBehaviour:
   - actionName: Collaborate
     description: Work on community projects
     baseSuccessRate: 50
-    duration: 45
+    duration: 20
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -11346,6 +11439,82 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 716888091}
   m_CullTransparentMesh: 1
+--- !u!1 &717140339
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 717140340}
+  - component: {fileID: 717140341}
+  m_Layer: 0
+  m_Name: WaypointsManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &717140340
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 717140339}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1063114006}
+  - {fileID: 163371293}
+  - {fileID: 1104541191}
+  - {fileID: 1138415001}
+  - {fileID: 822147813}
+  - {fileID: 1234187815}
+  - {fileID: 1543192260}
+  - {fileID: 1105619422}
+  - {fileID: 1858262350}
+  - {fileID: 1697573617}
+  - {fileID: 448792827}
+  - {fileID: 1851275875}
+  - {fileID: 583349325}
+  - {fileID: 1553232051}
+  - {fileID: 1458852609}
+  m_Father: {fileID: 1992242691}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &717140341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 717140339}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f48237ea0d2445098836939b4462588, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  waypoints:
+  - {fileID: 1063114006}
+  - {fileID: 163371293}
+  - {fileID: 1104541191}
+  - {fileID: 1138415001}
+  - {fileID: 822147813}
+  - {fileID: 1234187815}
+  - {fileID: 1543192260}
+  - {fileID: 1105619422}
+  - {fileID: 1858262350}
+  - {fileID: 1697573617}
+  - {fileID: 448792827}
+  - {fileID: 1851275875}
+  - {fileID: 583349325}
+  - {fileID: 1553232051}
+  - {fileID: 1458852609}
+  waypointRadius: 1
 --- !u!1 &727009541
 GameObject:
   m_ObjectHideFlags: 0
@@ -13293,6 +13462,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 816945270}
   m_CullTransparentMesh: 1
+--- !u!1 &822147812
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 822147813}
+  m_Layer: 0
+  m_Name: Waypoint_5
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &822147813
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 822147812}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 6.1, y: 0, z: -39.7}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &833912091
 GameObject:
   m_ObjectHideFlags: 0
@@ -15486,6 +15686,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1054704950}
   m_CullTransparentMesh: 1
+--- !u!1 &1063114005
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1063114006}
+  m_Layer: 0
+  m_Name: Waypoint_1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1063114006
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1063114005}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 5.5, y: 0, z: -2.4}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1067986830
 GameObject:
   m_ObjectHideFlags: 0
@@ -16322,6 +16553,68 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1092612307}
   m_CullTransparentMesh: 1
+--- !u!1 &1104541190
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1104541191}
+  m_Layer: 0
+  m_Name: Waypoint_3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1104541191
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1104541190}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 6.2, y: 0, z: -25.2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1105619421
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1105619422}
+  m_Layer: 0
+  m_Name: Waypoint_8
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1105619422
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1105619421}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -15.7, y: 0, z: -14}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1105827173
 GameObject:
   m_ObjectHideFlags: 0
@@ -16904,6 +17197,37 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!1 &1138415000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1138415001}
+  m_Layer: 0
+  m_Name: Waypoint_4
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1138415001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1138415000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -15.9, y: 0, z: -25.2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1152135158
 GameObject:
   m_ObjectHideFlags: 0
@@ -18020,6 +18344,37 @@ MonoBehaviour:
   m_unityDetailDistance: 150
   m_unityDetailDensity: 0.538
   m_terrain: {fileID: 1230561727}
+--- !u!1 &1234187814
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1234187815}
+  m_Layer: 0
+  m_Name: Waypoint_6
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1234187815
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1234187814}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -15.8, y: 0, z: -2.4}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1235276828
 GameObject:
   m_ObjectHideFlags: 0
@@ -18313,7 +18668,7 @@ MonoBehaviour:
   - actionName: Broadcast
     description: Share news and updates
     baseSuccessRate: 50
-    duration: 15
+    duration: 5
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -18322,7 +18677,7 @@ MonoBehaviour:
   - actionName: Interview
     description: Gather information from characters
     baseSuccessRate: 50
-    duration: 30
+    duration: 10
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -18332,7 +18687,7 @@ MonoBehaviour:
   - actionName: Produce
     description: Create and edit media content
     baseSuccessRate: 50
-    duration: 45
+    duration: 20
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -20871,6 +21226,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1455322297}
   m_CullTransparentMesh: 1
+--- !u!1 &1458852608
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1458852609}
+  m_Layer: 0
+  m_Name: Waypoint_15
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1458852609
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1458852608}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 4.8, y: 0, z: -31.9}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1471882441
 GameObject:
   m_ObjectHideFlags: 0
@@ -21769,6 +22155,37 @@ MonoBehaviour:
   m_unityDetailDistance: 150
   m_unityDetailDensity: 0.538
   m_terrain: {fileID: 1534267365}
+--- !u!1 &1543192259
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1543192260}
+  m_Layer: 0
+  m_Name: Waypoint_7
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1543192260
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1543192259}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -5.5, y: 0, z: 5.3}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1543745178
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21928,7 +22345,7 @@ MonoBehaviour:
   - actionName: Experiment
     description: Conduct scientific tests
     baseSuccessRate: 50
-    duration: 15
+    duration: 5
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -21938,7 +22355,7 @@ MonoBehaviour:
   - actionName: Analyze
     description: Examine research data
     baseSuccessRate: 50
-    duration: 30
+    duration: 10
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -21948,7 +22365,7 @@ MonoBehaviour:
   - actionName: Document
     description: Record findings and results
     baseSuccessRate: 50
-    duration: 45
+    duration: 20
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -22022,6 +22439,37 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &1553232050
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1553232051}
+  m_Layer: 0
+  m_Name: Waypoint_14
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1553232051
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553232050}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -40.7, y: 0, z: 3.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1557905170
 GameObject:
   m_ObjectHideFlags: 0
@@ -24701,6 +25149,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1689854865}
   m_CullTransparentMesh: 1
+--- !u!1 &1697573616
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1697573617}
+  m_Layer: 0
+  m_Name: Waypoint_10
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1697573617
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1697573616}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -27.9, y: 0, z: 3.1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1704240248 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7556573129858814168, guid: 7b32bedbfbc6b37499df45b05d5a2b8f, type: 3}
@@ -24869,7 +25348,7 @@ MonoBehaviour:
   - actionName: Ideate
     description: Generate new business concepts
     baseSuccessRate: 50
-    duration: 15
+    duration: 5
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -24879,7 +25358,7 @@ MonoBehaviour:
   - actionName: Prototype
     description: Create startup project models
     baseSuccessRate: 50
-    duration: 30
+    duration: 10
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -24889,7 +25368,7 @@ MonoBehaviour:
   - actionName: Pitch
     description: Present ideas to potential investors
     baseSuccessRate: 50
-    duration: 45
+    duration: 20
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -25241,7 +25720,7 @@ MonoBehaviour:
   - actionName: Engineer
     description: Design biological systems
     baseSuccessRate: 50
-    duration: 15
+    duration: 5
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -25251,7 +25730,7 @@ MonoBehaviour:
   - actionName: Cultivate
     description: Grow biological samples
     baseSuccessRate: 50
-    duration: 30
+    duration: 10
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -25261,7 +25740,7 @@ MonoBehaviour:
   - actionName: Automate
     description: Optimize bioprocesses
     baseSuccessRate: 50
-    duration: 45
+    duration: 20
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -26677,6 +27156,37 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   guideDisplay: {fileID: 357820519}
+--- !u!1 &1851275874
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1851275875}
+  m_Layer: 0
+  m_Name: Waypoint_12
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1851275875
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1851275874}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -42.1, y: 0, z: -26.4}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1853923845
 GameObject:
   m_ObjectHideFlags: 0
@@ -26753,6 +27263,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1853923845}
   m_CullTransparentMesh: 1
+--- !u!1 &1858262349
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1858262350}
+  m_Layer: 0
+  m_Name: Waypoint_9
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1858262350
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1858262349}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -26.7, y: 0, z: -31.1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 717140340}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1867502588
 GameObject:
   m_ObjectHideFlags: 0
@@ -28051,6 +28592,7 @@ Transform:
   - {fileID: 1612578684}
   - {fileID: 1010885767}
   - {fileID: 2065698279}
+  - {fileID: 717140340}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1995004029
@@ -29853,69 +30395,6 @@ MonoBehaviour:
   blendDistance: 0
   weight: 1
   sharedProfile: {fileID: 11400000, guid: 9ac154473ed6e294eb1474ce765968db, type: 2}
---- !u!1 &2078477488
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2078477490}
-  - component: {fileID: 2078477489}
-  m_Layer: 0
-  m_Name: NavMesh Surface
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &2078477489
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2078477488}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_AgentTypeID: 0
-  m_CollectObjects: 0
-  m_Size: {x: 10, y: 10, z: 10}
-  m_Center: {x: 0, y: 2, z: 0}
-  m_LayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_UseGeometry: 0
-  m_DefaultArea: 0
-  m_GenerateLinks: 0
-  m_IgnoreNavMeshAgent: 1
-  m_IgnoreNavMeshObstacle: 1
-  m_OverrideTileSize: 0
-  m_TileSize: 256
-  m_OverrideVoxelSize: 0
-  m_VoxelSize: 0.2
-  m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 0}
-  m_BuildHeightMesh: 0
---- !u!4 &2078477490
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2078477488}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -54.925346, y: 9.370003, z: -120.9725}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2105334575
 GameObject:
   m_ObjectHideFlags: 0
@@ -30227,7 +30706,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 0
-  m_Spacing: 10
+  m_Spacing: 20
   m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 0
@@ -33668,7 +34147,7 @@ MonoBehaviour:
   - actionName: Treat
     description: Provide medical care to patients
     baseSuccessRate: 50
-    duration: 15
+    duration: 5
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -33677,7 +34156,7 @@ MonoBehaviour:
   - actionName: Research
     description: Conduct medical experiments
     baseSuccessRate: 50
-    duration: 30
+    duration: 10
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -33687,7 +34166,7 @@ MonoBehaviour:
   - actionName: Consult
     description: Advise on medical issues
     baseSuccessRate: 50
-    duration: 45
+    duration: 20
     requiredRole: 
     actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
     tags:
@@ -33750,4 +34229,3 @@ SceneRoots:
   - {fileID: 1557905173}
   - {fileID: 91253510}
   - {fileID: 1992242691}
-  - {fileID: 2078477490}

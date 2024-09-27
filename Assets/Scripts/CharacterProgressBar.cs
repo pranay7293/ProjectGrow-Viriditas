@@ -14,7 +14,7 @@ public class CharacterProgressBar : MonoBehaviour
     [SerializeField] private Image locationAcclimationFill;
 
     [Header("Settings")]
-    [SerializeField] private float collabCooldown = 45f;
+    [SerializeField] private float collabCooldown = 10f;
     [SerializeField] private Color unfilledColor = new Color(0x4A / 255f, 0x4A / 255f, 0x4A / 255f, 1f);
     [SerializeField] private Color acclimationColor = new Color(0x18 / 255f, 0x18 / 255f, 0x18 / 255f, 1f);
     [SerializeField] private int personalGoalMaxScore = 100;

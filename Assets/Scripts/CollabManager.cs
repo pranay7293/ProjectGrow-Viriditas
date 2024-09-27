@@ -11,7 +11,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
     public static CollabManager Instance { get; private set; }
 
     [SerializeField] private float collabRadius = 5f;
-    [SerializeField] private float collabCooldown = 45f;
+    [SerializeField] private float collabCooldown = 10f;
     [SerializeField] private int maxCollaborators = 3;
     [SerializeField] private float collabBonusMultiplier = 0.5f;
 
@@ -59,8 +59,9 @@ public class CollabManager : MonoBehaviourPunCallbacks
             if (character != initiator &&
                 character.currentLocation == initiator.currentLocation &&
                 Vector3.Distance(initiator.transform.position, character.transform.position) <= collabRadius &&
-                !collabCooldowns.ContainsKey(character.characterName) &&
-                !character.HasState(UniversalCharacterController.CharacterState.PerformingAction) &&
+                (character.HasState(UniversalCharacterController.CharacterState.Idle) ||
+                 character.HasState(UniversalCharacterController.CharacterState.Moving) ||
+                 character.HasState(UniversalCharacterController.CharacterState.Chatting)) &&
                 (string.IsNullOrEmpty(initiatorGroupId) || character.GetCurrentGroupId() == initiatorGroupId))
             {
                 eligibleCollaborators.Add(character);
@@ -183,6 +184,9 @@ public class CollabManager : MonoBehaviourPunCallbacks
                 collaborator.AddState(UniversalCharacterController.CharacterState.Collaborating);
                 collaborator.currentCollabID = collabID;
                 collaborator.StartAction(action);
+
+                // Log the collaboration initiation
+            ActionLogManager.Instance?.LogAction(collaborator.characterName, $"Started collaboration on {actionName} with {string.Join(", ", collaborators.Where(c => c != collaborator).Select(c => c.characterName))}");
             }
         }
 

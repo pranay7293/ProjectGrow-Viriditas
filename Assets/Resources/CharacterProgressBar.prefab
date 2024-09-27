@@ -1061,7 +1061,7 @@ MonoBehaviour:
   keyStateText: {fileID: 1833414641653969601}
   cooldownSlider: {fileID: 2361886666394887692}
   locationAcclimationFill: {fileID: 6491209784774445770}
-  collabCooldown: 45
+  collabCooldown: 10
   unfilledColor: {r: 0.2901961, g: 0.2901961, b: 0.2901961, a: 1}
   acclimationColor: {r: 0.09411765, g: 0.09411765, b: 0.09411765, a: 1}
   personalGoalMaxScore: 100
