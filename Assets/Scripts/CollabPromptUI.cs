@@ -67,7 +67,7 @@ public class CollabPromptUI : MonoBehaviour
         initiatorCharacter = initiator;
         localCharacter = localPlayer;
         currentActionName = actionName;
-        promptText.text = $"{initiator.characterName} wants to collab on {actionName}.;
+        promptText.text = $"{initiator.characterName} wants to collab on {actionName}.";
         promptPanel.SetActive(true);
 
         if (timeoutCoroutine != null)

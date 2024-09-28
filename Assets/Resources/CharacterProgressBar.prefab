@@ -368,7 +368,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 1
   m_WholeNumbers: 0
-  m_Value: 0
+  m_Value: 1
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -1059,7 +1059,9 @@ MonoBehaviour:
   - {fileID: 1086672383467311449}
   keyStateOverlay: {fileID: 8851563765948243348}
   keyStateText: {fileID: 1833414641653969601}
+  cooldownBarObject: {fileID: 8430693010208171364}
   cooldownSlider: {fileID: 2361886666394887692}
+  locationAcclimationObject: {fileID: 6409622035986147283}
   locationAcclimationFill: {fileID: 6491209784774445770}
   collabCooldown: 10
   unfilledColor: {r: 0.2901961, g: 0.2901961, b: 0.2901961, a: 1}
@@ -1099,7 +1101,7 @@ RectTransform:
   m_Father: {fileID: 288705101836228347}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -1302,7 +1304,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4946265848223435238
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1781,7 +1783,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &612207379683426650
 RectTransform:
   m_ObjectHideFlags: 0

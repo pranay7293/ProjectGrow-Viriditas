@@ -10,7 +10,9 @@ public class CharacterProgressBar : MonoBehaviour
     [SerializeField] private Slider[] personalGoalSliders;
     [SerializeField] private Image keyStateOverlay;
     [SerializeField] private TextMeshProUGUI keyStateText;
+    [SerializeField] private GameObject cooldownBarObject;
     [SerializeField] private Slider cooldownSlider;
+    [SerializeField] private GameObject locationAcclimationObject;
     [SerializeField] private Image locationAcclimationFill;
 
     [Header("Settings")]
@@ -42,6 +44,7 @@ public class CharacterProgressBar : MonoBehaviour
         SetupSliders(characterColor);
         SetupKeyStateUI(characterColor);
         SetupLocationAcclimationUI(characterColor);
+        SetupCooldownUI();
     }
 
     private void SetupSliders(Color characterColor)
@@ -52,10 +55,6 @@ public class CharacterProgressBar : MonoBehaviour
             slider.maxValue = 1f;
             slider.value = 0f;
         }
-
-        SetSliderColors(cooldownSlider, Color.white);
-        cooldownSlider.maxValue = collabCooldown;
-        cooldownSlider.value = 0f;
     }
 
     private void SetSliderColors(Slider slider, Color fillColor)
@@ -91,11 +90,26 @@ public class CharacterProgressBar : MonoBehaviour
         }
     }
 
+    private void SetupCooldownUI()
+    {
+        if (cooldownSlider != null)
+        {
+            cooldownSlider.direction = Slider.Direction.RightToLeft;
+            cooldownSlider.maxValue = collabCooldown;
+            cooldownSlider.value = collabCooldown;
+            Image fillImage = cooldownSlider.fillRect.GetComponent<Image>();
+            if (fillImage != null)
+            {
+                fillImage.color = Color.white;
+            }
+        }
+    }
+
     private void ResetUIState()
     {
         UpdateKeyState(UniversalCharacterController.CharacterState.None);
-        cooldownSlider.gameObject.SetActive(false);
-        if (locationAcclimationFill != null) locationAcclimationFill.gameObject.SetActive(false);
+        if (cooldownBarObject != null) cooldownBarObject.SetActive(false);
+        if (locationAcclimationObject != null) locationAcclimationObject.SetActive(false);
     }
 
     private void LateUpdate()
@@ -178,6 +192,9 @@ public class CharacterProgressBar : MonoBehaviour
             case UniversalCharacterController.CharacterState.FormingGroup:
                 displayText = "Forming Group";
                 break;
+            case UniversalCharacterController.CharacterState.Cooldown:
+                displayText = "Cooling Down";
+                break;
         }
         
         keyStateText.text = showKeyState ? displayText : "";
@@ -198,35 +215,47 @@ public class CharacterProgressBar : MonoBehaviour
 
     public void SetCooldown(float duration)
     {
-        cooldownSlider.gameObject.SetActive(true);
-        cooldownSlider.maxValue = duration;
-        cooldownSlider.value = duration;
-        StartCoroutine(UpdateCooldown());
+        if (cooldownBarObject != null)
+        {
+            cooldownBarObject.SetActive(true);
+        }
+        if (cooldownSlider != null)
+        {
+            cooldownSlider.maxValue = duration;
+            cooldownSlider.value = duration;
+            StartCoroutine(UpdateCooldown());
+        }
     }
 
     private IEnumerator UpdateCooldown()
     {
-        while (cooldownSlider.value > 0)
+        while (cooldownSlider != null && cooldownSlider.value > 0)
         {
             cooldownSlider.value -= Time.deltaTime;
             yield return null;
         }
-        cooldownSlider.gameObject.SetActive(false);
+        if (cooldownBarObject != null)
+        {
+            cooldownBarObject.SetActive(false);
+        }
         UpdateKeyState(UniversalCharacterController.CharacterState.None);
     }
 
     public void StartAcclimation()
     {
+        if (locationAcclimationObject != null)
+        {
+            locationAcclimationObject.SetActive(true);
+        }
         if (locationAcclimationFill != null)
         {
-            locationAcclimationFill.gameObject.SetActive(true);
             locationAcclimationFill.fillAmount = 1f;
         }
     }
 
     public void UpdateAcclimationProgress(float progress)
     {
-        if (locationAcclimationFill != null)
+        if (locationAcclimationFill != null && locationAcclimationObject.activeSelf)
         {
             locationAcclimationFill.fillAmount = progress;
         }
@@ -234,9 +263,9 @@ public class CharacterProgressBar : MonoBehaviour
 
     public void EndAcclimation()
     {
-        if (locationAcclimationFill != null)
+        if (locationAcclimationObject != null)
         {
-            locationAcclimationFill.gameObject.SetActive(false);
+            locationAcclimationObject.SetActive(false);
         }
         UpdateKeyState(UniversalCharacterController.CharacterState.None);
     }
