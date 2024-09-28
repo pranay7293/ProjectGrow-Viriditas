@@ -1,8 +1,6 @@
 using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.AI;
-using System.Linq; // Ensure this namespace is included
+using System.Linq;
 
 public class GroupManager : MonoBehaviour
 {
@@ -10,18 +8,18 @@ public class GroupManager : MonoBehaviour
 
     [SerializeField] private float groupFormationDistance = 2f;
     [SerializeField] private float groupMovementSpeed = 3f;
+    [SerializeField] private float maxGroupDuration = 120f; // 2 minutes
 
-    private Dictionary<string, List<UniversalCharacterController>> activeGroups = new Dictionary<string, List<UniversalCharacterController>>();
+    private Dictionary<string, Group> activeGroups = new Dictionary<string, Group>();
 
     private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-            // If this script is not attached to a GameObject in the scene, create one
             if (transform.parent == null)
             {
-                GameObject.DontDestroyOnLoad(gameObject);
+                DontDestroyOnLoad(gameObject);
             }
         }
         else
@@ -30,9 +28,13 @@ public class GroupManager : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        CheckGroupDurations();
+    }
+
     public void FormGroup(List<UniversalCharacterController> characters)
     {
-        // Exclude player-controlled characters
         characters = characters.Where(c => !c.IsPlayerControlled).ToList();
 
         if (characters.Count == 0)
@@ -42,7 +44,8 @@ public class GroupManager : MonoBehaviour
         }
 
         string groupId = System.Guid.NewGuid().ToString();
-        activeGroups[groupId] = characters;
+        Group newGroup = new Group(groupId, characters);
+        activeGroups[groupId] = newGroup;
 
         foreach (var character in characters)
         {
@@ -52,7 +55,7 @@ public class GroupManager : MonoBehaviour
         StartCoroutine(FinishGroupFormation(groupId, characters));
     }
 
-    private IEnumerator FinishGroupFormation(string groupId, List<UniversalCharacterController> characters)
+    private System.Collections.IEnumerator FinishGroupFormation(string groupId, List<UniversalCharacterController> characters)
     {
         yield return new WaitForSeconds(2f);  // Adjust time as needed
 
@@ -69,16 +72,15 @@ public class GroupManager : MonoBehaviour
     {
         if (character.IsPlayerControlled)
         {
-            // Skip adding player-controlled characters automatically
             Debug.Log("AddToGroup: Player-controlled character cannot be added without consent.");
             return;
         }
 
-        if (activeGroups.TryGetValue(groupId, out List<UniversalCharacterController> groupMembers))
+        if (activeGroups.TryGetValue(groupId, out Group group))
         {
-            if (!groupMembers.Contains(character))
+            if (!group.Members.Contains(character))
             {
-                groupMembers.Add(character);
+                group.Members.Add(character);
                 character.JoinGroup(groupId);
             }
         }
@@ -86,11 +88,11 @@ public class GroupManager : MonoBehaviour
 
     public void DisbandGroup(string groupId)
     {
-        if (activeGroups.TryGetValue(groupId, out List<UniversalCharacterController> characters))
+        if (activeGroups.TryGetValue(groupId, out Group group))
         {
-            foreach (var character in characters)
+            foreach (var character in group.Members)
             {
-                character.LeaveGroup(false); // Prevent infinite recursion
+                character.LeaveGroup(false);
             }
             activeGroups.Remove(groupId);
         }
@@ -98,31 +100,31 @@ public class GroupManager : MonoBehaviour
 
     public void MoveGroup(string groupId, Vector3 destination)
     {
-        if (activeGroups.TryGetValue(groupId, out List<UniversalCharacterController> characters))
+        if (activeGroups.TryGetValue(groupId, out Group group))
         {
-            Vector3 groupCenter = GetGroupCenter(characters);
+            Vector3 groupCenter = GetGroupCenter(group.Members);
             Vector3 moveDirection = (destination - groupCenter).normalized;
 
-            for (int i = 0; i < characters.Count; i++)
+            for (int i = 0; i < group.Members.Count; i++)
             {
-                Vector3 offset = CalculateFormationOffset(i, characters.Count);
+                Vector3 offset = CalculateFormationOffset(i, group.Members.Count);
                 Vector3 targetPosition = destination + offset;
-                characters[i].MoveTo(targetPosition);
+                group.Members[i].MoveTo(targetPosition);
             }
         }
     }
 
     private void ArrangeGroupFormation(string groupId)
     {
-        if (activeGroups.TryGetValue(groupId, out List<UniversalCharacterController> characters))
+        if (activeGroups.TryGetValue(groupId, out Group group))
         {
-            Vector3 groupCenter = GetGroupCenter(characters);
+            Vector3 groupCenter = GetGroupCenter(group.Members);
 
-            for (int i = 0; i < characters.Count; i++)
+            for (int i = 0; i < group.Members.Count; i++)
             {
-                Vector3 offset = CalculateFormationOffset(i, characters.Count);
+                Vector3 offset = CalculateFormationOffset(i, group.Members.Count);
                 Vector3 targetPosition = groupCenter + offset;
-                characters[i].MoveTo(targetPosition);
+                group.Members[i].MoveTo(targetPosition);
             }
         }
     }
@@ -147,22 +149,48 @@ public class GroupManager : MonoBehaviour
 
     public bool IsInGroup(UniversalCharacterController character)
     {
-        foreach (var group in activeGroups.Values)
-        {
-            if (group.Contains(character))
-            {
-                return true;
-            }
-        }
-        return false;
+        return activeGroups.Values.Any(group => group.Members.Contains(character));
     }
 
     public List<UniversalCharacterController> GetGroupMembers(string groupId)
     {
-        if (activeGroups.TryGetValue(groupId, out List<UniversalCharacterController> characters))
+        if (activeGroups.TryGetValue(groupId, out Group group))
         {
-            return new List<UniversalCharacterController>(characters);
+            return new List<UniversalCharacterController>(group.Members);
         }
         return new List<UniversalCharacterController>();
+    }
+
+    private void CheckGroupDurations()
+    {
+        List<string> groupsToDisband = new List<string>();
+
+        foreach (var group in activeGroups.Values)
+        {
+            group.Duration += Time.deltaTime;
+            if (group.Duration >= maxGroupDuration)
+            {
+                groupsToDisband.Add(group.Id);
+            }
+        }
+
+        foreach (var groupId in groupsToDisband)
+        {
+            DisbandGroup(groupId);
+        }
+    }
+
+    private class Group
+    {
+        public string Id { get; private set; }
+        public List<UniversalCharacterController> Members { get; private set; }
+        public float Duration { get; set; }
+
+        public Group(string id, List<UniversalCharacterController> members)
+        {
+            Id = id;
+            Members = members;
+            Duration = 0f;
+        }
     }
 }

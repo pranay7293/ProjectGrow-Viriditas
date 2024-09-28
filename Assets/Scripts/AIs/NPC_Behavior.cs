@@ -18,6 +18,8 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private float interactionCooldown = 30f;
     private float lastInteractionTime;
     private float interactionDistance = 5f;
+    [SerializeField] private float interactionPauseTime = 3f;
+    private float lastInteractionPauseTime = 0f;
 
     [SerializeField] private float interactionCheckInterval = 2f;
     private float lastInteractionCheckTime = 0f;
@@ -77,21 +79,17 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     }
 
     public void UpdateBehavior()
+{
+    if (isAcclimating || characterController == null || aiManager == null) return;
+
+    if (Time.time - lastDecisionTime > characterController.aiSettings.decisionInterval)
     {
-        if (isAcclimating || characterController == null || aiManager == null) return;
+        StartCoroutine(MakeDecisionCoroutine());
+    }
 
-        if (Time.time - lastDecisionTime > characterController.aiSettings.decisionInterval)
+    if (characterController.HasState(UniversalCharacterController.CharacterState.Moving))
         {
-            StartCoroutine(MakeDecisionCoroutine());
-        }
-
-        if (characterController.HasState(UniversalCharacterController.CharacterState.Moving))
-        {
-            if (navMeshAgent != null && !navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
-            {
-                characterController.RemoveState(UniversalCharacterController.CharacterState.Moving);
-                characterController.AddState(UniversalCharacterController.CharacterState.Idle);
-            }
+            CheckForNearbyCharacters();
         }
 
         if (Time.time - lastInteractionTime > interactionCooldown)
@@ -99,6 +97,35 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             AttemptInteraction();
         }
     }
+
+    private void CheckForNearbyCharacters()
+    {
+        Collider[] hitColliders = Physics.OverlapSphere(transform.position, aiManager.interactionRadius);
+        foreach (var hitCollider in hitColliders)
+        {
+            UniversalCharacterController otherCharacter = hitCollider.GetComponent<UniversalCharacterController>();
+            if (otherCharacter != null && otherCharacter != characterController)
+            {
+                InitiateInteractionPause(otherCharacter);
+                break;
+            }
+        }
+    }
+
+   private void InitiateInteractionPause(UniversalCharacterController otherCharacter)
+{
+    if (Time.time - lastInteractionPauseTime < interactionPauseTime) return;
+
+    lastInteractionPauseTime = Time.time;
+    characterController.StopMoving();
+    StartCoroutine(InteractionPauseCoroutine(otherCharacter));
+}
+
+private IEnumerator InteractionPauseCoroutine(UniversalCharacterController otherCharacter)
+{
+    yield return new WaitForSeconds(interactionPauseTime);
+    aiManager.ConsiderCollaboration(otherCharacter);
+}
 
     private void PerformBackgroundThinking()
     {
@@ -330,6 +357,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
         string newLocation = LocationManagerMaster.Instance.GetTargetLocation(GameManager.Instance.GetCurrentChallenge().milestones);
         MoveToLocation(newLocation);
+
+        lastLocationChangeTime = Time.time;
+        Debug.Log($"{characterController.characterName} moved to {newLocation}");
     }
 
     public void MoveToPosition(Vector3 position)

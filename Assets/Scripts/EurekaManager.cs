@@ -59,8 +59,10 @@ public class EurekaManager : MonoBehaviourPunCallbacks
         }
     }
 
- public void TriggerEureka(List<UniversalCharacterController> collaborators, string actionName)
+    public void TriggerEureka(List<UniversalCharacterController> collaborators, string actionName)
     {
+        Debug.Log($"Triggering Eureka for action: {actionName} with {collaborators.Count} collaborators");
+        
         if (!isInitialized)
         {
             Debug.LogWarning("EurekaManager not initialized. Skipping Eureka trigger.");
@@ -115,6 +117,8 @@ public class EurekaManager : MonoBehaviourPunCallbacks
         {
             collaborators[0].currentLocation.PlayEurekaEffect();
         }
+
+        Debug.Log($"Eureka triggered: {eurekaDescription}");
     }
 
     private void AddRecentEureka(string eurekaDescription)

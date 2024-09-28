@@ -93,6 +93,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public bool IsCollaborating { get; private set; }
     public string currentCollabID;
+    public float CollaborationTimeElapsed { get; private set; }
 
     private HashSet<CharacterState> activeStates = new HashSet<CharacterState>();
 
@@ -376,7 +377,27 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             {
                 UpdateAcclimation();
             }
+
+            if (IsCollaborating)
+            {
+                UpdateCollaboration();
+            }
         }
+    }
+
+    private void UpdateCollaboration()
+    {
+        CollaborationTimeElapsed += Time.deltaTime;
+    }
+
+    public void StartCollaboration(LocationManager.LocationAction action, string collabID)
+    {
+        IsCollaborating = true;
+        AddState(CharacterState.Collaborating);
+        currentCollabID = collabID;
+        currentAction = action;
+        CollaborationTimeElapsed = 0f;
+        StartAction(action);
     }
 
     private void UpdateMovement()
@@ -447,6 +468,38 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             RemoveState(CharacterState.Moving);
             AddState(CharacterState.Idle);
         }
+    }
+
+    public void StopMoving()
+    {
+        if (navMeshAgent != null && navMeshAgent.enabled)
+        {
+            navMeshAgent.isStopped = true;
+        }
+        RemoveState(CharacterState.Moving);
+        AddState(CharacterState.Idle);
+    }
+
+    public void ResumeMoving()
+    {
+        if (navMeshAgent != null && navMeshAgent.enabled)
+        {
+            navMeshAgent.isStopped = false;
+        }
+        RemoveState(CharacterState.Idle);
+        AddState(CharacterState.Moving);
+    }
+
+    public void StartCollaboration(UniversalCharacterController collaborator)
+    {
+        AddState(CharacterState.Collaborating);
+        // Logic to start collaboration
+    }
+
+    public void EndCollaboration()
+    {
+        RemoveState(CharacterState.Collaborating);
+        // Logic to end collaboration
     }
 
     private void UpdateRotation()
@@ -617,34 +670,35 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     private void CompleteAction()
+{
+    if (photonView.IsMine || !IsPlayerControlled)
     {
-        if (photonView.IsMine || !IsPlayerControlled)
+        if (RiskRewardManager.Instance != null)
         {
-            if (RiskRewardManager.Instance != null)
-            {
-                RiskRewardManager.Instance.EvaluateActionOutcome(this, currentAction?.actionName ?? "Unknown Action");
-            }
-
-            if (CollabManager.Instance != null && IsCollaborating && !string.IsNullOrEmpty(currentCollabID))
-            {
-                CollabManager.Instance.FinalizeCollaboration(currentCollabID, currentAction.duration);
-                IsCollaborating = false;
-                RemoveState(CharacterState.Collaborating);
-                currentCollabID = null;
-            }
-            else
-            {
-                GameManager.Instance.UpdateGameState(characterName, currentAction.actionName);
-            }
+            RiskRewardManager.Instance.EvaluateActionOutcome(this, currentAction?.actionName ?? "Unknown Action");
         }
 
-        if (currentAction != null)
+        if (CollabManager.Instance != null && IsCollaborating && !string.IsNullOrEmpty(currentCollabID))
         {
-            CheckPersonalGoalProgress(currentAction.actionName);
+            CollabManager.Instance.FinalizeCollaboration(currentCollabID);
+            IsCollaborating = false;
+            RemoveState(CharacterState.Collaborating);
+            currentCollabID = null;
         }
-        currentAction = null;
-        RemoveState(CharacterState.PerformingAction);
+        else
+        {
+            GameManager.Instance.UpdateGameState(characterName, currentAction.actionName);
+        }
     }
+
+    if (currentAction != null)
+    {
+        CheckPersonalGoalProgress(currentAction.actionName);
+    }
+    currentAction = null;
+    RemoveState(CharacterState.PerformingAction);
+    Debug.Log($"{characterName} completed action: {currentAction?.actionName}");
+}
 
     private void InitializePersonalGoals()
     {
@@ -903,22 +957,18 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public void InitiateCollab(string actionName, UniversalCharacterController collaborator)
     {
         if (!photonView.IsMine || IsCollaborating || currentLocation == null || 
-            HasState(CharacterState.Acclimating) || collaborator == null || HasState(CharacterState.Cooldown))
+            HasState(CharacterState.Acclimating) || collaborator == null)
         {
             return;
         }
 
-        if (IsActionAvailable(actionName))
+        if (CollabManager.Instance.CanInitiateCollab(this) && IsActionAvailable(actionName))
         {
             LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
             if (action != null)
             {
                 currentAction = action;
-
-                if (CollabManager.Instance != null)
-                {
-                    CollabManager.Instance.RequestCollaboration(photonView.ViewID, new int[] { collaborator.photonView.ViewID }, actionName);
-                }
+                CollabManager.Instance.RequestCollaboration(photonView.ViewID, new int[] { collaborator.photonView.ViewID }, actionName);
             }
         }
     }
@@ -929,6 +979,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, collaboratorViewIDs, collabID);
         IsCollaborating = true;
         AddState(CharacterState.Collaborating);
+        currentCollabID = collabID;
     }
 
     public void JoinCollab(string actionName, UniversalCharacterController initiator)
@@ -939,9 +990,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             if (action != null)
             {
                 currentAction = action;
-
                 string collabID = System.Guid.NewGuid().ToString();
-
                 photonView.RPC("RPC_JoinCollab", RpcTarget.All, actionName, initiator.photonView.ViewID, new int[] { photonView.ViewID }, collabID);
             }
             else
@@ -957,32 +1006,37 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         CollabManager.Instance.InitiateCollab(actionName, initiatorViewID, collaboratorViewIDs, collabID);
         IsCollaborating = true;
         AddState(CharacterState.Collaborating);
+        currentCollabID = collabID;
     }
 
-    public void EndCollab(string actionName)
+    public void EndCollab()
     {
         if (photonView.IsMine && IsCollaborating)
         {
             IsCollaborating = false;
             if (currentAction != null)
             {
-                photonView.RPC("RPC_EndCollab", RpcTarget.All, actionName, currentAction.duration);
+                photonView.RPC("RPC_EndCollab", RpcTarget.All, currentAction.actionName, currentAction.duration);
             }
             else
             {
                 Debug.LogWarning($"EndCollab called for {characterName} but currentAction is null");
-                photonView.RPC("RPC_EndCollab", RpcTarget.All, actionName, 0);
+                photonView.RPC("RPC_EndCollab", RpcTarget.All, "Unknown", 0);
             }
         }
     }
 
     [PunRPC]
-    private void RPC_EndCollab(string actionName, int actionDuration)
+private void RPC_EndCollab(string actionName, float actionDuration)
+{
+    if (!string.IsNullOrEmpty(currentCollabID))
     {
-        CollabManager.Instance.FinalizeCollaboration(actionName, actionDuration);
-        RemoveState(CharacterState.Collaborating);
-        AddState(CharacterState.Cooldown);
+        CollabManager.Instance.FinalizeCollaboration(currentCollabID);
     }
+    RemoveState(CharacterState.Collaborating);
+    AddState(CharacterState.Cooldown);
+    currentCollabID = null;
+}
 
     public void JoinGroup(string groupId)
     {
@@ -1036,6 +1090,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             stream.SendNext(currentGroupId ?? "");
             stream.SendNext(currentSpeed);
             stream.SendNext(moveDirection);
+            stream.SendNext(IsCollaborating);
+            stream.SendNext(CollaborationTimeElapsed);
         }
         else
         {
@@ -1054,6 +1110,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             currentGroupId = (string)stream.ReceiveNext();
             currentSpeed = (float)stream.ReceiveNext();
             moveDirection = (Vector3)stream.ReceiveNext();
+            IsCollaborating = (bool)stream.ReceiveNext();
+            CollaborationTimeElapsed = (float)stream.ReceiveNext();
 
             if (string.IsNullOrEmpty(currentCollabID))
             {

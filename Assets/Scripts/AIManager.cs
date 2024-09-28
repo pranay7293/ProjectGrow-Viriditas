@@ -8,7 +8,6 @@ using ProjectGrow.AI;
 
 public class AIManager : MonoBehaviourPunCallbacks
 {
-    #region Fields
     private UniversalCharacterController characterController;
     private NPC_Behavior npcBehavior;
     private NPC_Data npcData;
@@ -21,13 +20,13 @@ public class AIManager : MonoBehaviourPunCallbacks
     [SerializeField] private float movementConsiderationInterval = 10f;
     [SerializeField] private float explorationProbability = 0.2f;
     private float lastMovementConsiderationTime = 0f;
+    private float lastCollabConsiderationTime = 0f;
+
+    public float interactionRadius = 5f;
 
     private bool isInitialized = false;
     private float lastDialogueInitiationTime = 0f;
-    private float lastCollabConsiderationTime = 0f;
-    #endregion
 
-    #region Unity Lifecycle Methods
     private void Awake()
     {
         decisionMaker = gameObject.AddComponent<AIDecisionMaker>();
@@ -39,19 +38,41 @@ public class AIManager : MonoBehaviourPunCallbacks
         StartCoroutine(PeriodicReflection());
     }
 
-     private void Update()
+    public void Update()
     {
         if (!photonView.IsMine || !isInitialized) return;
 
-        if (!characterController.HasState(UniversalCharacterController.CharacterState.Chatting) &&
-            !characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
+        if (characterController == null)
+        {
+            Debug.LogWarning($"AIManager: CharacterController is null for {gameObject.name}");
+            return;
+        }
+
+        if (!characterController.IsCollaborating)
         {
             npcBehavior.UpdateBehavior();
             ConsiderMovement();
             ConsiderCollaboration();
         }
     }
-    #endregion
+
+    public void Initialize(UniversalCharacterController controller)
+    {
+        characterController = controller;
+        npcBehavior = GetComponent<NPC_Behavior>();
+        npcData = GetComponent<NPC_Data>();
+
+        if (npcBehavior != null && npcData != null)
+        {
+            npcData.Initialize(characterController);
+            npcBehavior.Initialize(characterController, npcData, this);
+            isInitialized = true;
+        }
+        else
+        {
+            Debug.LogError("AIManager: One or more required components are missing.");
+        }
+    }
 
     private void ConsiderMovement()
     {
@@ -78,6 +99,12 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     private void ExploreRandomWaypoint()
     {
+        if (WaypointsManager.Instance == null)
+        {
+            Debug.LogWarning("AIManager: WaypointsManager.Instance is null");
+            return;
+        }
+
         Vector3 randomWaypoint = WaypointsManager.Instance.GetRandomWaypoint();
         if (randomWaypoint != Vector3.zero)
         {
@@ -88,56 +115,17 @@ public class AIManager : MonoBehaviourPunCallbacks
     private void ConsiderMovingToNewLocation()
     {
         string bestLocation = EvaluateBestLocation();
-        if (bestLocation != characterController.currentLocation.locationName)
+        if (characterController.currentLocation == null || bestLocation != characterController.currentLocation.locationName)
         {
-            Vector3 waypointNearLocation = WaypointsManager.Instance.GetWaypointNearLocation(bestLocation);
-            npcBehavior.MoveToPosition(waypointNearLocation);
-        }
-    }
-
-    #region Initialization
-    public void Initialize(UniversalCharacterController controller)
-    {
-        characterController = controller;
-        npcBehavior = GetComponent<NPC_Behavior>();
-        npcData = GetComponent<NPC_Data>();
-
-        if (npcBehavior != null && npcData != null)
-        {
-            npcData.Initialize(characterController);
-            npcBehavior.Initialize(characterController, npcData, this);
-            isInitialized = true;
-        }
-        else
-        {
-            Debug.LogError("AIManager: One or more required components are missing.");
-        }
-    }
-    #endregion
-
-    #region Collaboration Logic
-   public void ConsiderCollaboration()
-    {
-        if (Time.time - lastCollabConsiderationTime < collabConsiderationInterval) return;
-
-        lastCollabConsiderationTime = Time.time;
-
-        if (characterController.HasState(UniversalCharacterController.CharacterState.Cooldown) ||
-            characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
-            characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction) ||
-            characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
-        {
-            return;
-        }
-
-        List<UniversalCharacterController> eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(characterController);
-        if (eligibleCollaborators.Count > 0)
-        {
-            StartCoroutine(EvaluateCollaborationOpportunityCoroutine(eligibleCollaborators));
-        }
-        else
-        {
-            ConsiderMovingToNewLocation();
+            if (WaypointsManager.Instance != null)
+            {
+                Vector3 waypointNearLocation = WaypointsManager.Instance.GetWaypointNearLocation(bestLocation);
+                npcBehavior.MoveToPosition(waypointNearLocation);
+            }
+            else
+            {
+                Debug.LogWarning("AIManager: WaypointsManager.Instance is null");
+            }
         }
     }
 
@@ -150,7 +138,6 @@ public class AIManager : MonoBehaviourPunCallbacks
         {
             float score = 0f;
 
-            // Check for relevant actions
             List<LocationManager.LocationAction> actions = LocationManagerMaster.Instance.GetLocationActions(location, characterController.aiSettings.characterRole);
             foreach (var action in actions)
             {
@@ -164,8 +151,10 @@ public class AIManager : MonoBehaviourPunCallbacks
                 }
             }
 
-            // Check for potential collaborators
-            List<UniversalCharacterController> charactersAtLocation = GameManager.Instance.GetAllCharacters().Where(c => c.currentLocation.locationName == location).ToList();
+            List<UniversalCharacterController> charactersAtLocation = GameManager.Instance.GetAllCharacters()
+                .Where(c => c != null && c.currentLocation != null && c.currentLocation.locationName == location)
+                .ToList();
+
             foreach (var character in charactersAtLocation)
             {
                 if (npcData.GetMentalModel().Relationships.TryGetValue(character.characterName, out float relationship))
@@ -174,41 +163,70 @@ public class AIManager : MonoBehaviourPunCallbacks
                 }
             }
 
-            // Add a small random factor
             score += Random.Range(0f, 0.5f);
 
             locationScores[location] = score;
         }
 
-        return locationScores.OrderByDescending(kvp => kvp.Value).First().Key;
+        return locationScores.OrderByDescending(kvp => kvp.Value).FirstOrDefault().Key;
     }
 
-private IEnumerator EvaluateCollaborationOpportunityCoroutine(List<UniversalCharacterController> eligibleCollaborators)
+   public void ConsiderCollaboration(UniversalCharacterController potentialCollaborator = null)
 {
-    Task task = EvaluateCollaborationOpportunity(eligibleCollaborators);
-    yield return new WaitUntil(() => task.IsCompleted);
+    if (Time.time - lastCollabConsiderationTime < collabConsiderationInterval) return;
+
+    lastCollabConsiderationTime = Time.time;
+
+    if (characterController.IsCollaborating)
+    {
+        return;
+    }
+
+    List<UniversalCharacterController> eligibleCollaborators;
+    if (potentialCollaborator != null)
+    {
+        eligibleCollaborators = new List<UniversalCharacterController> { potentialCollaborator };
+    }
+    else
+    {
+        eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(characterController);
+    }
+
+    if (eligibleCollaborators.Count > 0)
+    {
+        StartCoroutine(EvaluateCollaborationOpportunityCoroutine(eligibleCollaborators));
+    }
 }
 
-private async Task EvaluateCollaborationOpportunity(List<UniversalCharacterController> eligibleCollaborators)
-{
-    List<string> options = new List<string> { "Initiate Collaboration", "Continue Current Activity" };
-    GameState currentState = GameManager.Instance.GetCurrentGameState();
-
-    string decision = await MakeDecision(options, currentState);
-
-    if (decision == "Initiate Collaboration")
+    private IEnumerator EvaluateCollaborationOpportunityCoroutine(List<UniversalCharacterController> eligibleCollaborators)
     {
-        UniversalCharacterController bestCollaborator = ChooseBestCollaborator(eligibleCollaborators);
-        if (bestCollaborator != null)
+        Task<bool> task = EvaluateCollaborationOpportunity(eligibleCollaborators);
+        yield return new WaitUntil(() => task.IsCompleted);
+    }
+
+    private async Task<bool> EvaluateCollaborationOpportunity(List<UniversalCharacterController> eligibleCollaborators)
+    {
+        List<string> options = new List<string> { "Initiate Collaboration", "Continue Current Activity" };
+        GameState currentState = GameManager.Instance.GetCurrentGameState();
+
+        string decision = await MakeDecision(options, currentState);
+
+        if (decision == "Initiate Collaboration")
         {
-            string actionName = ChooseCollaborationAction(bestCollaborator);
-            if (!string.IsNullOrEmpty(actionName))
+            UniversalCharacterController bestCollaborator = ChooseBestCollaborator(eligibleCollaborators);
+            if (bestCollaborator != null)
             {
-                characterController.InitiateCollab(actionName, bestCollaborator);
+                string actionName = ChooseCollaborationAction(bestCollaborator);
+                if (!string.IsNullOrEmpty(actionName))
+                {
+                    characterController.InitiateCollab(actionName, bestCollaborator);
+                    return true;
+                }
             }
         }
+
+        return false;
     }
-}
 
     private UniversalCharacterController ChooseBestCollaborator(List<UniversalCharacterController> eligibleCollaborators)
     {
@@ -264,9 +282,15 @@ private async Task EvaluateCollaborationOpportunity(List<UniversalCharacterContr
         if (characterController == null || 
             characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
             characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction) ||
-            characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
+            characterController.IsCollaborating)
         {
             return false;
+        }
+
+        if (Random.value < 0.7f)
+        {
+            Debug.Log($"{characterController.characterName} decided to collaborate on {actionName}");
+            return true;
         }
 
         List<string> options = new List<string> { "Collaborate", "Work alone" };
@@ -275,11 +299,10 @@ private async Task EvaluateCollaborationOpportunity(List<UniversalCharacterContr
         if (currentState.Equals(default(GameState))) return false;
 
         string decision = await MakeDecision(options, currentState);
+        Debug.Log($"{characterController.characterName} decision on collaboration: {decision}");
         return decision == "Collaborate";
     }
-    #endregion
 
-    #region Dialogue and Interaction
     public void InitiateDialogueWithPlayer(UniversalCharacterController player)
     {
         if (Time.time - lastDialogueInitiationTime < dialogueInitiationCooldown) return;
@@ -297,9 +320,7 @@ private async Task EvaluateCollaborationOpportunity(List<UniversalCharacterContr
             GameManager.Instance.dialogueRequestUI.ShowRequest(characterController);
         }
     }
-    #endregion
 
-    #region Memory and Knowledge Management
     public void UpdateKnowledge(string key, string value)
     {
         npcData.UpdateKnowledge(key, value);
@@ -349,9 +370,7 @@ private async Task EvaluateCollaborationOpportunity(List<UniversalCharacterContr
             npcData.GetMentalModel().AddMemory(eventDescription, importance);
         }
     }
-    #endregion
 
-    #region Decision Making and State Management
     public async Task<string> MakeDecision(List<string> options, GameState currentState)
     {
         string memoryContext = string.Join(", ", npcData.GetMentalModel().RetrieveRelevantMemories(string.Join(" ", options)).Select(m => m.Content));
@@ -368,9 +387,7 @@ private async Task EvaluateCollaborationOpportunity(List<UniversalCharacterContr
     {
         npcData.UpdateRelationship(characterName, change);
     }
-    #endregion
 
-    #region Utility Methods
     public List<string> GetPersonalGoalTags()
     {
         return characterController.GetPersonalGoalTags();
@@ -401,7 +418,6 @@ private async Task EvaluateCollaborationOpportunity(List<UniversalCharacterContr
         
         return topScenarios[Random.Range(0, topScenarios.Count)].Key;
     }
-    #endregion
 }
 
 public class LocationActionComparer : IEqualityComparer<LocationManager.LocationAction>
