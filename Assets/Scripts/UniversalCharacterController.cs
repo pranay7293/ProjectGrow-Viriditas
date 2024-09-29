@@ -390,15 +390,16 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         CollaborationTimeElapsed += Time.deltaTime;
     }
 
-    public void StartCollaboration(LocationManager.LocationAction action, string collabID)
-    {
-        IsCollaborating = true;
-        AddState(CharacterState.Collaborating);
-        currentCollabID = collabID;
-        currentAction = action;
-        CollaborationTimeElapsed = 0f;
-        StartAction(action);
-    }
+   public void StartCollaboration(LocationManager.LocationAction action, string collabID)
+{
+    IsCollaborating = true;
+    AddState(CharacterState.Collaborating);
+    currentCollabID = collabID;
+    currentAction = action;
+    CollaborationTimeElapsed = 0f;
+    StartAction(action);
+    Debug.Log($"{characterName} started collaboration on {action.actionName} with ID {collabID}");
+}
 
     private void UpdateMovement()
     {
@@ -685,7 +686,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             RemoveState(CharacterState.Collaborating);
             currentCollabID = null;
         }
-        else
+        else if (currentAction != null)
         {
             GameManager.Instance.UpdateGameState(characterName, currentAction.actionName);
         }
@@ -954,24 +955,24 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return characterColor;
     }
 
-    public void InitiateCollab(string actionName, UniversalCharacterController collaborator)
+   public void InitiateCollab(string actionName, UniversalCharacterController collaborator)
+{
+    if (!photonView.IsMine || IsCollaborating || currentLocation == null || 
+        HasState(CharacterState.Acclimating) || collaborator == null)
     {
-        if (!photonView.IsMine || IsCollaborating || currentLocation == null || 
-            HasState(CharacterState.Acclimating) || collaborator == null)
-        {
-            return;
-        }
+        return;
+    }
 
-        if (CollabManager.Instance.CanInitiateCollab(this) && IsActionAvailable(actionName))
+    if (CollabManager.Instance.CanInitiateCollab(this) && IsActionAvailable(actionName))
+    {
+        LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
+        if (action != null)
         {
-            LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
-            if (action != null)
-            {
-                currentAction = action;
-                CollabManager.Instance.RequestCollaboration(photonView.ViewID, new int[] { collaborator.photonView.ViewID }, actionName);
-            }
+            currentAction = action;
+            CollabManager.Instance.InitiateCollab(actionName, photonView.ViewID, new int[] { collaborator.photonView.ViewID }, System.Guid.NewGuid().ToString());
         }
     }
+}
 
     [PunRPC]
     private void RPC_InitiateCollab(string actionName, int initiatorViewID, int[] collaboratorViewIDs, string collabID)

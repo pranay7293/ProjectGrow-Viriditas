@@ -13,8 +13,6 @@ public class EurekaManager : MonoBehaviourPunCallbacks
     private List<string> recentEurekas = new List<string>();
     private const int maxRecentEurekas = 5;
 
-    private bool isInitialized = false;
-
     private void Awake()
     {
         if (Instance == null)
@@ -22,7 +20,7 @@ public class EurekaManager : MonoBehaviourPunCallbacks
             Instance = this;
             DontDestroyOnLoad(gameObject);
         }
-        else
+        else if (Instance != this)
         {
             Destroy(gameObject);
         }
@@ -30,49 +28,34 @@ public class EurekaManager : MonoBehaviourPunCallbacks
 
     private void Start()
     {
-        InitializeManager();
-    }
-
-    public override void OnEnable()
-    {
-        base.OnEnable();
-        PhotonNetwork.AddCallbackTarget(this);
-    }
-
-    public override void OnDisable()
-    {
-        base.OnDisable();
-        PhotonNetwork.RemoveCallbackTarget(this);
-    }
-
-    public override void OnJoinedRoom()
-    {
-        InitializeManager();
-    }
-
-    private void InitializeManager()
-    {
-        if (!isInitialized)
-        {
-            isInitialized = true;
-            Debug.Log("EurekaManager initialized.");
-        }
+        Debug.Log("EurekaManager initialized.");
     }
 
     public void TriggerEureka(List<UniversalCharacterController> collaborators, string actionName)
     {
-        Debug.Log($"Triggering Eureka for action: {actionName} with {collaborators.Count} collaborators");
-        
-        if (!isInitialized)
+        if (collaborators == null || collaborators.Count < 2)
         {
-            Debug.LogWarning("EurekaManager not initialized. Skipping Eureka trigger.");
+            Debug.LogWarning($"TriggerEureka: Invalid collaborators list for action {actionName}");
             return;
         }
 
-        if (PhotonNetwork.IsMasterClient && collaborators != null && collaborators.Count > 0)
+        Debug.Log($"Triggering Eureka for action: {actionName} with {collaborators.Count} collaborators");
+
+        if (PhotonNetwork.IsMasterClient)
         {
-            int[] collaboratorViewIDs = collaborators.Select(c => c.photonView.ViewID).ToArray();
-            photonView.RPC("RPC_TriggerEureka", RpcTarget.All, collaboratorViewIDs, actionName);
+            int[] collaboratorViewIDs = collaborators
+                .Where(c => c != null && c.photonView != null)
+                .Select(c => c.photonView.ViewID)
+                .ToArray();
+
+            if (collaboratorViewIDs.Length > 0)
+            {
+                photonView.RPC("RPC_TriggerEureka", RpcTarget.All, collaboratorViewIDs, actionName);
+            }
+            else
+            {
+                Debug.LogWarning("TriggerEureka: No valid collaborator ViewIDs found.");
+            }
         }
     }
 
@@ -112,8 +95,7 @@ public class EurekaManager : MonoBehaviourPunCallbacks
 
         GameManager.Instance.UpdateMilestoneProgress("Eureka", "Eureka Moment");
 
-        // Trigger the Eureka effect at the location
-        if (collaborators.Count > 0 && collaborators[0].currentLocation != null)
+        if (collaborators[0].currentLocation != null)
         {
             collaborators[0].currentLocation.PlayEurekaEffect();
         }

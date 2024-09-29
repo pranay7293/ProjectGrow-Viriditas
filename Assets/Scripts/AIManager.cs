@@ -16,13 +16,13 @@ public class AIManager : MonoBehaviourPunCallbacks
     [SerializeField] private float memoryConsolidationInterval = 60f;
     [SerializeField] private float reflectionInterval = 120f;
     [SerializeField] private float dialogueInitiationCooldown = 300f;
-    [SerializeField] private float collabConsiderationInterval = 15f;
+    [SerializeField] private float collabConsiderationInterval = 5f;
     [SerializeField] private float movementConsiderationInterval = 10f;
     [SerializeField] private float explorationProbability = 0.2f;
     private float lastMovementConsiderationTime = 0f;
     private float lastCollabConsiderationTime = 0f;
 
-    public float interactionRadius = 5f;
+    public float interactionRadius = 10f;
 
     private bool isInitialized = false;
     private float lastDialogueInitiationTime = 0f;
@@ -38,7 +38,7 @@ public class AIManager : MonoBehaviourPunCallbacks
         StartCoroutine(PeriodicReflection());
     }
 
-    public void Update()
+    private void Update()
     {
         if (!photonView.IsMine || !isInitialized) return;
 
@@ -141,7 +141,7 @@ public class AIManager : MonoBehaviourPunCallbacks
             List<LocationManager.LocationAction> actions = LocationManagerMaster.Instance.GetLocationActions(location, characterController.aiSettings.characterRole);
             foreach (var action in actions)
             {
-                if (action.actionName.ToLower().Contains(characterController.currentObjective.ToLower()))
+                if (!string.IsNullOrEmpty(characterController.currentObjective) && action.actionName.ToLower().Contains(characterController.currentObjective.ToLower()))
                 {
                     score += 2f;
                 }
@@ -171,61 +171,79 @@ public class AIManager : MonoBehaviourPunCallbacks
         return locationScores.OrderByDescending(kvp => kvp.Value).FirstOrDefault().Key;
     }
 
-   public void ConsiderCollaboration(UniversalCharacterController potentialCollaborator = null)
-{
-    if (Time.time - lastCollabConsiderationTime < collabConsiderationInterval) return;
-
-    lastCollabConsiderationTime = Time.time;
-
-    if (characterController.IsCollaborating)
+    public void ConsiderCollaboration(UniversalCharacterController potentialCollaborator = null)
     {
-        return;
-    }
+        if (Time.time - lastCollabConsiderationTime < collabConsiderationInterval) return;
 
-    List<UniversalCharacterController> eligibleCollaborators;
-    if (potentialCollaborator != null)
-    {
-        eligibleCollaborators = new List<UniversalCharacterController> { potentialCollaborator };
-    }
-    else
-    {
-        eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(characterController);
-    }
+        lastCollabConsiderationTime = Time.time;
 
-    if (eligibleCollaborators.Count > 0)
-    {
-        StartCoroutine(EvaluateCollaborationOpportunityCoroutine(eligibleCollaborators));
+        if (characterController.IsCollaborating)
+        {
+            return;
+        }
+
+        List<UniversalCharacterController> eligibleCollaborators;
+        if (potentialCollaborator != null)
+        {
+            eligibleCollaborators = new List<UniversalCharacterController> { potentialCollaborator };
+        }
+        else
+        {
+            eligibleCollaborators = CollabManager.Instance.GetEligibleCollaborators(characterController);
+        }
+
+        if (eligibleCollaborators.Count > 0)
+        {
+            StartCoroutine(EvaluateCollaborationOpportunityCoroutine(eligibleCollaborators));
+        }
     }
-}
 
     private IEnumerator EvaluateCollaborationOpportunityCoroutine(List<UniversalCharacterController> eligibleCollaborators)
     {
-        Task<bool> task = EvaluateCollaborationOpportunity(eligibleCollaborators);
-        yield return new WaitUntil(() => task.IsCompleted);
+        bool result = EvaluateCollaborationOpportunity(eligibleCollaborators);
+        // Optionally handle 'result' if needed
+        yield break;
     }
 
-    private async Task<bool> EvaluateCollaborationOpportunity(List<UniversalCharacterController> eligibleCollaborators)
+    private bool EvaluateCollaborationOpportunity(List<UniversalCharacterController> eligibleCollaborators)
     {
-        List<string> options = new List<string> { "Initiate Collaboration", "Continue Current Activity" };
-        GameState currentState = GameManager.Instance.GetCurrentGameState();
-
-        string decision = await MakeDecision(options, currentState);
-
-        if (decision == "Initiate Collaboration")
+        UniversalCharacterController bestCollaborator = ChooseBestCollaborator(eligibleCollaborators);
+        if (bestCollaborator != null)
         {
-            UniversalCharacterController bestCollaborator = ChooseBestCollaborator(eligibleCollaborators);
-            if (bestCollaborator != null)
+            string actionName = ChooseCollaborationAction(bestCollaborator);
+            if (!string.IsNullOrEmpty(actionName))
             {
-                string actionName = ChooseCollaborationAction(bestCollaborator);
-                if (!string.IsNullOrEmpty(actionName))
+                bool decided = DecideOnCollaboration(actionName);
+                if (decided)
                 {
-                    characterController.InitiateCollab(actionName, bestCollaborator);
+                    CollabManager.Instance.RequestCollaboration(characterController.photonView.ViewID, new int[] { bestCollaborator.photonView.ViewID }, actionName);
                     return true;
                 }
             }
         }
-
         return false;
+    }
+
+    public bool DecideOnCollaboration(string actionName)
+    {
+        if (characterController == null)
+        {
+            Debug.LogError("AIManager.DecideOnCollaboration: characterController is null.");
+            return false;
+        }
+        if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
+            characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction) ||
+            characterController.IsCollaborating)
+        {
+            return false;
+        }
+
+        if (!characterController.IsPlayerControlled)
+        {
+            return Random.value < 0.9f;
+        }
+
+        return false; // Player-controlled characters don't auto-decide
     }
 
     private UniversalCharacterController ChooseBestCollaborator(List<UniversalCharacterController> eligibleCollaborators)
@@ -270,37 +288,14 @@ public class AIManager : MonoBehaviourPunCallbacks
     private float EvaluateAction(LocationManager.LocationAction action)
     {
         float score = 0f;
-        score += GameManager.Instance.GetCurrentChallenge().title.ToLower().Contains(action.actionName.ToLower()) ? 2f : 0f;
+        if (GameManager.Instance.GetCurrentChallenge().title.ToLower().Contains(action.actionName.ToLower()))
+        {
+            score += 2f;
+        }
         score += characterController.aiSettings.personalGoalTags.Count(goalTag => action.actionName.ToLower().Contains(goalTag.ToLower())) * 1.5f;
         score += TagSystem.GetTagsForAction(action.actionName).Count(tag => tag.StartsWith("Challenge") || tag.StartsWith("PersonalGoal")) * 0.5f;
         score += Random.Range(0f, 0.5f);
         return score;
-    }
-
-    public async Task<bool> DecideOnCollaboration(string actionName)
-    {
-        if (characterController == null || 
-            characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
-            characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction) ||
-            characterController.IsCollaborating)
-        {
-            return false;
-        }
-
-        if (Random.value < 0.7f)
-        {
-            Debug.Log($"{characterController.characterName} decided to collaborate on {actionName}");
-            return true;
-        }
-
-        List<string> options = new List<string> { "Collaborate", "Work alone" };
-        GameState currentState = GameManager.Instance != null ? GameManager.Instance.GetCurrentGameState() : default;
-        
-        if (currentState.Equals(default(GameState))) return false;
-
-        string decision = await MakeDecision(options, currentState);
-        Debug.Log($"{characterController.characterName} decision on collaboration: {decision}");
-        return decision == "Collaborate";
     }
 
     public void InitiateDialogueWithPlayer(UniversalCharacterController player)

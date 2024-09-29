@@ -17,7 +17,7 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
             Instance = this;
             DontDestroyOnLoad(gameObject);
         }
-        else
+        else if (Instance != this)
         {
             Destroy(gameObject);
         }
@@ -49,13 +49,20 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
             if (CollabManager.Instance != null)
             {
                 List<UniversalCharacterController> collaborators = CollabManager.Instance.GetCollaborators(character.currentCollabID);
-                if (EurekaManager.Instance != null)
+                if (collaborators != null && collaborators.Count > 0)
                 {
-                    EurekaManager.Instance.TriggerEureka(collaborators, actionName);
+                    if (EurekaManager.Instance != null)
+                    {
+                        EurekaManager.Instance.TriggerEureka(collaborators, actionName);
+                    }
+                    else
+                    {
+                        Debug.LogError("EvaluateActionOutcome: EurekaManager.Instance is null.");
+                    }
                 }
                 else
                 {
-                    Debug.LogWarning("EvaluateActionOutcome: EurekaManager.Instance is null");
+                    Debug.LogWarning($"EvaluateActionOutcome: No collaborators found for collabID {character.currentCollabID}");
                 }
             }
             else
@@ -63,7 +70,7 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
                 Debug.LogWarning("EvaluateActionOutcome: CollabManager.Instance is null");
             }
         }
-        }
+    }
         else
         {
             outcome = "FAILURE";
@@ -86,7 +93,6 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
             }
         }
 
-        // Update character's mental model only for AI characters
         if (!character.IsPlayerControlled)
         {
             AIManager aiManager = character.GetComponent<AIManager>();
@@ -123,10 +129,6 @@ public class RiskRewardManager : MonoBehaviourPunCallbacks
             {
                 Debug.LogWarning("CalculateSuccessRate: CollabManager.Instance is null");
             }
-        }
-        else
-        {
-
         }
 
         return Mathf.Clamp01(baseRate + roleBonus + collabBonus);

@@ -27,10 +27,14 @@ public class EurekaUI : MonoBehaviour
     }
 
     public void DisplayEurekaNotification(string description)
+{
+    if (!gameObject.activeInHierarchy)
     {
-        StopAllCoroutines();
-        StartCoroutine(ShowNotificationCoroutine(description));
+        gameObject.SetActive(true);
     }
+    StopAllCoroutines();
+    StartCoroutine(ShowNotificationCoroutine(description));
+}
 
     private IEnumerator ShowNotificationCoroutine(string description)
     {

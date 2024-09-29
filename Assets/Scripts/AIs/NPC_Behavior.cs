@@ -15,7 +15,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private AIManager aiManager;
 
     private float lastDecisionTime;
-    private float interactionCooldown = 30f;
+    private float interactionCooldown = 10f;
     private float lastInteractionTime;
     private float interactionDistance = 5f;
     [SerializeField] private float interactionPauseTime = 3f;
@@ -79,15 +79,15 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     }
 
     public void UpdateBehavior()
-{
-    if (isAcclimating || characterController == null || aiManager == null) return;
-
-    if (Time.time - lastDecisionTime > characterController.aiSettings.decisionInterval)
     {
-        StartCoroutine(MakeDecisionCoroutine());
-    }
+        if (isAcclimating || characterController == null || aiManager == null) return;
 
-    if (characterController.HasState(UniversalCharacterController.CharacterState.Moving))
+        if (Time.time - lastDecisionTime > characterController.aiSettings.decisionInterval)
+        {
+            StartCoroutine(MakeDecisionCoroutine());
+        }
+
+        if (characterController.HasState(UniversalCharacterController.CharacterState.Moving))
         {
             CheckForNearbyCharacters();
         }
@@ -112,20 +112,20 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         }
     }
 
-   private void InitiateInteractionPause(UniversalCharacterController otherCharacter)
-{
-    if (Time.time - lastInteractionPauseTime < interactionPauseTime) return;
+    private void InitiateInteractionPause(UniversalCharacterController otherCharacter)
+    {
+        if (Time.time - lastInteractionPauseTime < interactionPauseTime) return;
 
-    lastInteractionPauseTime = Time.time;
-    characterController.StopMoving();
-    StartCoroutine(InteractionPauseCoroutine(otherCharacter));
-}
+        lastInteractionPauseTime = Time.time;
+        characterController.StopMoving();
+        StartCoroutine(InteractionPauseCoroutine(otherCharacter));
+    }
 
-private IEnumerator InteractionPauseCoroutine(UniversalCharacterController otherCharacter)
-{
-    yield return new WaitForSeconds(interactionPauseTime);
-    aiManager.ConsiderCollaboration(otherCharacter);
-}
+    private IEnumerator InteractionPauseCoroutine(UniversalCharacterController otherCharacter)
+    {
+        yield return new WaitForSeconds(interactionPauseTime);
+        aiManager.ConsiderCollaboration(otherCharacter);
+    }
 
     private void PerformBackgroundThinking()
     {
@@ -410,7 +410,7 @@ private IEnumerator InteractionPauseCoroutine(UniversalCharacterController other
 
     public void MoveToLocation(string locationName)
     {
-        Vector3 destination = LocationManagerMaster.Instance.GetLocationPosition(locationName);
+        Vector3 destination = WaypointsManager.Instance.GetWaypointNearLocation(locationName);
         if (destination != Vector3.zero)
         {
             MoveToPosition(destination);
@@ -473,54 +473,53 @@ private IEnumerator InteractionPauseCoroutine(UniversalCharacterController other
         return score;
     }
 
-   private void AttemptInteraction()
-{
-    List<UniversalCharacterController> nearbyCharacters = GetNearbyCharacters();
-    if (nearbyCharacters.Count > 0)
+    private void AttemptInteraction()
     {
-        UniversalCharacterController target = ChooseInteractionTarget(nearbyCharacters);
-        if (target != null)
+        List<UniversalCharacterController> nearbyCharacters = GetNearbyCharacters();
+        if (nearbyCharacters.Count > 0)
         {
-            if (ShouldAttemptCollaboration(target))
+            UniversalCharacterController target = ChooseInteractionTarget(nearbyCharacters);
+            if (target != null)
             {
-                InitiateCollaboration(target);
-            }
-            else
-            {
-                InitiateInteraction(target);
+                if (ShouldAttemptCollaboration(target))
+                {
+                    InitiateCollaboration(target);
+                }
+                else
+                {
+                    InitiateInteraction(target);
+                }
             }
         }
     }
-}
 
-private bool ShouldAttemptCollaboration(UniversalCharacterController target)
-{
-    // Simple check for prototype: random chance or based on shared location
-    return Random.value > 0.5f || target.currentLocation == characterController.currentLocation;
-}
-
-private void InitiateCollaboration(UniversalCharacterController target)
-{
-    if (CollabManager.Instance.CanInitiateCollab(characterController))
+    private bool ShouldAttemptCollaboration(UniversalCharacterController target)
     {
-        string actionName = ChooseCollaborationAction(target);
-        if (!string.IsNullOrEmpty(actionName))
+        return Random.value > 0.5f || target.currentLocation == characterController.currentLocation;
+    }
+
+    private void InitiateCollaboration(UniversalCharacterController target)
+    {
+        if (CollabManager.Instance.CanInitiateCollab(characterController))
         {
-            characterController.InitiateCollab(actionName, target);
+            string actionName = ChooseCollaborationAction(target);
+            if (!string.IsNullOrEmpty(actionName))
+            {
+                characterController.InitiateCollab(actionName, target);
+            }
         }
     }
-}
 
-private string ChooseCollaborationAction(UniversalCharacterController target)
-{
-    if (currentLocationManager == null) return null;
+    private string ChooseCollaborationAction(UniversalCharacterController target)
+    {
+        if (currentLocationManager == null) return null;
 
-    List<LocationManager.LocationAction> availableActions = currentLocationManager.GetAvailableActions(characterController.aiSettings.characterRole);
-    List<LocationManager.LocationAction> targetActions = currentLocationManager.GetAvailableActions(target.aiSettings.characterRole);
+        List<LocationManager.LocationAction> availableActions = currentLocationManager.GetAvailableActions(characterController.aiSettings.characterRole);
+        List<LocationManager.LocationAction> targetActions = currentLocationManager.GetAvailableActions(target.aiSettings.characterRole);
 
-    var commonActions = availableActions.Intersect(targetActions, new LocationActionComparer());
-    return commonActions.Any() ? commonActions.First().actionName : null;
-}
+        var commonActions = availableActions.Intersect(targetActions, new LocationActionComparer());
+        return commonActions.Any() ? commonActions.First().actionName : null;
+    }
 
     private List<UniversalCharacterController> GetNearbyCharacters()
     {

@@ -313,15 +313,16 @@ public class GameManager : MonoBehaviourPunCallbacks
         return challengeDuration;
     }
 
-    private bool ShouldEndGame()
-    {
-        float elapsedTime = Time.time - gameStartTime;
-        bool timeUp = remainingTime <= 0;
-        bool allMilestonesCompleted = milestoneCompletion.Count > 0 && milestoneCompletion.All(m => m.Value);
-        bool minimumTimeMet = elapsedTime >= minimumPlayTime;
+   private bool ShouldEndGame()
+{
+    float elapsedTime = Time.time - gameStartTime;
+    bool timeUp = remainingTime <= 0;
+    // bool allMilestonesCompleted = milestoneCompletion.Count > 0 && milestoneCompletion.All(m => m.Value);
+    bool minimumTimeMet = elapsedTime >= minimumPlayTime;
 
-        return (timeUp || allMilestonesCompleted) && minimumTimeMet;
-    }
+    // Return true only if time is up and minimum playtime is met
+    return timeUp && minimumTimeMet;
+}
 
     [PunRPC]
     private void UpdateTimer(float time)
@@ -573,7 +574,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         if (milestoneCompletion.Count > 0 && milestoneCompletion.All(m => m.Value))
         {
-            EndChallenge();
+            // EndChallenge();
         }
     }
 
@@ -731,10 +732,23 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     public void UpdatePlayerEurekas(UniversalCharacterController character, int eurekaCount)
+{
+    // Remove the recursive call
+    // character.IncrementEurekaCount();
+
+    // Update the player's Eureka count in the GameManager's dictionary
+    if (playerEurekas.ContainsKey(character.characterName))
     {
-        character.IncrementEurekaCount();
-        PlayerProfileManager.Instance.UpdatePlayerEurekas(character.characterName, eurekaCount);
+        playerEurekas[character.characterName] = eurekaCount;
     }
+    else
+    {
+        playerEurekas.Add(character.characterName, eurekaCount);
+    }
+
+    // Update the Player Profile UI
+    PlayerProfileManager.Instance.UpdatePlayerEurekas(character.characterName, eurekaCount);
+}
 
     public int GetPlayerScore(string playerName)
     {
