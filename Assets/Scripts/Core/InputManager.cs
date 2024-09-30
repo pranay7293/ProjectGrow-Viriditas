@@ -45,16 +45,16 @@ public class InputManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public Vector3 PlayerRelativeMoveDirection
+public Vector3 PlayerRelativeMoveDirection
+{
+    get
     {
-        get
-        {
-            if (IsInDialogue || IsPointerOverUIElement()) return Vector3.zero;
+        if (IsInDialogue || IsPointerOverUIElement() || IsEurekaLogOpen()) return Vector3.zero;
 
-            Vector3 moveVector = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
-            return moveVector.normalized;
-        }
+        Vector3 moveVector = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
+        return moveVector.normalized;
     }
+}
 
     private void Update()
     {
@@ -293,6 +293,11 @@ private void CheckForInteractableCharacter()
             wasUIActiveLastFrame = shouldShowCursor;
         }
     }
+
+    public bool IsEurekaLogOpen()
+{
+    return eurekaLogUI != null && eurekaLogUI.IsLogVisible();
+}
 
     public void SetUIActive(bool active)
     {

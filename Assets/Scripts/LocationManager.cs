@@ -91,17 +91,49 @@ public class LocationManager : MonoBehaviourPunCallbacks
         GameManager.Instance.UpdatePlayerScore(character.characterName, ScoreConstants.GetActionPoints(action.duration), action.actionName, action.tags);
     }
 
-    public void PlayEurekaEffect()
-    {
-        if (activeEurekaEffect != null)
-        {
-            Destroy(activeEurekaEffect);
-        }
+    // public void PlayEurekaEffect()
+    // {
+    //     if (activeEurekaEffect != null)
+    //     {
+    //         Destroy(activeEurekaEffect);
+    //     }
 
-        Vector3 effectPosition = transform.position + Vector3.up * 2f;
-        activeEurekaEffect = Instantiate(eurekaEffectPrefab, effectPosition, Quaternion.identity);
-        StartCoroutine(DestroyEurekaEffectAfterDelay(5f));
+    //     Vector3 effectPosition = transform.position + Vector3.up * 2f;
+    //     activeEurekaEffect = Instantiate(eurekaEffectPrefab, effectPosition, Quaternion.identity);
+    //     EurekaEffectController effectController = activeEurekaEffect.GetComponent<EurekaEffectController>();
+    //     if (effectController != null)
+    //     {
+    //         effectController.Initialize(locationColor);
+    //     }
+    // }
+
+ public void PlayEurekaEffect()
+{
+    if (PhotonNetwork.IsMasterClient)
+    {
+        Debug.Log($"Attempting to instantiate EurekaEffect at {transform.position}");
+        GameObject eurekaEffect = PhotonNetwork.Instantiate("EurekaEffect", transform.position, Quaternion.identity);
+        if (eurekaEffect == null)
+        {
+            Debug.LogError("Failed to instantiate EurekaEffect");
+        }
+        else
+        {
+            Debug.Log("EurekaEffect instantiated successfully");
+            EurekaEffectController effectController = eurekaEffect.GetComponent<EurekaEffectController>();
+            if (effectController != null)
+            {
+                effectController.Initialize(locationColor);
+            }
+            else
+            {
+                Debug.LogError("EurekaEffectController component not found on instantiated object");
+            }
+        }
     }
+}
+
+
 
     private IEnumerator DestroyEurekaEffectAfterDelay(float delay)
     {

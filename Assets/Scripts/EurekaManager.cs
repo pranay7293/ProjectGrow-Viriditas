@@ -80,7 +80,7 @@ public class EurekaManager : MonoBehaviourPunCallbacks
         EurekaUI.Instance.DisplayEurekaNotification(eurekaDescription);
 
         List<string> involvedCharacters = collaborators.Select(c => c.characterName).ToList();
-        EurekaLogManager.Instance.AddEurekaLogEntry(eurekaDescription, involvedCharacters);
+        EurekaLogManager.Instance.AddEurekaLogEntry(eurekaDescription, collaborators);
 
         AddRecentEureka(eurekaDescription);
 
