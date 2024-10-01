@@ -199,7 +199,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: CharacterName and CharacterName made a discovery.
+  m_text: Dr. Eden Kapoor and Dr. Flora Tremblay  made a discovery.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 74950b6efb6394c08a1d329834bf105c, type: 2}
   m_sharedMaterial: {fileID: -6885337673217138601, guid: 74950b6efb6394c08a1d329834bf105c, type: 2}
@@ -648,7 +648,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -221}
-  m_SizeDelta: {x: 1500, y: 75}
+  m_SizeDelta: {x: 1650, y: 75}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3755239473533698516
 CanvasRenderer:

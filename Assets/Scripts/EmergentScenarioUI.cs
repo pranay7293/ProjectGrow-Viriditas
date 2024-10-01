@@ -5,9 +5,13 @@ using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
 using System.Linq;
+using DG.Tweening;
+using UnityEngine.EventSystems;
 
 public class EmergentScenarioUI : MonoBehaviourPunCallbacks
 {
+    public static EmergentScenarioUI Instance { get; private set; }
+
     [SerializeField] private GameObject scenarioPanel;
     [SerializeField] private TextMeshProUGUI[] scenarioTexts;
     [SerializeField] private Button[] scenarioButtons;
@@ -15,14 +19,28 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI whatIfText;
     [SerializeField] private GameObject characterProfilePrefab;
-    [SerializeField] private Image backgroundImage;
     [SerializeField] private EmergentScenarioNotification emergentScenarioNotification;
+    [SerializeField] private float hoverTransitionDuration = 0.3f;
 
     private Color hubColor;
+    private Color defaultColor = new Color(0.094f, 0.094f, 0.094f); // #181818 in RGB
     private Dictionary<int, List<CharacterProfileSimple>> scenarioProfiles = new Dictionary<int, List<CharacterProfileSimple>>();
     private Dictionary<string, int> playerVotes = new Dictionary<string, int>();
     private float voteTimer = 30f;
     private bool isVoting = false;
+    private int localPlayerVote = -1;
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
 
     private void Start()
     {
@@ -30,24 +48,32 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
         {
             int index = i;
             scenarioButtons[i].onClick.AddListener(() => OnScenarioSelected(index));
+            
+            EventTrigger trigger = scenarioButtons[i].gameObject.AddComponent<EventTrigger>();
+            EventTrigger.Entry enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            enterEntry.callback.AddListener((data) => { OnPointerEnter((PointerEventData)data, index); });
+            trigger.triggers.Add(enterEntry);
+
+            EventTrigger.Entry exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+            exitEntry.callback.AddListener((data) => { OnPointerExit((PointerEventData)data, index); });
+            trigger.triggers.Add(exitEntry);
+
+            scenarioButtons[i].GetComponent<Image>().color = defaultColor;
         }
         scenarioPanel.SetActive(false);
     }
 
     public void DisplayScenarios(List<string> scenarios)
     {
+        InputManager.Instance.SetUIActive(true);
         hubColor = GameManager.Instance.GetCurrentHubColor();
+        Debug.Log($"Current Hub Color: R={hubColor.r}, G={hubColor.g}, B={hubColor.b}, A={hubColor.a}");
         scenarioPanel.SetActive(true);
-        
-        backgroundImage.color = new Color(hubColor.r, hubColor.g, hubColor.b, 0.9f);
 
         for (int i = 0; i < scenarioTexts.Length; i++)
         {
             scenarioTexts[i].text = i < scenarios.Count ? scenarios[i] : "";
             scenarioButtons[i].gameObject.SetActive(i < scenarios.Count);
-            
-            Image panelImage = scenarioButtons[i].GetComponent<Image>();
-            panelImage.color = i == 1 ? DarkenColor(hubColor, 0.2f) : hubColor;
         }
         
         whatIfText.text = "What If...";
@@ -61,6 +87,7 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
         playerVotes.Clear();
         voteTimer = 30f;
         isVoting = true;
+        localPlayerVote = -1;
         if (PhotonNetwork.IsMasterClient)
         {
             StartCoroutine(SimulateAIVoting());
@@ -71,27 +98,44 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
     {
         if (!isVoting) return;
 
-        string playerName = PhotonNetwork.LocalPlayer.NickName;
-        photonView.RPC("RPC_SubmitVote", RpcTarget.All, scenarioIndex, playerName);
-    }
-
-    [PunRPC]
-    private void RPC_SubmitVote(int scenarioIndex, string playerName)
-    {
-        if (!playerVotes.ContainsKey(playerName))
+        string characterName = GetLocalPlayerCharacterName();
+        if (!string.IsNullOrEmpty(characterName))
         {
-            playerVotes[playerName] = scenarioIndex;
-            DisplayVote(playerName, scenarioIndex);
+            localPlayerVote = scenarioIndex;
+            photonView.RPC("RPC_SubmitVote", RpcTarget.All, scenarioIndex, characterName);
+        }
+        else
+        {
+            Debug.LogError("Local player's character name not found.");
         }
     }
 
-    private void DisplayVote(string playerName, int scenarioIndex)
+    private string GetLocalPlayerCharacterName()
     {
-        UniversalCharacterController character = GameManager.Instance.GetCharacterByName(playerName);
+        if (PhotonNetwork.LocalPlayer.CustomProperties.TryGetValue("SelectedCharacter", out object selectedCharacter))
+        {
+            return (string)selectedCharacter;
+        }
+        return null;
+    }
+
+    [PunRPC]
+    private void RPC_SubmitVote(int scenarioIndex, string characterName)
+    {
+        if (!playerVotes.ContainsKey(characterName))
+        {
+            playerVotes[characterName] = scenarioIndex;
+            DisplayVote(characterName, scenarioIndex);
+        }
+    }
+
+    private void DisplayVote(string characterName, int scenarioIndex)
+    {
+        UniversalCharacterController character = GameManager.Instance.GetCharacterByName(characterName);
         if (character != null)
         {
             CharacterProfileSimple profile = Instantiate(characterProfilePrefab, profileContainers[scenarioIndex]).GetComponent<CharacterProfileSimple>();
-            profile.SetProfileInfo(playerName, character.GetCharacterColor(), !character.IsPlayerControlled, character.photonView.IsMine);
+            profile.SetProfileInfo(characterName, character.GetCharacterColor(), !character.IsPlayerControlled, character.photonView.IsMine);
             
             int voteCount = profileContainers[scenarioIndex].childCount;
             ResizeProfileContainer(scenarioIndex, voteCount);
@@ -165,43 +209,16 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
 
     private IEnumerator ImplementWinningScenarioSequence(string winningScenarioText)
     {
-        // Hide scenario panel
         yield return StartCoroutine(HideScenarioPanel());
-
-        // Implement the winning scenario
-        GameManager.Instance.ImplementEmergentScenario(winningScenarioText);
-
-        // Wait for notification to complete
-        yield return new WaitForSeconds(emergentScenarioNotification.GetNotificationDuration());
-
-        // Reset player positions
         GameManager.Instance.ResetPlayerPositions();
-
-        // End emergent scenario state
-        GameManager.Instance.EndEmergentScenario();
-    }
-
-    [PunRPC]
-    private void RPC_EndEmergentScenario(string winningScenarioText)
-    {
-        StartCoroutine(EndEmergentScenarioSequence(winningScenarioText));
-    }
-
-    private IEnumerator EndEmergentScenarioSequence(string winningScenarioText)
-    {
-        // Hide scenario panel
-        yield return StartCoroutine(HideScenarioPanel());
-
-        // Show notification
+        GameManager.Instance.ImplementEmergentScenario(winningScenarioText);
         emergentScenarioNotification.DisplayNotification(winningScenarioText);
         yield return new WaitForSeconds(emergentScenarioNotification.GetNotificationDuration());
-
-        // Update game state and respawn characters
-        GameManager.Instance.UpdateGameState("SYSTEM", winningScenarioText, true);
-        GameManager.Instance.ResetPlayerPositions();
-
-        // End emergent scenario state
+        string actTitle = GameManager.Instance.GetCurrentActTitle();
+        ActTitleManager.Instance.DisplayActTitle(actTitle);
+        yield return new WaitForSeconds(3.5f);
         GameManager.Instance.EndEmergentScenario();
+        InputManager.Instance.SetUIActive(false);
     }
 
     private IEnumerator HideScenarioPanel()
@@ -238,13 +255,20 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
         return new List<string>(scenarioTexts.Select(text => text.text));
     }
 
-    private Color DarkenColor(Color color, float amount)
+    private void OnPointerEnter(PointerEventData eventData, int index)
     {
-        return new Color(
-            Mathf.Clamp01(color.r - amount),
-            Mathf.Clamp01(color.g - amount),
-            Mathf.Clamp01(color.b - amount),
-            color.a
-        );
+        if (!isVoting) return;
+        Image buttonImage = scenarioButtons[index].GetComponent<Image>();
+        buttonImage.DOColor(hubColor, hoverTransitionDuration);
+    }
+
+    private void OnPointerExit(PointerEventData eventData, int index)
+    {
+        if (!isVoting) return;
+        Image buttonImage = scenarioButtons[index].GetComponent<Image>();
+        if (localPlayerVote != index)
+        {
+            buttonImage.DOColor(defaultColor, hoverTransitionDuration);
+        }
     }
 }

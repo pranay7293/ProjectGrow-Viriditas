@@ -29,8 +29,9 @@ public class InputManager : MonoBehaviourPunCallbacks
     [SerializeField] public float interactionDistance = 5f;
 
     private UniversalCharacterController localPlayer;
-    private bool wasUIActiveLastFrame;
     private UniversalCharacterController currentInteractableCharacter;
+    private bool cursorWasVisible;
+    private CursorLockMode previousLockState;
 
     private void Awake()
     {
@@ -45,16 +46,16 @@ public class InputManager : MonoBehaviourPunCallbacks
         }
     }
 
-public Vector3 PlayerRelativeMoveDirection
-{
-    get
+    public Vector3 PlayerRelativeMoveDirection
     {
-        if (IsInDialogue || IsPointerOverUIElement() || IsEurekaLogOpen()) return Vector3.zero;
+        get
+        {
+            if (IsUIActive || IsInDialogue || IsPointerOverUIElement() || IsEurekaLogOpen()) return Vector3.zero;
 
-        Vector3 moveVector = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
-        return moveVector.normalized;
+            Vector3 moveVector = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
+            return moveVector.normalized;
+        }
     }
-}
 
     private void Update()
     {
@@ -68,13 +69,11 @@ public Vector3 PlayerRelativeMoveDirection
             HandlePlayerInput();
             CheckForInteractableCharacter();
         }
-
-        UpdateCursorState();
     }
 
     private void HandlePlayerInput()
     {
-        if (Input.GetKeyDown(interactKey) && !IsInDialogue && !IsPointerOverUIElement())
+        if (Input.GetKeyDown(interactKey) && !IsUIActive && !IsInDialogue && !IsPointerOverUIElement())
         {
             TryInteract();
         }
@@ -132,7 +131,7 @@ public Vector3 PlayerRelativeMoveDirection
         }
     }
 
-private void CheckForInteractableCharacter()
+    private void CheckForInteractableCharacter()
     {
         if (localPlayer == null)
         {
@@ -204,24 +203,21 @@ private void CheckForInteractableCharacter()
     public void StartDialogue()
     {
         IsInDialogue = true;
-        IsUIActive = true;
-        UpdateCursorState();
+        SetUIActive(true);
     }
 
     public void EndDialogue()
     {
         IsInDialogue = false;
-        IsUIActive = false;
+        SetUIActive(false);
         DialogueManager.Instance.EndConversation();
-        UpdateCursorState();
     }
 
     private void ToggleChatLog()
     {
         IsChatLogOpen = !IsChatLogOpen;
-        IsUIActive = IsChatLogOpen;
+        SetUIActive(IsChatLogOpen);
         DialogueManager.Instance.ToggleChatLog();
-        UpdateCursorState();
     }
 
     private void ToggleCustomInput()
@@ -232,15 +228,13 @@ private void CheckForInteractableCharacter()
     private void ToggleActionLog()
     {
         ActionLogManager.Instance.ToggleActionLog();
-        IsUIActive = ActionLogManager.Instance.IsLogVisible();
-        UpdateCursorState();
+        SetUIActive(ActionLogManager.Instance.IsLogVisible());
     }
 
     private void ToggleMilestones()
     {
         GameManager.Instance.ToggleMilestonesDisplay();
-        IsUIActive = GameManager.Instance.IsMilestonesDisplayVisible();
-        UpdateCursorState();
+        SetUIActive(GameManager.Instance.IsMilestonesDisplayVisible());
     }
 
     private void TogglePersonalGoals()
@@ -253,8 +247,7 @@ private void CheckForInteractableCharacter()
         if (eurekaLogUI != null)
         {
             eurekaLogUI.ToggleEurekaLog();
-            IsUIActive = eurekaLogUI.IsLogVisible();
-            UpdateCursorState();
+            SetUIActive(eurekaLogUI.IsLogVisible());
         }
         else
         {
@@ -265,8 +258,7 @@ private void CheckForInteractableCharacter()
     private void ToggleGuideDisplay()
     {
         GuideBoxManager.Instance.ToggleGuideDisplay();
-        IsUIActive = GuideBoxManager.Instance.IsGuideDisplayVisible();
-        UpdateCursorState();
+        SetUIActive(GuideBoxManager.Instance.IsGuideDisplayVisible());
     }
 
     private UniversalCharacterController FindLocalPlayer()
@@ -282,27 +274,39 @@ private void CheckForInteractableCharacter()
         return null;
     }
 
+    public void SetUIActive(bool active)
+    {
+        if (IsUIActive != active)
+        {
+            IsUIActive = active;
+            UpdateCursorState();
+        }
+    }
+
     private void UpdateCursorState()
     {
-        bool shouldShowCursor = IsUIActive || IsInDialogue || IsPointerOverUIElement();
-
-        if (shouldShowCursor != wasUIActiveLastFrame)
+        if (IsUIActive)
         {
-            Cursor.visible = shouldShowCursor;
-            Cursor.lockState = shouldShowCursor ? CursorLockMode.None : CursorLockMode.Locked;
-            wasUIActiveLastFrame = shouldShowCursor;
+            cursorWasVisible = Cursor.visible;
+            previousLockState = Cursor.lockState;
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+        }
+        else
+        {
+            Cursor.visible = cursorWasVisible;
+            Cursor.lockState = previousLockState;
+        }
+
+        if (localPlayer != null && localPlayer.PlayerCamera != null)
+        {
+            localPlayer.PlayerCamera.GetComponent<com.ootii.Cameras.CameraController>().enabled = !IsUIActive;
         }
     }
 
     public bool IsEurekaLogOpen()
-{
-    return eurekaLogUI != null && eurekaLogUI.IsLogVisible();
-}
-
-    public void SetUIActive(bool active)
     {
-        IsUIActive = active;
-        UpdateCursorState();
+        return eurekaLogUI != null && eurekaLogUI.IsLogVisible();
     }
 
     private bool IsPointerOverUIElement()

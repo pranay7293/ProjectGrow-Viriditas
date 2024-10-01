@@ -72,13 +72,14 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     private void Start()
+{
+    if (PhotonNetwork.IsMasterClient)
     {
-        if (PhotonNetwork.IsMasterClient)
-        {
-            InitializeGame();
-        }
-        milestonesDisplay.SetActive(false);
+        InitializeGame();
+        ActTitleManager.Instance.DisplayActTitle("ACT I");
     }
+    milestonesDisplay.SetActive(false);
+}
 
     private bool hasPlayedFirstMusicCue = false;
     private bool hasPlayedSecondMusicCue = false;
@@ -339,6 +340,19 @@ public class GameManager : MonoBehaviourPunCallbacks
     private bool hasTriggered5MinScenario = false;
     private bool hasTriggered10MinScenario = false;
 
+    public string GetCurrentActTitle()
+{
+    if (hasTriggered5MinScenario && !hasTriggered10MinScenario)
+    {
+        return "ACT II";
+    }
+    else if (hasTriggered10MinScenario)
+    {
+        return "ACT III";
+    }
+    return "";
+}
+
     private void CheckForMusicCues()
     {
         float gameTime = Time.time - gameStartTime;
@@ -361,7 +375,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private void CheckForEmergentScenario()
+   private void CheckForEmergentScenario()
     {
         float gameTime = Time.time - gameStartTime;
 
