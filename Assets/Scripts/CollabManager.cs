@@ -18,6 +18,8 @@ public class CollabManager : MonoBehaviourPunCallbacks
     private Dictionary<string, List<UniversalCharacterController>> activeCollabs = new Dictionary<string, List<UniversalCharacterController>>();
     private Dictionary<string, float> collabCooldowns = new Dictionary<string, float>();
 
+    private PhotonView photonView;
+
     private void Awake()
     {
         if (Instance == null)
@@ -28,6 +30,13 @@ public class CollabManager : MonoBehaviourPunCallbacks
         else
         {
             Destroy(gameObject);
+            return;
+        }
+
+        photonView = GetComponent<PhotonView>();
+        if (photonView == null)
+        {
+            Debug.LogError("PhotonView component is missing on CollabManager!");
         }
     }
 
@@ -54,7 +63,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
 
         foreach (var character in GameManager.Instance.GetAllCharacters())
         {
-            if (character != initiator &&
+            if (character != null && character != initiator &&
                 !character.IsCollaborating &&
                 character.currentLocation == initiator.currentLocation &&
                 Vector3.Distance(initiator.transform.position, character.transform.position) <= collabRadius)
@@ -69,6 +78,12 @@ public class CollabManager : MonoBehaviourPunCallbacks
 
     public void RequestCollaboration(int initiatorViewID, int[] targetViewIDs, string actionName)
     {
+        if (photonView == null)
+        {
+            Debug.LogError("PhotonView is null in RequestCollaboration!");
+            return;
+        }
+
         photonView.RPC("RPC_RequestCollaboration", RpcTarget.All, initiatorViewID, targetViewIDs, actionName);
     }
 
@@ -76,18 +91,34 @@ public class CollabManager : MonoBehaviourPunCallbacks
     private void RPC_RequestCollaboration(int initiatorViewID, int[] targetViewIDs, string actionName)
     {
         PhotonView initiatorView = PhotonView.Find(initiatorViewID);
-        if (initiatorView == null) return;
+        if (initiatorView == null)
+        {
+            Debug.LogWarning($"Initiator PhotonView not found for ViewID: {initiatorViewID}");
+            return;
+        }
 
         UniversalCharacterController initiator = initiatorView.GetComponent<UniversalCharacterController>();
-        if (initiator == null) return;
+        if (initiator == null)
+        {
+            Debug.LogWarning($"UniversalCharacterController not found on initiator with ViewID: {initiatorViewID}");
+            return;
+        }
 
         foreach (int targetViewID in targetViewIDs)
         {
             PhotonView targetView = PhotonView.Find(targetViewID);
-            if (targetView == null) continue;
+            if (targetView == null)
+            {
+                Debug.LogWarning($"Target PhotonView not found for ViewID: {targetViewID}");
+                continue;
+            }
 
             UniversalCharacterController target = targetView.GetComponent<UniversalCharacterController>();
-            if (target == null) continue;
+            if (target == null)
+            {
+                Debug.LogWarning($"UniversalCharacterController not found on target with ViewID: {targetViewID}");
+                continue;
+            }
 
             if (target.IsPlayerControlled && target.photonView.IsMine)
             {
@@ -99,6 +130,10 @@ public class CollabManager : MonoBehaviourPunCallbacks
                 if (aiManager != null)
                 {
                     StartCoroutine(DecideOnCollaborationCoroutine(aiManager, actionName, initiatorViewID, target.photonView.ViewID));
+                }
+                else
+                {
+                    Debug.LogWarning($"AIManager not found on non-player character: {target.characterName}");
                 }
             }
         }
@@ -112,15 +147,25 @@ public class CollabManager : MonoBehaviourPunCallbacks
         if (decisionResult)
         {
             string collabID = System.Guid.NewGuid().ToString();
-            photonView.RPC("InitiateCollab", RpcTarget.All, actionName, initiatorViewID, new int[] { targetViewID }, collabID);
+            if (photonView != null)
+            {
+                photonView.RPC("InitiateCollab", RpcTarget.All, actionName, initiatorViewID, new int[] { targetViewID }, collabID);
+            }
+            else
+            {
+                Debug.LogError("PhotonView is null when trying to initiate collaboration!");
+            }
         }
-        yield break;
     }
 
     [PunRPC]
     public void InitiateCollab(string actionName, int initiatorViewID, int[] collaboratorViewIDs, string collabID)
     {
-        if (string.IsNullOrEmpty(actionName) || string.IsNullOrEmpty(collabID)) return;
+        if (string.IsNullOrEmpty(actionName) || string.IsNullOrEmpty(collabID))
+        {
+            Debug.LogWarning("Invalid action name or collabID in InitiateCollab");
+            return;
+        }
 
         List<UniversalCharacterController> collaborators = new List<UniversalCharacterController>();
         UniversalCharacterController initiatorCharacter = null;
@@ -157,10 +202,18 @@ public class CollabManager : MonoBehaviourPunCallbacks
         activeCollabs[collabID] = collaborators;
 
         LocationManager location = initiatorCharacter.currentLocation;
-        if (location == null) return;
+        if (location == null)
+        {
+            Debug.LogWarning($"InitiateCollab: Initiator {initiatorCharacter.characterName} has no current location");
+            return;
+        }
 
         LocationManager.LocationAction action = location.GetActionByName(actionName);
-        if (action == null) return;
+        if (action == null)
+        {
+            Debug.LogWarning($"InitiateCollab: Action {actionName} not found at location {location.locationName}");
+            return;
+        }
 
         List<Vector3> collabPositions = WaypointsManager.Instance.GetCollaborationPositions(location.locationName, collaborators.Count);
 
@@ -170,7 +223,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
             if (collaborator != null)
             {
                 SetCollabCooldown(collaborator.characterName);
-                collaborator.StartCollaboration(action, collabID); // Fixed line
+                collaborator.StartCollaboration(action, collabID);
 
                 if (collabPositions != null && i < collabPositions.Count)
                 {

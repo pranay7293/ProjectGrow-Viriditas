@@ -34,14 +34,20 @@ public class EurekaEntryUI : MonoBehaviour
         timestampText.text = $"<color=#{fallbackCharacterColor}>{entry.timestamp}</color>";
     }
 
-    private string FormatCollaborators(List<(string name, string role)> collaborators)
+    private string FormatCollaborators(List<(string name, string role, Color color)> collaborators)
     {
         if (collaborators.Count == 0) return "";
-        if (collaborators.Count == 1) return $"{collaborators[0].name} ({collaborators[0].role})";
+        if (collaborators.Count == 1) return FormatCollaborator(collaborators[0]);
         
-        var formattedCollaborators = collaborators.Select(c => $"{c.name} ({c.role})");
+        var formattedCollaborators = collaborators.Select(FormatCollaborator);
         return string.Join(", ", formattedCollaborators.Take(collaborators.Count - 1)) + 
                $" and {formattedCollaborators.Last()}";
+    }
+
+    private string FormatCollaborator((string name, string role, Color color) collaborator)
+    {
+        string colorHex = ColorUtility.ToHtmlStringRGB(collaborator.color);
+        return $"<color=#{colorHex}>{collaborator.name}</color> ({collaborator.role})";
     }
 
     public void OnHover(bool isHovering)

@@ -91,22 +91,6 @@ public class LocationManager : MonoBehaviourPunCallbacks
         GameManager.Instance.UpdatePlayerScore(character.characterName, ScoreConstants.GetActionPoints(action.duration), action.actionName, action.tags);
     }
 
-    // public void PlayEurekaEffect()
-    // {
-    //     if (activeEurekaEffect != null)
-    //     {
-    //         Destroy(activeEurekaEffect);
-    //     }
-
-    //     Vector3 effectPosition = transform.position + Vector3.up * 2f;
-    //     activeEurekaEffect = Instantiate(eurekaEffectPrefab, effectPosition, Quaternion.identity);
-    //     EurekaEffectController effectController = activeEurekaEffect.GetComponent<EurekaEffectController>();
-    //     if (effectController != null)
-    //     {
-    //         effectController.Initialize(locationColor);
-    //     }
-    // }
-
  public void PlayEurekaEffect()
 {
     if (PhotonNetwork.IsMasterClient)

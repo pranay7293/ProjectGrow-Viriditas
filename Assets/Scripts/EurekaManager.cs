@@ -32,76 +32,76 @@ public class EurekaManager : MonoBehaviourPunCallbacks
     }
 
     public void TriggerEureka(List<UniversalCharacterController> collaborators, string actionName)
+{
+    if (collaborators == null || collaborators.Count < 2)
     {
-        if (collaborators == null || collaborators.Count < 2)
-        {
-            Debug.LogWarning($"TriggerEureka: Invalid collaborators list for action {actionName}");
-            return;
-        }
-
-        Debug.Log($"Triggering Eureka for action: {actionName} with {collaborators.Count} collaborators");
-
-        if (PhotonNetwork.IsMasterClient)
-        {
-            int[] collaboratorViewIDs = collaborators
-                .Where(c => c != null && c.photonView != null)
-                .Select(c => c.photonView.ViewID)
-                .ToArray();
-
-            if (collaboratorViewIDs.Length > 0)
-            {
-                photonView.RPC("RPC_TriggerEureka", RpcTarget.All, collaboratorViewIDs, actionName);
-            }
-            else
-            {
-                Debug.LogWarning("TriggerEureka: No valid collaborator ViewIDs found.");
-            }
-        }
+        Debug.LogWarning($"TriggerEureka: Invalid collaborators list for action {actionName}");
+        return;
     }
 
-    [PunRPC]
-    private async void RPC_TriggerEureka(int[] collaboratorViewIDs, string actionName)
+    Debug.Log($"Triggering Eureka for action: {actionName} with {collaborators.Count} collaborators");
+
+    if (PhotonNetwork.IsMasterClient)
     {
-        List<UniversalCharacterController> collaborators = collaboratorViewIDs
-            .Select(id => PhotonView.Find(id)?.GetComponent<UniversalCharacterController>())
-            .Where(c => c != null)
-            .ToList();
+        int[] collaboratorViewIDs = collaborators
+            .Where(c => c != null && c.photonView != null)
+            .Select(c => c.photonView.ViewID)
+            .ToArray();
 
-        if (collaborators.Count == 0)
+        if (collaboratorViewIDs.Length > 0)
         {
-            Debug.LogWarning("No valid collaborators found for Eureka event.");
-            return;
+            photonView.RPC("RPC_TriggerEureka", RpcTarget.All, collaboratorViewIDs, actionName);
         }
-
-        string eurekaDescription = await OpenAIService.Instance.GenerateEurekaDescription(collaborators, GameManager.Instance.GetCurrentGameState(), actionName);
-
-        string completedMilestone = GameManager.Instance.CompleteRandomMilestone(eurekaDescription);
-
-        EurekaUI.Instance.DisplayEurekaNotification(eurekaDescription);
-
-        List<string> involvedCharacters = collaborators.Select(c => c.characterName).ToList();
-        EurekaLogManager.Instance.AddEurekaLogEntry(eurekaDescription, collaborators);
-
-        AddRecentEureka(eurekaDescription);
-
-        foreach (var collaborator in collaborators)
+        else
         {
-            collaborator.IncrementEurekaCount();
-            GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS, "Eureka Moment", new List<string> { "Eureka" });
-
-            Vector3 textPosition = collaborator.transform.position + Vector3.up * 2f;
-            FloatingTextManager.Instance.ShowFloatingText($"+{ScoreConstants.EUREKA_BONUS} Eureka!", textPosition, FloatingTextType.Eureka);
+            Debug.LogWarning("TriggerEureka: No valid collaborator ViewIDs found.");
         }
-
-        GameManager.Instance.UpdateMilestoneProgress("Eureka", "Eureka Moment");
-
-        if (collaborators[0].currentLocation != null)
-        {
-            collaborators[0].currentLocation.PlayEurekaEffect();
-        }
-
-        Debug.Log($"Eureka triggered: {eurekaDescription}");
     }
+}
+
+[PunRPC]
+private async void RPC_TriggerEureka(int[] collaboratorViewIDs, string actionName)
+{
+    List<UniversalCharacterController> collaborators = collaboratorViewIDs
+        .Select(id => PhotonView.Find(id)?.GetComponent<UniversalCharacterController>())
+        .Where(c => c != null)
+        .ToList();
+
+    if (collaborators.Count == 0)
+    {
+        Debug.LogWarning("No valid collaborators found for Eureka event.");
+        return;
+    }
+
+    string eurekaDescription = await OpenAIService.Instance.GenerateEurekaDescription(collaborators, GameManager.Instance.GetCurrentGameState(), actionName);
+
+    string completedMilestone = GameManager.Instance.CompleteRandomMilestone(eurekaDescription);
+
+    EurekaUI.Instance.DisplayEurekaNotification(collaborators, actionName);
+
+    List<string> involvedCharacters = collaborators.Select(c => c.characterName).ToList();
+    EurekaLogManager.Instance.AddEurekaLogEntry(eurekaDescription, collaborators);
+
+    AddRecentEureka(eurekaDescription);
+
+    foreach (var collaborator in collaborators)
+    {
+        collaborator.IncrementEurekaCount();
+        GameManager.Instance.UpdatePlayerScore(collaborator.characterName, ScoreConstants.EUREKA_BONUS, "Eureka Moment", new List<string> { "Eureka" });
+
+        Vector3 textPosition = collaborator.transform.position + Vector3.up * 2f;
+        FloatingTextManager.Instance.ShowFloatingText($"+{ScoreConstants.EUREKA_BONUS} Eureka!", textPosition, FloatingTextType.Eureka);
+    }
+
+    GameManager.Instance.UpdateMilestoneProgress("Eureka", "Eureka Moment");
+
+    if (collaborators[0].currentLocation != null)
+    {
+        collaborators[0].currentLocation.PlayEurekaEffect();
+    }
+
+    Debug.Log($"Eureka triggered: {eurekaDescription}");
+}
 
     private void AddRecentEureka(string eurekaDescription)
     {
