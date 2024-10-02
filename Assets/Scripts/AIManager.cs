@@ -10,7 +10,7 @@ public class AIManager : MonoBehaviourPunCallbacks
 {
     private UniversalCharacterController characterController;
     private NPC_Behavior npcBehavior;
-    private NPC_Data npcData;
+    public NPC_Data npcData;
     private AIDecisionMaker decisionMaker;
 
     [SerializeField] private float memoryConsolidationInterval = 60f;

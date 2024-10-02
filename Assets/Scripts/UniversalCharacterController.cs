@@ -61,7 +61,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private List<string> personalGoalTags = new List<string>();
     private Dictionary<string, bool> personalGoalCompletion = new Dictionary<string, bool>();
 
-    private AIManager aiManager;
+    public AIManager aiManager;
     private CharacterController characterController;
     private NavMeshAgent navMeshAgent;
     private Animator animator;

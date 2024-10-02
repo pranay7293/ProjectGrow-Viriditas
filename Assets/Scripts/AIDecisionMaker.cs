@@ -59,19 +59,24 @@ public class AIDecisionMaker : MonoBehaviour
         string personalGoals = string.Join(", ", character.GetPersonalGoalTags());
         string completedMilestones = string.Join(", ", gameState.MilestoneCompletion.Where(kvp => kvp.Value).Select(kvp => kvp.Key));
         string incompleteMilestones = string.Join(", ", gameState.MilestoneCompletion.Where(kvp => !kvp.Value).Select(kvp => kvp.Key));
+        List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
+
+        string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join("; ", recentEurekas)}\n" : "";
 
         return $"You are {character.characterName}, a {character.aiSettings.characterRole}. " +
+               $"{character.aiSettings.characterBackground}\n" +
                $"Your personality: {character.aiSettings.characterPersonality}\n" +
                $"Your personal goals: {personalGoals}\n" +
                $"Recent memories: {memoryContext}\n" +
                $"Your current reflection: {reflection}\n" +
+               $"{eurekaContext}" +
                $"Current challenge: {gameState.CurrentChallenge.title}\n" +
                $"Completed milestones: {completedMilestones}\n" +
                $"Incomplete milestones: {incompleteMilestones}\n" +
                $"Current collective progress: {gameState.CollectiveProgress}%\n" +
                $"Your current score: {gameState.PlayerScores[character.characterName]}\n" +
                $"Time remaining: {Mathf.FloorToInt(gameState.RemainingTime / 60)} minutes\n\n" +
-               "Given the following options, what action would you take? Consider your personality, personal goals, recent memories, current reflection, the current challenge, and the overall game state. " +
+               "Given the following options, what action would you take? Consider your personality, personal goals, recent memories, current reflection, recent breakthroughs, the current challenge, and the overall game state. " +
                "Respond with only the number of your chosen option.\n\n" +
                string.Join("\n", options.Select((option, index) => $"{index + 1}. {option}"));
     }
@@ -86,9 +91,9 @@ public class AIDecisionMaker : MonoBehaviour
     }
 
     private string GenerateCacheKey(AIManager aiManager, List<string> options, GameState gameState, string memoryContext, string reflection)
-{
-    string optionsHash = string.Join("|", options);
-    string gameStateHash = $"{gameState.CurrentChallenge.title}|{gameState.CollectiveProgress}|{Mathf.FloorToInt(gameState.RemainingTime / 60)}";
-    return $"{aiManager.GetCharacterController().characterName}|{optionsHash}|{gameStateHash}|{memoryContext}|{reflection}";
-}
+    {
+        string optionsHash = string.Join("|", options);
+        string gameStateHash = $"{gameState.CurrentChallenge.title}|{gameState.CollectiveProgress}|{Mathf.FloorToInt(gameState.RemainingTime / 60)}";
+        return $"{aiManager.GetCharacterController().characterName}|{optionsHash}|{gameStateHash}|{memoryContext}|{reflection}";
+    }
 }

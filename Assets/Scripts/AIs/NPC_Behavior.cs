@@ -526,7 +526,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (GameManager.Instance == null || characterController == null) return new List<UniversalCharacterController>();
 
         return GameManager.Instance.GetAllCharacters()
-            .Where(character => character != null && character != characterController && 
+            .Where(character => character != null && character != characterController &&
                    Vector3.Distance(transform.position, character.transform.position) <= interactionDistance)
             .ToList();
     }
@@ -549,7 +549,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         }
         else
         {
-            DialogueManager.Instance?.TriggerNPCDialogue(characterController, target);
+            DialogueManager.Instance?.TriggerAgentDialogue(characterController, target);
         }
     }
 

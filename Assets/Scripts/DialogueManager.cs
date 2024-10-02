@@ -13,10 +13,10 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     [Header("Dialogue Panel")]
     [SerializeField] private GameObject dialoguePanel;
-    [SerializeField] private TextMeshProUGUI dialogueText;
-    [SerializeField] private Button[] optionButtons;
-    [SerializeField] private TextMeshProUGUI[] optionTexts;
-    [SerializeField] private GameObject dialogInputWindow;
+    [SerializeField] private TextMeshProUGUI agentDialogueText;
+    [SerializeField] private Button[] generativeChoiceButtons;
+    [SerializeField] private TextMeshProUGUI[] generativeChoiceTexts;
+    [SerializeField] private GameObject customInputWindow;
     [SerializeField] private TMP_InputField customInputField;
     [SerializeField] private Button submitCustomInputButton;
     [SerializeField] private Button endConversationButton;
@@ -31,8 +31,8 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     [SerializeField] private CanvasGroup chatLogCanvasGroup;
     [SerializeField] private float fadeDuration = 0.3f;
 
-    private UniversalCharacterController currentNPC;
-    private List<DialogueOption> currentOptions = new List<DialogueOption>();
+    private UniversalCharacterController currentAgent;
+    private List<GenerativeChoiceOption> currentChoices = new List<GenerativeChoiceOption>();
     private bool isProcessingInput = false;
     private bool isGeneratingChoices = false;
     private bool isCustomInputActive = false;
@@ -110,20 +110,20 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             }
         }
 
-        // Initialize Option Buttons
-        if (optionButtons != null && optionTexts != null)
+        // Initialize Generative Choice Buttons
+        if (generativeChoiceButtons != null && generativeChoiceTexts != null)
         {
-            for (int i = 0; i < optionButtons.Length; i++)
+            for (int i = 0; i < generativeChoiceButtons.Length; i++)
             {
-                if (optionButtons[i] != null)
+                if (generativeChoiceButtons[i] != null)
                 {
-                    optionButtons[i].gameObject.SetActive(false);
+                    generativeChoiceButtons[i].gameObject.SetActive(false);
                 }
             }
         }
         else
         {
-            Debug.LogError("DialogueManager: OptionButtons or OptionTexts are not assigned.");
+            Debug.LogError("DialogueManager: GenerativeChoiceButtons or GenerativeChoiceTexts are not assigned.");
         }
 
         // Initialize Chat Log Data Structures
@@ -135,34 +135,34 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         // Initialize chat log structures if needed
     }
 
-    public async void InitiateDialogue(UniversalCharacterController npc)
+    public async void InitiateDialogue(UniversalCharacterController agent)
     {
-        if (npc == null || currentState != DialogueState.Idle)
+        if (agent == null || currentState != DialogueState.Idle)
         {
             return;
         }
 
-        currentNPC = npc;
-        currentNPC.AddState(UniversalCharacterController.CharacterState.Chatting);
+        currentAgent = agent;
+        currentAgent.AddState(UniversalCharacterController.CharacterState.Chatting);
         InputManager.Instance.StartDialogue();
 
         // Generate a dynamic greeting using OpenAIService
-        string greeting = await OpenAIService.Instance.GenerateGreetingResponse(currentNPC.characterName, currentNPC.aiSettings);
-        string initialDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: \"{greeting}\"";
-        dialogueText.text = initialDialogue;
+        string greeting = await OpenAIService.Instance.GenerateAgentGreeting(currentAgent.characterName, currentAgent.aiSettings);
+        string initialDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentAgent.characterColor)}>{currentAgent.characterName}</color> says to you: \"{greeting}\"";
+        agentDialogueText.text = initialDialogue;
         dialoguePanel.SetActive(true);
         customInputField.text = "";
 
         SetCustomInputActive(false);
 
-        AddToChatLog(currentNPC.characterName, initialDialogue); // Dialogue-related log
+        AddToChatLog(currentAgent.characterName, initialDialogue); // Dialogue-related log
 
         SetDialogueState(DialogueState.GeneratingResponse);
-        await GenerateAndDisplayChoices();
+        await GenerateAndDisplayGenerativeChoices();
         SetDialogueState(DialogueState.WaitingForPlayerInput);
     }
 
-    private async Task GenerateAndDisplayChoices()
+    private async Task GenerateAndDisplayGenerativeChoices()
     {
         if (isGeneratingChoices)
         {
@@ -173,56 +173,56 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         ShowLoadingIndicator(true);
 
         string context = GetCurrentContext();
-        currentOptions = await OpenAIService.Instance.GetGenerativeChoices(currentNPC.characterName, context, currentNPC.aiSettings);
+        currentChoices = await OpenAIService.Instance.GetGenerativeChoices(currentAgent.characterName, context, currentAgent.aiSettings);
 
-        if (currentOptions == null || currentOptions.Count == 0)
+        if (currentChoices == null || currentChoices.Count == 0)
         {
-            Debug.LogWarning("DialogueManager: No dialogue options generated.");
-            currentOptions = new List<DialogueOption>
+            Debug.LogWarning("DialogueManager: No generative choices generated.");
+            currentChoices = new List<GenerativeChoiceOption>
             {
-                new DialogueOption("Sorry, I need to go.", DialogueCategory.Casual)
+                new GenerativeChoiceOption("I need to think more about this.", GenerativeChoiceCategory.Practical)
             };
         }
 
-        UpdateDialogueOptions(currentOptions);
+        UpdateGenerativeChoiceButtons(currentChoices);
 
         ShowLoadingIndicator(false);
         isGeneratingChoices = false;
     }
 
-    private void UpdateDialogueOptions(List<DialogueOption> options)
+    private void UpdateGenerativeChoiceButtons(List<GenerativeChoiceOption> choices)
     {
-        int optionsCount = Mathf.Min(options.Count, optionButtons.Length);
-        for (int i = 0; i < optionButtons.Length; i++)
+        int optionsCount = Mathf.Min(choices.Count, generativeChoiceButtons.Length);
+        for (int i = 0; i < generativeChoiceButtons.Length; i++)
         {
-            if (i < optionsCount && optionButtons[i] != null && optionTexts[i] != null)
+            if (i < optionsCount && generativeChoiceButtons[i] != null && generativeChoiceTexts[i] != null)
             {
-                string categoryText = options[i].Category.ToString().ToUpper();
-                string optionText = options[i].Text;
+                string categoryText = choices[i].Category.ToString().ToUpper();
+                string optionText = choices[i].Text;
 
-                string colorHex = options[i].Category == DialogueCategory.Casual ? "#00BFFF" : "#FFD700";
-                optionTexts[i].text = $"<color={colorHex}>[{categoryText}]</color> {optionText}";
+                string colorHex = "#FFD700"; // Gold color for high-stake choices
+                generativeChoiceTexts[i].text = $"<color={colorHex}>[{categoryText}]</color> {optionText}";
                 int index = i;
-                optionButtons[i].onClick.RemoveAllListeners();
-                optionButtons[i].onClick.AddListener(() => SelectDialogueOption(index));
-                optionButtons[i].gameObject.SetActive(true);
+                generativeChoiceButtons[i].onClick.RemoveAllListeners();
+                generativeChoiceButtons[i].onClick.AddListener(() => SelectGenerativeChoiceOption(index));
+                generativeChoiceButtons[i].gameObject.SetActive(true);
             }
-            else if (optionButtons[i] != null)
+            else if (generativeChoiceButtons[i] != null)
             {
-                optionButtons[i].gameObject.SetActive(false);
+                generativeChoiceButtons[i].gameObject.SetActive(false);
             }
         }
     }
 
-    public void SelectDialogueOption(int optionIndex)
+    public void SelectGenerativeChoiceOption(int optionIndex)
     {
         if (currentState != DialogueState.WaitingForPlayerInput) return;
 
-        if (currentNPC != null && optionIndex >= 0 && optionIndex < currentOptions.Count)
+        if (currentAgent != null && optionIndex >= 0 && optionIndex < currentChoices.Count)
         {
-            string selectedOption = currentOptions[optionIndex].Text;
+            string selectedOption = currentChoices[optionIndex].Text;
             ProcessPlayerChoice(selectedOption, isNaturalDialogue: false);
-            AddToChatLog("Player", $"<color=#FFD700>[{currentOptions[optionIndex].Category.ToString().ToUpper()}]</color> {selectedOption}"); // Dialogue-related log
+            AddToChatLog("Player", $"<color=#FFD700>[{currentChoices[optionIndex].Category.ToString().ToUpper()}]</color> {selectedOption}"); // Dialogue-related log
         }
         else
         {
@@ -238,13 +238,13 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     private void SetCustomInputActive(bool active)
     {
         isCustomInputActive = active;
-        if (dialogInputWindow != null)
+        if (customInputWindow != null)
         {
-            dialogInputWindow.SetActive(active);
+            customInputWindow.SetActive(active);
         }
         else
         {
-            Debug.LogWarning("DialogueManager: DialogInputWindow is not assigned.");
+            Debug.LogWarning("DialogueManager: CustomInputWindow is not assigned.");
         }
 
         if (active && customInputField != null)
@@ -257,13 +257,13 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     {
         if (currentState != DialogueState.WaitingForPlayerInput) return;
 
-        if (currentNPC != null && !string.IsNullOrEmpty(customInputField.text))
+        if (currentAgent != null && !string.IsNullOrEmpty(customInputField.text))
         {
             string playerInput = customInputField.text;
             customInputField.text = "";
             SetCustomInputActive(false);
             ProcessPlayerChoice(playerInput, isNaturalDialogue: true);
-            AddToChatLog("Player", $"<color=#00BFFF>[Casual]</color> {playerInput}"); // Dialogue-related log
+            AddToChatLog("Player", $"You: {playerInput}"); // Dialogue-related log
         }
     }
 
@@ -292,28 +292,28 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         isProcessingInput = true;
         ShowLoadingIndicator(true);
 
-        string playerDialogue = $"You say to <color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color>: \"{playerChoice}\"";
-        dialogueText.text = playerDialogue;
+        string playerDialogue = $"You say to <color=#{ColorUtility.ToHtmlStringRGB(currentAgent.characterColor)}>{currentAgent.characterName}</color>: \"{playerChoice}\"";
+        agentDialogueText.text = playerDialogue;
         AddToChatLog("Player", playerDialogue); // Dialogue-related log
         GameManager.Instance.AddPlayerAction(playerChoice);
 
-        string aiResponse;
+        string agentResponse;
         if (isNaturalDialogue)
         {
-            aiResponse = await OpenAIService.Instance.GetNaturalDialogueResponse(currentNPC.characterName, playerChoice, currentNPC.aiSettings);
+            agentResponse = await OpenAIService.Instance.GetAgentResponse(currentAgent.characterName, playerChoice, currentAgent.aiSettings);
         }
         else
         {
-            aiResponse = await OpenAIService.Instance.GetResponse(GetResponsePrompt(playerChoice), currentNPC.aiSettings);
+            agentResponse = await OpenAIService.Instance.GetAgentResponseToChoice(currentAgent.characterName, playerChoice, currentAgent.aiSettings);
         }
 
-        string npcDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: \"{aiResponse}\"";
-        dialogueText.text = npcDialogue;
-        AddToChatLog(currentNPC.characterName, npcDialogue); // Dialogue-related log
-        GameManager.Instance.UpdateGameState(currentNPC.characterName, aiResponse);
+        string agentDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentAgent.characterColor)}>{currentAgent.characterName}</color> says to you: \"{agentResponse}\"";
+        agentDialogueText.text = agentDialogue;
+        AddToChatLog(currentAgent.characterName, agentDialogue); // Dialogue-related log
+        GameManager.Instance.UpdateGameState(currentAgent.characterName, agentResponse);
 
         SetDialogueState(DialogueState.GeneratingResponse);
-        await GenerateAndDisplayChoices();
+        await GenerateAndDisplayGenerativeChoices();
 
         SetDialogueState(DialogueState.WaitingForPlayerInput);
         isProcessingInput = false;
@@ -327,13 +327,13 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        if (currentNPC != null)
+        if (currentAgent != null)
         {
-            currentNPC.RemoveState(UniversalCharacterController.CharacterState.Chatting);
+            currentAgent.RemoveState(UniversalCharacterController.CharacterState.Chatting);
         }
         dialoguePanel.SetActive(false);
         SetCustomInputActive(false);
-        currentNPC = null;
+        currentAgent = null;
         customInputField.text = "";
         SetDialogueState(DialogueState.Idle);
         isProcessingInput = false;
@@ -359,11 +359,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
         string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join(", ", recentEurekas)}" : "";
         return $"Current challenge: {currentState.CurrentChallenge.title}. Milestones: {string.Join(", ", currentState.CurrentChallenge.milestones)}. {eurekaContext}";
-    }
-
-    private string GetResponsePrompt(string playerInput)
-    {
-        return $"The player said: '{playerInput}'. Respond to this in the context of the current challenge: {GetCurrentContext()}";
     }
 
     // Chat Log Methods
@@ -489,82 +484,82 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     }
 
     // Processing Natural Dialogues Initiated by AI Agents
-    public async void InitiateNaturalDialogue(string aiCharacterName)
+    public async void InitiateAgentDialogue(string agentName)
     {
         if (currentState != DialogueState.Idle)
         {
             return;
         }
 
-        UniversalCharacterController aiNPC = GameManager.Instance.GetCharacterByName(aiCharacterName);
-        if (aiNPC == null)
+        UniversalCharacterController agentNPC = GameManager.Instance.GetCharacterByName(agentName);
+        if (agentNPC == null)
         {
-            Debug.LogWarning($"AI character '{aiCharacterName}' not found.");
+            Debug.LogWarning($"Agent character '{agentName}' not found.");
             return;
         }
 
-        currentNPC = aiNPC;
-        currentNPC.AddState(UniversalCharacterController.CharacterState.Chatting);
+        currentAgent = agentNPC;
+        currentAgent.AddState(UniversalCharacterController.CharacterState.Chatting);
         InputManager.Instance.StartDialogue();
 
-        // AI initiates the conversation
-        string initialDialogue = await OpenAIService.Instance.GetNaturalDialogueResponse(currentNPC.characterName, "", currentNPC.aiSettings);
-        dialogueText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: \"{initialDialogue}\"";
+        // Agent initiates the conversation
+        string initialDialogue = await OpenAIService.Instance.GetAgentResponse(currentAgent.characterName, "", currentAgent.aiSettings);
+        agentDialogueText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(currentAgent.characterColor)}>{currentAgent.characterName}</color> says to you: \"{initialDialogue}\"";
         dialoguePanel.SetActive(true);
         customInputField.text = "";
 
         SetCustomInputActive(false);
 
-        AddToChatLog(currentNPC.characterName, dialogueText.text); // Dialogue-related log
+        AddToChatLog(currentAgent.characterName, agentDialogueText.text); // Dialogue-related log
 
         SetDialogueState(DialogueState.GeneratingResponse);
-        await GenerateAndDisplayChoices();
+        await GenerateAndDisplayGenerativeChoices();
         SetDialogueState(DialogueState.WaitingForPlayerInput);
     }
 
-    // Handling Dialogue Requests from AI Agents
-    public void HandleDialogueRequest(int aiCharacterViewID)
+    // Handling Dialogue Requests from Agents
+    public void HandleDialogueRequest(int agentViewID)
     {
-        PhotonView aiView = PhotonView.Find(aiCharacterViewID);
-        if (aiView == null)
+        PhotonView agentView = PhotonView.Find(agentViewID);
+        if (agentView == null)
         {
-            Debug.LogWarning("DialogueManager: AI character PhotonView not found for dialogue request.");
+            Debug.LogWarning("DialogueManager: Agent PhotonView not found for dialogue request.");
             return;
         }
 
-        UniversalCharacterController aiNPC = aiView.GetComponent<UniversalCharacterController>();
-        if (aiNPC == null)
+        UniversalCharacterController agentNPC = agentView.GetComponent<UniversalCharacterController>();
+        if (agentNPC == null)
         {
-            Debug.LogWarning("DialogueManager: UniversalCharacterController not found on AI character for dialogue request.");
+            Debug.LogWarning("DialogueManager: UniversalCharacterController not found on agent for dialogue request.");
             return;
         }
 
-        DialogueRequestUI.Instance.ShowRequest(aiNPC);
+        DialogueRequestUI.Instance.ShowRequest(agentNPC);
     }
 
     // Called when player accepts the dialogue request
-    public async void AcceptDialogueRequest(UniversalCharacterController aiNPC)
+    public async void AcceptDialogueRequest(UniversalCharacterController agentNPC)
     {
-        if (aiNPC == null || currentState != DialogueState.Idle)
+        if (agentNPC == null || currentState != DialogueState.Idle)
         {
             return;
         }
 
-        currentNPC = aiNPC;
-        currentNPC.AddState(UniversalCharacterController.CharacterState.Chatting);
+        currentAgent = agentNPC;
+        currentAgent.AddState(UniversalCharacterController.CharacterState.Chatting);
         InputManager.Instance.StartDialogue();
 
-        string initialDialogue = await OpenAIService.Instance.GetNaturalDialogueResponse(currentNPC.characterName, "", currentNPC.aiSettings);
-        dialogueText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(currentNPC.characterColor)}>{currentNPC.characterName}</color> says to you: \"{initialDialogue}\"";
+        string initialDialogue = await OpenAIService.Instance.GetAgentResponse(currentAgent.characterName, "", currentAgent.aiSettings);
+        agentDialogueText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(currentAgent.characterColor)}>{currentAgent.characterName}</color> says to you: \"{initialDialogue}\"";
         dialoguePanel.SetActive(true);
         customInputField.text = "";
 
         SetCustomInputActive(false);
 
-        AddToChatLog(currentNPC.characterName, dialogueText.text); // Dialogue-related log
+        AddToChatLog(currentAgent.characterName, agentDialogueText.text); // Dialogue-related log
 
         SetDialogueState(DialogueState.GeneratingResponse);
-        await GenerateAndDisplayChoices();
+        await GenerateAndDisplayGenerativeChoices();
         SetDialogueState(DialogueState.WaitingForPlayerInput);
     }
 
@@ -574,6 +569,29 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         DialogueRequestUI.Instance.HideRequest();
     }
 
+    // Method to handle Agent-to-Agent or NPC-to-NPC dialogues
+    public async void TriggerAgentDialogue(UniversalCharacterController initiator, UniversalCharacterController target)
+    {
+        if (initiator == null || target == null)
+        {
+            Debug.LogWarning("DialogueManager: Invalid characters for agent dialogue.");
+            return;
+        }
+
+        // Access aiManager directly
+        string initiatorMemory = string.Join(", ", initiator.aiManager.npcData.GetMentalModel().RetrieveRelevantMemories("").Select(m => m.Content));
+        string initiatorReflection = initiator.aiManager.npcData.GetMentalModel().Reflect();
+
+        string initialDialogue = await OpenAIService.Instance.GetAgentResponse(initiator.characterName, $"Initiate a conversation with {target.characterName}", initiator.aiSettings, initiatorMemory, initiatorReflection);
+        AddToChatLog(initiator.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(initiator.characterColor)}>{initiator.characterName}</color> says to {target.characterName}: \"{initialDialogue}\"");
+
+        string targetMemory = string.Join(", ", target.aiManager.npcData.GetMentalModel().RetrieveRelevantMemories("").Select(m => m.Content));
+        string targetReflection = target.aiManager.npcData.GetMentalModel().Reflect();
+
+        string response = await OpenAIService.Instance.GetAgentResponse(target.characterName, initialDialogue, target.aiSettings, targetMemory, targetReflection);
+        AddToChatLog(target.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(target.characterColor)}>{target.characterName}</color> responds: \"{response}\"");
+    }
+
     // Helper Classes
     private class ChatLogEntry
     {
@@ -581,37 +599,22 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         public string Speaker;
         public string Message;
     }
-
-    // Method to handle NPC-to-NPC dialogues
-    public async void TriggerNPCDialogue(UniversalCharacterController initiator, UniversalCharacterController target)
-    {
-        if (initiator == null || target == null)
-        {
-            Debug.LogWarning("DialogueManager: Invalid characters for NPC dialogue.");
-            return;
-        }
-
-        string initialDialogue = await OpenAIService.Instance.GetNaturalDialogueResponse(initiator.characterName, $"Initiate a conversation with {target.characterName}", initiator.aiSettings);
-        AddToChatLog(initiator.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(initiator.characterColor)}>{initiator.characterName}</color> says to {target.characterName}: \"{initialDialogue}\""); // Dialogue-related log
-
-        string response = await OpenAIService.Instance.GetNaturalDialogueResponse(target.characterName, initialDialogue, target.aiSettings);
-        AddToChatLog(target.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(target.characterColor)}>{target.characterName}</color> responds: \"{response}\""); // Dialogue-related log
-    }
 }
 
-public class DialogueOption
+// Helper Classes for Generative Choices
+public class GenerativeChoiceOption
 {
     public string Text { get; set; }
-    public DialogueCategory Category { get; set; }
+    public GenerativeChoiceCategory Category { get; set; }
 
-    public DialogueOption(string text, DialogueCategory category)
+    public GenerativeChoiceOption(string text, GenerativeChoiceCategory category)
     {
         Text = text;
         Category = category;
     }
 }
 
-public enum DialogueCategory
+public enum GenerativeChoiceCategory
 {
     Ethical,
     Strategic,
@@ -619,6 +622,5 @@ public enum DialogueCategory
     Practical,
     Creative,
     Diplomatic,
-    RiskTaking,
-    Casual
+    RiskTaking
 }

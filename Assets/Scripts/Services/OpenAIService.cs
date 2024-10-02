@@ -45,41 +45,41 @@ public class OpenAIService : MonoBehaviour
         switch (model)
         {
             case OpenAIModel.GPT4o:
-                return "gpt-4o";
+                return "gpt-4";
             case OpenAIModel.GPT4oMini:
-                return "gpt-4o-mini";
+                return "gpt-3.5-turbo";
             case OpenAIModel.FineTunedNaturalDialog:
                 return "ft:gpt-4o-2024-08-06:karyo-studios:naturaldialog3:A7A1XgRr";
             default:
-                return "gpt-4o";
+                return "gpt-4";
         }
     }
 
-    // New Method: Generate Greeting Response
-    public async Task<string> GenerateGreetingResponse(string characterName, AISettings aiSettings)
+     // Method: Generate Agent Greeting
+    public async Task<string> GenerateAgentGreeting(string characterName, AISettings aiSettings)
     {
         await EnforceApiCooldown();
 
-        string prompt = GenerateGreetingPrompt(characterName, aiSettings);
+        string prompt = GenerateAgentGreetingPrompt(characterName, aiSettings);
         string response = await GetChatCompletionAsync(prompt, OpenAIModel.FineTunedNaturalDialog);
 
         lastApiCallTime = Time.time;
 
-        // Ensure the greeting is within 10 words
+        // Ensure the greeting is within 15 words
         if (!string.IsNullOrEmpty(response))
         {
             string[] words = response.Split(' ');
-            if (words.Length > 10)
+            if (words.Length > 15)
             {
-                response = string.Join(" ", words.Take(10));
+                response = string.Join(" ", words.Take(15));
             }
         }
 
         return string.IsNullOrEmpty(response) ? "Hello!" : response.Trim();
     }
 
-    // Existing Method: Get Generative Choices
-    public async Task<List<DialogueOption>> GetGenerativeChoices(string characterName, string context, AISettings aiSettings)
+    // Method: Get Generative Choices
+    public async Task<List<GenerativeChoiceOption>> GetGenerativeChoices(string characterName, string context, AISettings aiSettings)
     {
         await EnforceApiCooldown();
 
@@ -88,26 +88,39 @@ public class OpenAIService : MonoBehaviour
 
         if (string.IsNullOrEmpty(response))
         {
-            return GetDefaultDialogueOptions();
+            return GetDefaultGenerativeChoices();
         }
 
-        List<DialogueOption> choices = ParseDialogueOptions(response);
+        List<GenerativeChoiceOption> choices = ParseGenerativeChoices(response);
         lastApiCallTime = Time.time;
 
         return choices;
     }
 
-    // Existing Method: Get Natural Dialogue Response
-    public async Task<string> GetNaturalDialogueResponse(string characterName, string playerInput, AISettings aiSettings)
+    // Method: Get Agent Response to Player Input
+    public async Task<string> GetAgentResponse(string characterName, string playerInput, AISettings aiSettings, string memoryContext = "", string reflection = "")
     {
         await EnforceApiCooldown();
 
-        string prompt = GenerateNaturalDialoguePrompt(characterName, playerInput, aiSettings);
+        string prompt = GenerateAgentResponsePrompt(characterName, playerInput, aiSettings, memoryContext, reflection);
         string response = await GetChatCompletionAsync(prompt, OpenAIModel.FineTunedNaturalDialog);
 
         lastApiCallTime = Time.time;
 
         return string.IsNullOrEmpty(response) ? "Hmm, I need to think about that..." : response.Trim();
+    }
+
+    // Method: Get Agent Response to Generative Choice
+    public async Task<string> GetAgentResponseToChoice(string characterName, string playerChoice, AISettings aiSettings, string memoryContext = "", string reflection = "")
+    {
+        await EnforceApiCooldown();
+
+        string prompt = GenerateAgentResponseToChoicePrompt(characterName, playerChoice, aiSettings, memoryContext, reflection);
+        string response = await GetChatCompletionAsync(prompt, selectedModel);
+
+        lastApiCallTime = Time.time;
+
+        return string.IsNullOrEmpty(response) ? "Let me consider that option..." : response.Trim();
     }
 
     // Existing Method: Get Response (used for generalized responses)
@@ -132,9 +145,102 @@ public class OpenAIService : MonoBehaviour
         return string.IsNullOrEmpty(response) ? "Not sure how to respond to that..." : response;
     }
 
+    // Generate Agent Greeting Prompt
+    private string GenerateAgentGreetingPrompt(string characterName, AISettings aiSettings)
+    {
+        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
+               $"Your personality: {aiSettings.characterPersonality}\n\n" +
+               "Initiate a conversation with a natural and friendly greeting that reflects your personality. " +
+               "Keep it concise (max 15 words).";
+    }
+
+    // Generate Generative Choices Prompt
+    private string GenerateGenerativeChoicesPrompt(string characterName, string context, AISettings aiSettings)
+    {
+        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
+               $"Your personality: {aiSettings.characterPersonality}\n\n" +
+               $"Based on this context: {context}\n\n" +
+               $"Generate 3 high-stakes decisions that {characterName} might propose to the player. " +
+               $"Each decision should be impactful and fall into one of these categories: Ethical, Strategic, Emotional, Practical, Creative, Diplomatic, or RiskTaking.\n" +
+               $"Each decision should be concise (max 12 words) and clearly worded.\n" +
+               "Format your response as follows:\n" +
+               "1. [Category]: [Decision]\n" +
+               "2. [Category]: [Decision]\n" +
+               "3. [Category]: [Decision]";
+    }
+
+    // Generate Agent Response Prompt
+    private string GenerateAgentResponsePrompt(string characterName, string playerInput, AISettings aiSettings, string memoryContext = "", string reflection = "")
+    {
+        List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
+        string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join("; ", recentEurekas)}" : "";
+
+        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
+               $"Your personality: {aiSettings.characterPersonality}\n" +
+               $"Recent memories: {memoryContext}\n" +
+               $"Your current reflection: {reflection}\n" +
+               $"{eurekaContext}\n\n" +
+               $"The player says: \"{playerInput}\"\n" +
+               "Respond naturally and in character.";
+    }
+
+    // Generate Agent Response to Generative Choice Prompt
+    private string GenerateAgentResponseToChoicePrompt(string characterName, string playerChoice, AISettings aiSettings, string memoryContext = "", string reflection = "")
+    {
+        List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
+        string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join("; ", recentEurekas)}" : "";
+
+        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
+               $"Your personality: {aiSettings.characterPersonality}\n" +
+               $"Recent memories: {memoryContext}\n" +
+               $"Your current reflection: {reflection}\n" +
+               $"{eurekaContext}\n\n" +
+               $"The player has chosen: \"{playerChoice}\"\n" +
+               "Provide a response that reflects your thoughts on this choice, keeping in character and being concise (max 50 words).";
+    }
+
+    private List<GenerativeChoiceOption> GetDefaultGenerativeChoices()
+    {
+        return new List<GenerativeChoiceOption>
+        {
+            new GenerativeChoiceOption("Investigate the anomaly", GenerativeChoiceCategory.Practical),
+            new GenerativeChoiceOption("Collaborate with a nearby character", GenerativeChoiceCategory.Diplomatic),
+            new GenerativeChoiceOption("Take a calculated risk", GenerativeChoiceCategory.RiskTaking)
+        };
+    }
+
+    private List<GenerativeChoiceOption> ParseGenerativeChoices(string response)
+    {
+        List<GenerativeChoiceOption> options = new List<GenerativeChoiceOption>();
+        string[] lines = response.Split('\n');
+
+        foreach (string line in lines)
+        {
+            string[] parts = line.Split(':');
+            if (parts.Length == 2)
+            {
+                string categoryStr = parts[0].Trim().Replace("1. ", "").Replace("2. ", "").Replace("3. ", "");
+                string choiceText = parts[1].Trim();
+
+                if (Enum.TryParse(categoryStr, true, out GenerativeChoiceCategory category))
+                {
+                    options.Add(new GenerativeChoiceOption(choiceText, category));
+                }
+                else
+                {
+                    Debug.LogWarning($"Unknown category '{categoryStr}' in generative choice.");
+                }
+            }
+        }
+
+        return options;
+    }
+
     // Existing Method: Generate Eureka Description
     public async Task<string> GenerateEurekaDescription(List<UniversalCharacterController> collaborators, GameState gameState, string actionName)
     {
+        await EnforceApiCooldown();
+
         string collaboratorNamesAndRoles = string.Join(", ", collaborators.Select(c => $"{c.characterName} ({c.aiSettings.characterRole})"));
         string collaboratorBackgrounds = string.Join("; ", collaborators.Select(c => $"{c.characterName}'s background: {c.aiSettings.characterBackground}"));
         string collaboratorPersonalities = string.Join("; ", collaborators.Select(c => $"{c.characterName}'s personality: {c.aiSettings.characterPersonality}"));
@@ -210,73 +316,7 @@ Format the response as follows:
         return scenarios;
     }
 
-    // New Method: Generate Greeting Prompt
-    private string GenerateGreetingPrompt(string characterName, AISettings aiSettings)
-    {
-        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n" +
-               "Generate a friendly and concise greeting (max 10 words) that you would say when initiating a conversation with a player. " +
-               "The greeting should feel natural and may reflect your personality traits.";
-    }
-
-    private string GenerateGenerativeChoicesPrompt(string characterName, string context, AISettings aiSettings)
-    {
-        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n" +
-            $"Based on this context: {context}\n\n" +
-            "Generate 3 short, distinct responses (max 8 words each) that {characterName} might consider. " +
-            "These can be a mix of casual conversational responses and action choices. " +
-            "For action choices, use one of these categories: Ethical, Strategic, Emotional, Practical, Creative, Diplomatic, or Risk-Taking. " +
-            "For casual responses, use the Casual category. " +
-            "Format your response as follows:\n" +
-            "1. [Category]: [Response]\n" +
-            "2. [Category]: [Response]\n" +
-            "3. [Category]: [Response]";
-    }
-
-    private string GenerateNaturalDialoguePrompt(string characterName, string playerInput, AISettings aiSettings)
-    {
-        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n" +
-               $"The player says: \"{playerInput}\"\n" +
-               "Respond naturally and in character.";
-    }
-
-    private List<DialogueOption> GetDefaultDialogueOptions()
-    {
-        return new List<DialogueOption>
-        {
-            new DialogueOption("Investigate the area", DialogueCategory.Practical),
-            new DialogueOption("Collaborate with a nearby character", DialogueCategory.Diplomatic),
-            new DialogueOption("Propose an innovative solution", DialogueCategory.Creative)
-        };
-    }
-
-    private List<DialogueOption> ParseDialogueOptions(string response)
-    {
-        List<DialogueOption> options = new List<DialogueOption>();
-        string[] lines = response.Split('\n');
-
-        foreach (string line in lines)
-        {
-            string[] parts = line.Split(':');
-            if (parts.Length == 2)
-            {
-                string categoryStr = parts[0].Trim().Replace("1. ", "").Replace("2. ", "").Replace("3. ", "");
-                string choiceText = parts[1].Trim();
-
-                if (categoryStr.Equals("Casual", StringComparison.OrdinalIgnoreCase))
-                {
-                    options.Add(new DialogueOption(choiceText, DialogueCategory.Casual));
-                }
-                else if (Enum.TryParse(categoryStr, out DialogueCategory category))
-                {
-                    options.Add(new DialogueOption(choiceText, category));
-                }
-            }
-        }
-
-        return options;
-    }
-
-    // Existing Method: Get Chat Completion from OpenAI
+    // Method to get chat completion from OpenAI
     private async Task<string> GetChatCompletionAsync(string prompt, OpenAIModel model)
     {
         var requestBody = new
@@ -312,7 +352,7 @@ Format the response as follows:
         }
     }
 
-    // New Method: Enforce API Call Cooldown
+    // Enforce API call cooldown
     private async Task EnforceApiCooldown()
     {
         if (Time.time - lastApiCallTime < apiCallCooldown)
