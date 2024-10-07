@@ -725,16 +725,22 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goalTag}");
     }
 
-     private void UpdateGoalProgress(string actionName)
+     public void UpdateGoalProgress(string actionName)
     {
         List<(string tag, float weight)> tagsWithWeights = TagSystem.GetTagsForAction(actionName);
+        float[] progressUpdate = new float[aiSettings.personalGoalTags.Count];
+
         foreach (var (tag, weight) in tagsWithWeights)
         {
-            if (aiSettings.personalGoalTags.Contains(tag))
+            if (aiSettings.tagToSliderIndex.TryGetValue(tag, out int sliderIndex))
             {
-                int index = aiSettings.personalGoalTags.IndexOf(tag);
-                PersonalProgress[index] = Mathf.Clamp01(PersonalProgress[index] + weight);
+                progressUpdate[sliderIndex] += weight;
             }
+        }
+
+        for (int i = 0; i < progressUpdate.Length; i++)
+        {
+            PersonalProgress[i] = Mathf.Clamp01(PersonalProgress[i] + progressUpdate[i]);
         }
 
         if (progressBar != null)

@@ -7,14 +7,15 @@ public class EurekaLogManager : MonoBehaviour
 {
     public static EurekaLogManager Instance { get; private set; }
 
-    [System.Serializable]
-    public class EurekaLogEntry
-    {
-        public string title;
-        public string description;
-        public List<(string name, string role, Color color)> involvedCharacters;
-        public string timestamp;
-    }
+   [System.Serializable]
+public class EurekaLogEntry
+{
+    public string title;
+    public string description;
+    public string actionName;
+    public List<(string name, string role, Color color)> involvedCharacters;
+    public float gameTime;
+}
 
     private List<EurekaLogEntry> eurekaLog = new List<EurekaLogEntry>();
     private const int MaxLogEntries = 50;
@@ -35,26 +36,27 @@ public class EurekaLogManager : MonoBehaviour
         }
     }
 
-    public void AddEurekaLogEntry(string description, List<UniversalCharacterController> involvedCharacters)
+    public void AddEurekaLogEntry(string description, List<UniversalCharacterController> involvedCharacters, string actionName, float gameTime)
+{
+    eurekaCounter++;
+    EurekaLogEntry entry = new EurekaLogEntry
     {
-        eurekaCounter++;
-        EurekaLogEntry entry = new EurekaLogEntry
-        {
-            title = $"Eureka Moment #{eurekaCounter}",
-            description = description,
-            involvedCharacters = involvedCharacters.Select(c => (c.characterName, c.aiSettings.characterRole, c.characterColor)).ToList(),
-            timestamp = DateTime.Now.ToString("HH:mm:ss")
-        };
+        title = $"Eureka Moment #{eurekaCounter}",
+        description = description,
+        actionName = actionName,
+        involvedCharacters = involvedCharacters.Select(c => (c.characterName, c.aiSettings.characterRole, c.characterColor)).ToList(),
+        gameTime = gameTime
+    };
 
-        eurekaLog.Insert(0, entry);
+    eurekaLog.Insert(0, entry);
 
-        if (eurekaLog.Count > MaxLogEntries)
-        {
-            eurekaLog.RemoveAt(eurekaLog.Count - 1);
-        }
-
-        OnEurekaLogEntryAdded?.Invoke(entry);
+    if (eurekaLog.Count > MaxLogEntries)
+    {
+        eurekaLog.RemoveAt(eurekaLog.Count - 1);
     }
+
+    OnEurekaLogEntryAdded?.Invoke(entry);
+}
 
     public List<EurekaLogEntry> GetEurekaLog()
     {

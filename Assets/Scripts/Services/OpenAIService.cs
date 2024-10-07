@@ -216,52 +216,61 @@ public class OpenAIService : MonoBehaviour
 
     // New Method: Generate Eureka Description and Tags
     public async Task<(string description, List<string> tags)> GenerateEurekaDescriptionAndTags(List<UniversalCharacterController> collaborators, GameState gameState, string actionName)
+{
+    await EnforceApiCooldown();
+
+    // Static content at the beginning
+    string staticPrompt = @"
+Generate an unexpected and exciting breakthrough or discovery resulting from character collaboration.
+Focus on the unique insight or innovation that emerges from the combination of their expertise.
+Be concise (max 30 words), clear, and capture the imagination. The output can be unconventional or even weird, but should feel believable within the context.
+
+Based on the description, generate a list of 3 to 5 relevant tags that match the existing PersonalGoalTags and/or MilestoneTags.
+Choose only from the following tags: ";
+
+    // Add valid tags to static content
+    List<string> validTags = new List<string>();
+    validTags.AddRange(TagSystem.PersonalGoalTagsList);
+    validTags.AddRange(TagSystem.MilestoneTagsList);
+    staticPrompt += string.Join(", ", validTags) + "\n\n";
+
+    // Dynamic content
+    string dynamicPrompt = $@"Challenge: '{gameState.CurrentChallenge.title}'
+Collaborators: {string.Join(", ", collaborators.Select(c => $"{c.characterName} ({c.aiSettings.characterRole})"))}
+Action: '{actionName}'
+Game Progress: {gameState.CollectiveProgress}%
+Completed Milestones: {string.Join(", ", gameState.MilestoneCompletion.Where(m => m.Value).Select(m => m.Key))}
+Incomplete Milestones: {string.Join(", ", gameState.MilestoneCompletion.Where(m => !m.Value).Select(m => m.Key))}
+Recent Eureka Moments: {string.Join("; ", EurekaManager.Instance.GetRecentEurekas())}
+
+Provide the response in the following format:
+Description: [Your generated description here]
+Tags: [comma-separated list of 3-5 tags from the provided list]";
+
+    string fullPrompt = staticPrompt + dynamicPrompt;
+    string response = await GetChatCompletionAsync(fullPrompt, selectedModel);
+
+    // Parse the response
+    string description = "";
+    List<string> generatedTags = new List<string>();
+
+    string[] parts = response.Split(new[] { "Description:", "Tags:" }, StringSplitOptions.RemoveEmptyEntries);
+    if (parts.Length >= 2)
     {
-        await EnforceApiCooldown();
-
-        string collaboratorNamesAndRoles = string.Join(", ", collaborators.Select(c => $"{c.characterName} ({c.aiSettings.characterRole})"));
-        string collaboratorBackgrounds = string.Join("; ", collaborators.Select(c => $"{c.characterName}'s background: {c.aiSettings.characterBackground}"));
-        string collaboratorPersonalities = string.Join("; ", collaborators.Select(c => $"{c.characterName}'s personality: {c.aiSettings.characterPersonality}"));
-        string collaboratorGoals = string.Join("; ", collaborators.Select(c => $"{c.characterName}'s goals: {string.Join(", ", c.aiSettings.personalGoalTags)}"));
-
-        string recentEurekas = string.Join("; ", EurekaManager.Instance.GetRecentEurekas());
-
-        string prompt = $@"
-{collaboratorNamesAndRoles} collaborated on the action '{actionName}' as part of the challenge '{gameState.CurrentChallenge.title}'.
-{collaboratorBackgrounds}
-{collaboratorPersonalities}
-{collaboratorGoals}
-Current game progress: {gameState.CollectiveProgress}% complete.
-Completed milestones: {string.Join(", ", gameState.MilestoneCompletion.Where(m => m.Value).Select(m => m.Key))}
-Incomplete milestones: {string.Join(", ", gameState.MilestoneCompletion.Where(m => !m.Value).Select(m => m.Key))}
-Recent Eureka moments: {recentEurekas}
-Describe an unexpected and significant breakthrough resulting from their collaboration. Emphasize the interplay of their diverse roles, backgrounds, and personalities, and how this led to solving a key aspect of the challenge. Be concise (max 30 words) and compelling.
-
-Based on this description, generate a list of relevant tags that match the existing PersonalGoalTags and/or ChallengeTags. Provide the tags in a comma-separated format.
-
----
-Description:
-";
-
-        string response = await GetChatCompletionAsync(prompt, selectedModel);
-
-        // Split the response into description and tags
-        string[] parts = response.Split(new string[] { "---\nTags: ", "---\r\nTags: " }, StringSplitOptions.None);
-        if (parts.Length >= 2)
-        {
-            string description = parts[0].Trim();
-            string tagsPart = parts[1].Trim();
-            List<string> tags = tagsPart.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
-                                        .Select(tag => tag.Trim())
-                                        .ToList();
-            return (description, tags);
-        }
-        else
-        {
-            Debug.LogWarning("Eureka description and tags not properly formatted.");
-            return (response.Trim(), new List<string>());
-        }
+        description = parts[0].Trim();
+        generatedTags = parts[1].Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                .Select(tag => tag.Trim())
+                                .ToList();
     }
+    else
+    {
+        Debug.LogWarning("Eureka response not properly formatted.");
+        return (response.Trim(), new List<string>());
+    }
+
+    // Remove the validation step here and return the generated tags
+    return (description, generatedTags);
+}
 
      // Existing Method: Get Response (used for generalized responses)
     public async Task<string> GetResponse(string prompt, AISettings aiSettings, string memoryContext = "", string reflection = "")
@@ -341,31 +350,39 @@ Format the response as follows:
     }
 
     // Method to get chat completion from OpenAI
-    private async Task<string> GetChatCompletionAsync(string prompt, OpenAIModel model)
+    private async Task<string> GetChatCompletionAsync(string prompt, OpenAIModel model, int maxRetries = 3)
+{
+    await EnforceApiCooldown();
+
+    for (int attempt = 0; attempt < maxRetries; attempt++)
     {
-        await EnforceApiCooldown();
-
-        var requestBody = new
-        {
-            model = ModelToString(model),
-            messages = new[]
-            {
-                new { role = "user", content = prompt }
-            },
-            max_tokens = 150
-        };
-
-        var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
-
         try
         {
+            var requestBody = new
+            {
+                model = ModelToString(model),
+                messages = new[]
+                {
+                    new { role = "user", content = prompt }
+                },
+                max_tokens = 300 // Increased from 150
+            };
+
+            var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
+
             var response = await httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
             var responseString = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
-                Debug.LogError($"OpenAI API request failed: {responseString}");
-                return null;
+                Debug.LogWarning($"OpenAI API request failed (Attempt {attempt + 1}/{maxRetries}): {responseString}");
+                if (attempt == maxRetries - 1)
+                {
+                    Debug.LogError($"OpenAI API request failed after {maxRetries} attempts: {responseString}");
+                    return null;
+                }
+                await Task.Delay((int)Math.Pow(2, attempt) * 1000); // Exponential backoff
+                continue;
             }
 
             var responseJson = JObject.Parse(responseString);
@@ -373,10 +390,17 @@ Format the response as follows:
         }
         catch (Exception e)
         {
-            Debug.LogError($"Error in OpenAI API request: {e.Message}");
-            return null;
+            Debug.LogError($"Error in OpenAI API request (Attempt {attempt + 1}/{maxRetries}): {e.Message}");
+            if (attempt == maxRetries - 1)
+            {
+                return null;
+            }
+            await Task.Delay((int)Math.Pow(2, attempt) * 1000); // Exponential backoff
         }
     }
+
+    return null;
+}
 
     // Enforce API call cooldown
     private async Task EnforceApiCooldown()

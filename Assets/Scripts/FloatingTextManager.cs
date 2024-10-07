@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using TMPro;
 
 public class FloatingTextManager : MonoBehaviour
 {
@@ -10,11 +11,10 @@ public class FloatingTextManager : MonoBehaviour
     [SerializeField] private Canvas uiCanvas;
 
     [Header("Colors")]
-    public Color pointsColor = new Color(1f, 0.867f, 0f); // FFDD00
-    public Color milestoneColor = new Color(0.831f, 0.506f, 0.341f); // OD8157
-    public Color collabColor = new Color(0.722f, 0.204f, 0.541f); // B8348A
+    public Color actionPointsColor = new Color(1f, 0.867f, 0f); // FFDD00
+    public Color personalGoalColor = new Color(0.831f, 0.506f, 0.341f); // OD8157
+    public Color milestoneColor = new Color(0.722f, 0.204f, 0.541f); // B8348A
     public Color eurekaColor = new Color(0.137f, 0.467f, 0.910f); // 2377E8
-    public Color failureColor = new Color(0.8f, 0.2f, 0.2f); 
 
     private Queue<FloatingText> textPool = new Queue<FloatingText>();
     private int poolSize = 20;
@@ -50,10 +50,8 @@ public class FloatingTextManager : MonoBehaviour
         FloatingText floatingText = textPool.Dequeue();
         floatingText.gameObject.SetActive(true);
 
-        // Convert world position to screen position
         Vector3 screenPosition = Camera.main.WorldToScreenPoint(worldPosition);
 
-        // Adjust for canvas scaling
         if (uiCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
         {
             screenPosition.x *= uiCanvas.scaleFactor;
@@ -63,6 +61,13 @@ public class FloatingTextManager : MonoBehaviour
         floatingText.GetComponent<RectTransform>().position = screenPosition;
 
         Color color = GetColorForType(type);
+        
+        // Modify text for Eureka
+        if (type == FloatingTextType.Eureka)
+        {
+            text += " Eureka!";
+        }
+
         floatingText.Initialize(text, color);
 
         StartCoroutine(ReturnToPool(floatingText));
@@ -72,16 +77,14 @@ public class FloatingTextManager : MonoBehaviour
     {
         switch (type)
         {
-            case FloatingTextType.Points:
-                return pointsColor;
+            case FloatingTextType.ActionPoints:
+                return actionPointsColor;
+            case FloatingTextType.PersonalGoal:
+                return personalGoalColor;
             case FloatingTextType.Milestone:
                 return milestoneColor;
-            case FloatingTextType.Collab:
-                return collabColor;
             case FloatingTextType.Eureka:
                 return eurekaColor;
-            case FloatingTextType.Failure:
-                return failureColor;
             default:
                 return Color.white;
         }
@@ -100,9 +103,8 @@ public class FloatingTextManager : MonoBehaviour
 
 public enum FloatingTextType
 {
-    Points,
+    ActionPoints,
+    PersonalGoal,
     Milestone,
-    Collab,
-    Eureka,
-    Failure
+    Eureka
 }

@@ -163,13 +163,15 @@ public class CharacterProgressBar : MonoBehaviour
 
     public void SetPersonalGoalProgress(float[] progress)
     {
-        if (progress.Length != personalGoalProgress.Length)
+        if (progress.Length != personalGoalSliders.Length)
         {
             Debug.LogError("Mismatch in personal goal progress array length");
             return;
         }
-        personalGoalProgress = progress;
-        UpdatePersonalGoals();
+        for (int i = 0; i < progress.Length; i++)
+        {
+            StartCoroutine(SmoothSliderUpdate(personalGoalSliders[i], progress[i]));
+        }
     }
 
     public void UpdateKeyState(UniversalCharacterController.CharacterState state)

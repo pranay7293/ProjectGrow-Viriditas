@@ -684,11 +684,13 @@ public class GameManager : MonoBehaviourPunCallbacks
             // Update CharacterProgressBar
             character.UpdateProgress(playerProgress[playerName]);
 
-            // Show floating text
-            Vector3 textPosition = character.transform.position + Vector3.up * 2f;
-            string scoreText = (scoreChange >= 0 ? "+" : "") + scoreChange;
-            FloatingTextType textType = scoreChange >= 0 ? FloatingTextType.Points : FloatingTextType.Failure;
-            FloatingTextManager.Instance.ShowFloatingText(scoreText, textPosition, textType);
+            // Show floating text only for non-Eureka score changes
+            if (actionName != "Eureka Moment")
+            {
+                Vector3 textPosition = character.transform.position + Vector3.up * 2f;
+                string scoreText = "+" + scoreChange;
+                FloatingTextManager.Instance.ShowFloatingText(scoreText, textPosition, FloatingTextType.ActionPoints);
+            }
         }
 
         // Update PlayerProfileUI
@@ -698,7 +700,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         PlayerProfileManager.Instance.SortPlayersByScore();
 
         // Log the score change
-        string logMessage = $"{playerName} {(scoreChange >= 0 ? "gained" : "lost")} {Mathf.Abs(scoreChange)} points. Action: {actionName}";
+        string logMessage = $"{playerName} gained {scoreChange} points. Action: {actionName}";
         ActionLogManager.Instance.LogAction("SYSTEM", logMessage);
     }
 
@@ -864,35 +866,22 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     public void UpdateMilestoneProgress(string characterName, string actionName, List<(string tag, float weight)> tagsWithWeights)
-    {
-        float[] milestoneProgress = new float[currentChallenge.milestones.Count];
+{
+    float[] milestoneProgress = new float[currentChallenge.milestones.Count];
 
-        for (int i = 0; i < currentChallenge.milestones.Count; i++)
+    foreach (var (tag, weight) in tagsWithWeights)
+    {
+        if (currentChallenge.tagToSliderIndex.TryGetValue(tag, out int sliderIndex))
         {
-            string milestone = currentChallenge.milestones[i];
-            if (!milestoneCompletion[milestone])
+            milestoneProgress[sliderIndex] += weight;
+            if (milestoneProgress[sliderIndex] >= 1f && !milestoneCompletion[currentChallenge.milestones[sliderIndex]])
             {
-                float progressIncrement = 0f;
-                foreach (var (tag, weight) in tagsWithWeights)
-                {
-                    if (milestone.Contains(tag))
-                    {
-                        progressIncrement += weight;
-                    }
-                }
-                milestoneProgress[i] = Mathf.Min(milestoneProgress[i] + progressIncrement, 1f);
-                if (milestoneProgress[i] >= 1f)
-                {
-                    CompleteMilestone(characterName, milestone, i);
-                }
-            }
-            else
-            {
-                milestoneProgress[i] = 1f;
+                CompleteMilestone(characterName, currentChallenge.milestones[sliderIndex], sliderIndex);
             }
         }
-
-        challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
-        UpdateScoreDisplay();
     }
+
+    challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
+    UpdateScoreDisplay();
+}
 }

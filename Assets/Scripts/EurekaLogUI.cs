@@ -92,8 +92,23 @@ public class EurekaLogUI : MonoBehaviour
         }
         else
         {
-            StartCoroutine(FadeCanvasGroup(eurekaLogCanvasGroup, eurekaLogCanvasGroup.alpha, 0f, fadeDuration));
+            StartCoroutine(FadeOutAndDeactivate());
         }
+    }
+
+    public void FadeOutEurekaLog()
+    {
+        if (eurekaLogPanel.activeSelf)
+        {
+            StartCoroutine(FadeOutAndDeactivate());
+        }
+    }
+
+    private IEnumerator FadeOutAndDeactivate()
+    {
+        yield return StartCoroutine(FadeCanvasGroup(eurekaLogCanvasGroup, eurekaLogCanvasGroup.alpha, 0f, fadeDuration));
+        eurekaLogPanel.SetActive(false);
+        InputManager.Instance.SetUIActive(false);
     }
 
     public bool IsLogVisible()

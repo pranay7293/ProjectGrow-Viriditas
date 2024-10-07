@@ -12,4 +12,13 @@ public class ChallengeData : ScriptableObject
     public bool isAvailable;
     public Sprite iconSprite;
     public List<string> milestoneTags = new List<string>();
+    public Dictionary<string, int> tagToSliderIndex = new Dictionary<string, int>();
+
+    public void InitializeTagMapping()
+    {
+        for (int i = 0; i < milestoneTags.Count; i++)
+        {
+            tagToSliderIndex[milestoneTags[i]] = i;
+        }
+    }
 }

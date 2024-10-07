@@ -23,16 +23,18 @@ public class EurekaEntryUI : MonoBehaviour
         defaultColor = backgroundImage.color;
     }
 
-    public void SetEntryData(EurekaLogManager.EurekaLogEntry entry)
-    {
-        titleText.text = entry.title;
-        descriptionText.text = entry.description;
-        
-        string collaboratorsString = FormatCollaborators(entry.involvedCharacters);
-        collaboratorsText.text = collaboratorsString;
-        
-        timestampText.text = $"<color=#{fallbackCharacterColor}>{entry.timestamp}</color>";
-    }
+   public void SetEntryData(EurekaLogManager.EurekaLogEntry entry)
+{
+    titleText.text = entry.title;
+    descriptionText.text = entry.description;
+    
+    string collaboratorsString = FormatCollaborators(entry.involvedCharacters);
+    collaboratorsText.text = collaboratorsString;
+    
+    int minutes = Mathf.FloorToInt(entry.gameTime / 60f);
+    int seconds = Mathf.FloorToInt(entry.gameTime % 60f);
+    timestampText.text = $"<color=#{fallbackCharacterColor}>{minutes:00}:{seconds:00}</color> - {entry.actionName}";
+}
 
     private string FormatCollaborators(List<(string name, string role, Color color)> collaborators)
     {

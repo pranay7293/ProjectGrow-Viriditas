@@ -118,6 +118,11 @@ public class InputManager : MonoBehaviourPunCallbacks
             ToggleGuideDisplay();
         }
 
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            CloseAllUIElements();
+        }
+
         if (DialogueRequestUI.Instance != null && DialogueRequestUI.Instance.IsRequestActive())
         {
             if (Input.GetKeyDown(acceptDialogueRequestKey))
@@ -130,6 +135,35 @@ public class InputManager : MonoBehaviourPunCallbacks
             }
         }
     }
+
+    public void CloseAllUIElements()
+{
+    if (IsInDialogue)
+    {
+        EndDialogue();
+    }
+    if (IsChatLogOpen)
+    {
+        ToggleChatLog();
+    }
+    if (ActionLogManager.Instance.IsLogVisible())
+    {
+        ToggleActionLog();
+    }
+    if (GameManager.Instance.IsMilestonesDisplayVisible())
+    {
+        ToggleMilestones();
+    }
+    if (eurekaLogUI.IsLogVisible())
+    {
+        ToggleEurekaLog();
+    }
+    if (GuideBoxManager.Instance.IsGuideDisplayVisible())
+    {
+        ToggleGuideDisplay();
+    }
+    SetUIActive(false);
+}
 
     private void CheckForInteractableCharacter()
     {
@@ -242,18 +276,25 @@ public class InputManager : MonoBehaviourPunCallbacks
         Debug.Log("Toggle Personal Goals - Not yet implemented");
     }
 
-    private void ToggleEurekaLog()
+private void ToggleEurekaLog()
+{
+    if (eurekaLogUI != null)
     {
-        if (eurekaLogUI != null)
+        if (eurekaLogUI.IsLogVisible())
         {
-            eurekaLogUI.ToggleEurekaLog();
-            SetUIActive(eurekaLogUI.IsLogVisible());
+            eurekaLogUI.FadeOutEurekaLog();
         }
         else
         {
-            Debug.LogWarning("EurekaLogUI reference is missing in InputManager");
+            eurekaLogUI.ToggleEurekaLog();
         }
+        SetUIActive(eurekaLogUI.IsLogVisible());
     }
+    else
+    {
+        Debug.LogWarning("EurekaLogUI reference is missing in InputManager");
+    }
+}
 
     private void ToggleGuideDisplay()
     {
