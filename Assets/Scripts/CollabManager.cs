@@ -294,7 +294,7 @@ public class CollabManager : MonoBehaviourPunCallbacks
             {
                 GameManager.Instance.UpdatePlayerScore(collaborator.characterName, basePoints, $"Completed {collaborators.Count}-person collaboration", new List<string> { "Collaboration" });
                 GameManager.Instance.UpdatePlayerScore(collaborator.characterName, collabBonus, $"Collaboration bonus", new List<string> { "CollaborationBonus" });
-                collaborator.EndCollaboration();
+                collaborator.EndCollab();
             }
         }
 

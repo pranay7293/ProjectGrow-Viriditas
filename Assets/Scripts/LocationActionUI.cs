@@ -4,6 +4,8 @@ using TMPro;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using DG.Tweening;
+using UnityEngine.EventSystems;
 
 public class LocationActionUI : MonoBehaviour
 {
@@ -34,10 +36,17 @@ public class LocationActionUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI guideText;
     [SerializeField] private float guideDisplayDuration = 2f;
     [SerializeField] private float guideFadeDuration = 0.5f;
+    [SerializeField] private float hoverTransitionDuration = 0.3f;
+    [SerializeField] private float bounceScale = 1.05f;
+    [SerializeField] private float bounceDuration = 0.2f;
+    [SerializeField] private float debounceDuration = 0.5f;
 
     private UniversalCharacterController currentCharacter;
     private LocationManager currentLocation;
     private Dictionary<string, List<UniversalCharacterController>> eligibleCollaborators = new Dictionary<string, List<UniversalCharacterController>>();
+    private Color defaultButtonColor;
+    private Color hoverButtonColor;
+    private Coroutine showActionsCoroutine;
 
     private void Awake()
     {
@@ -63,6 +72,7 @@ public class LocationActionUI : MonoBehaviour
             guideTextBox.SetActive(false);
         }
 
+        defaultButtonColor = actionButtons[0].circularBackground.color;
         InitializeActionButtons();
     }
 
@@ -77,6 +87,16 @@ public class LocationActionUI : MonoBehaviour
             {
                 actionButton.button.onClick.RemoveAllListeners();
                 actionButton.button.onClick.AddListener(() => OnActionButtonClicked(index));
+
+                // Add hover effects
+                EventTrigger trigger = actionButton.button.gameObject.AddComponent<EventTrigger>();
+                EventTrigger.Entry enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+                enterEntry.callback.AddListener((data) => { OnPointerEnter((PointerEventData)data, index); });
+                trigger.triggers.Add(enterEntry);
+
+                EventTrigger.Entry exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+                exitEntry.callback.AddListener((data) => { OnPointerExit((PointerEventData)data, index); });
+                trigger.triggers.Add(exitEntry);
             }
 
             if (actionButton.collabButton != null)
@@ -104,6 +124,22 @@ public class LocationActionUI : MonoBehaviour
 
     public void ShowActionsForLocation(UniversalCharacterController character, LocationManager location)
     {
+        if (showActionsCoroutine != null)
+        {
+            StopCoroutine(showActionsCoroutine);
+        }
+        showActionsCoroutine = StartCoroutine(ShowActionsCoroutine(character, location));
+    }
+
+    private IEnumerator ShowActionsCoroutine(UniversalCharacterController character, LocationManager location)
+    {
+        yield return new WaitForSeconds(debounceDuration);
+
+        if (!location.IsCharacterInLocation(character) || character.HasState(UniversalCharacterController.CharacterState.Acclimating))
+        {
+            yield break;
+        }
+
         currentCharacter = character;
         currentLocation = location;
 
@@ -126,9 +162,14 @@ public class LocationActionUI : MonoBehaviour
             }
         }
 
+        hoverButtonColor = location.locationColor;
         actionPanel.SetActive(true);
         UpdateCollabUI();
         InputManager.Instance.SetUIActive(true);
+
+        // Fade in the action panel
+        actionPanel.GetComponent<CanvasGroup>().alpha = 0f;
+        actionPanel.GetComponent<CanvasGroup>().DOFade(1f, 0.5f);
     }
 
     private void SetupActionButton(ActionButton button, LocationManager.LocationAction action)
@@ -145,26 +186,27 @@ public class LocationActionUI : MonoBehaviour
         button.actionDurationText.text = $"{action.duration}";
         button.circularProgressBar.fillAmount = 0;
         button.collabButton.gameObject.SetActive(false);
+        button.circularBackground.color = defaultButtonColor;
     }
 
     private void OnActionButtonClicked(int index)
-{
-    if (currentLocation == null)
     {
-        Debug.LogError("CurrentLocation is null in OnActionButtonClicked");
-        return;
-    }
+        if (currentLocation == null)
+        {
+            Debug.LogError("CurrentLocation is null in OnActionButtonClicked");
+            return;
+        }
 
-    List<LocationManager.LocationAction> availableActions = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole);
-    if (index < 0 || index >= availableActions.Count)
-    {
-        Debug.LogError($"Invalid action index: {index}");
-        return;
-    }
+        List<LocationManager.LocationAction> availableActions = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole);
+        if (index < 0 || index >= availableActions.Count)
+        {
+            Debug.LogError($"Invalid action index: {index}");
+            return;
+        }
 
-    LocationManager.LocationAction selectedAction = availableActions[index];
-    currentCharacter.StartAction(selectedAction);
-}
+        LocationManager.LocationAction selectedAction = availableActions[index];
+        currentCharacter.StartAction(selectedAction);
+    }
 
     private void ToggleCollabOptions(int actionIndex)
     {
@@ -259,10 +301,19 @@ public class LocationActionUI : MonoBehaviour
 
     public void HideActions()
     {
-        actionPanel.SetActive(false);
-        currentCharacter = null;
-        currentLocation = null;
-        InputManager.Instance.SetUIActive(false);
+        if (showActionsCoroutine != null)
+        {
+            StopCoroutine(showActionsCoroutine);
+        }
+
+        // Fade out the action panel
+        actionPanel.GetComponent<CanvasGroup>().DOFade(0f, 0.5f).OnComplete(() =>
+        {
+            actionPanel.SetActive(false);
+            currentCharacter = null;
+            currentLocation = null;
+            InputManager.Instance.SetUIActive(false);
+        });
     }
 
     private void UpdateCollabUI()
@@ -329,5 +380,30 @@ public class LocationActionUI : MonoBehaviour
         {
             guideTextBox.SetActive(false);
         }
+    }
+
+    private void OnPointerEnter(PointerEventData eventData, int index)
+    {
+        ActionButton button = actionButtons[index];
+        button.circularBackground.DOColor(hoverButtonColor, hoverTransitionDuration);
+        button.button.transform.DOScale(bounceScale, bounceDuration);
+
+        // Show action description
+        List<LocationManager.LocationAction> availableActions = currentLocation.GetAvailableActions(currentCharacter.aiSettings.characterRole);
+        if (index < availableActions.Count)
+        {
+            actionDescriptionText.text = availableActions[index].description;
+            actionDescriptionText.DOFade(1f, hoverTransitionDuration);
+        }
+    }
+
+    private void OnPointerExit(PointerEventData eventData, int index)
+    {
+        ActionButton button = actionButtons[index];
+        button.circularBackground.DOColor(defaultButtonColor, hoverTransitionDuration);
+        button.button.transform.DOScale(1f, bounceDuration);
+
+        // Hide action description
+        actionDescriptionText.DOFade(0f, hoverTransitionDuration);
     }
 }

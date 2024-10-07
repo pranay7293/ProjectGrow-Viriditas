@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class AnimateCollabIcon : MonoBehaviour
 {
@@ -8,7 +9,7 @@ public class AnimateCollabIcon : MonoBehaviour
     [SerializeField] private float maxScale = 1.1f;
 
     private Image iconImage;
-    private float pulseTimer;
+    private Tween pulseTween;
 
     private void Awake()
     {
@@ -17,32 +18,32 @@ public class AnimateCollabIcon : MonoBehaviour
 
     public void StartAnimation()
     {
-        enabled = true;
-        pulseTimer = 0f;
+        if (pulseTween != null)
+        {
+            pulseTween.Kill();
+        }
+
+        pulseTween = transform.DOScale(maxScale, pulseDuration / 2)
+            .SetEase(Ease.InOutSine)
+            .SetLoops(-1, LoopType.Yoyo);
     }
 
     public void StopAnimation()
     {
-        enabled = false;
-        transform.localScale = Vector3.one;
-    }
-
-
-    private void Update()
-    {
-        pulseTimer += Time.deltaTime;
-        if (pulseTimer > pulseDuration)
+        if (pulseTween != null)
         {
-            pulseTimer -= pulseDuration;
+            pulseTween.Kill();
         }
-
-        float t = pulseTimer / pulseDuration;
-        float scale = Mathf.Lerp(minScale, maxScale, (Mathf.Sin(t * Mathf.PI * 2) + 1) / 2);
-        transform.localScale = Vector3.one * scale;
+        transform.localScale = Vector3.one;
     }
 
     public void SetColor(Color color)
     {
         iconImage.color = color;
+    }
+
+    private void OnDisable()
+    {
+        StopAnimation();
     }
 }

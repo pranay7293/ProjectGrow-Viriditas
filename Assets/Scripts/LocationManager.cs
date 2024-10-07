@@ -25,6 +25,8 @@ public class LocationManager : MonoBehaviourPunCallbacks
     [SerializeField] private GameObject eurekaEffectPrefab;
     private GameObject activeEurekaEffect;
 
+    private HashSet<UniversalCharacterController> charactersInLocation = new HashSet<UniversalCharacterController>();
+
     private void Start()
     {
         ApplyColorToAllRenderers();
@@ -43,8 +45,9 @@ public class LocationManager : MonoBehaviourPunCallbacks
     private void OnTriggerEnter(Collider other)
     {
         UniversalCharacterController character = other.GetComponent<UniversalCharacterController>();
-        if (character != null)
+        if (character != null && !charactersInLocation.Contains(character))
         {
+            charactersInLocation.Add(character);
             character.EnterLocation(this);
         }
     }
@@ -54,8 +57,14 @@ public class LocationManager : MonoBehaviourPunCallbacks
         UniversalCharacterController character = other.GetComponent<UniversalCharacterController>();
         if (character != null)
         {
+            charactersInLocation.Remove(character);
             character.ExitLocation();
         }
+    }
+
+    public bool IsCharacterInLocation(UniversalCharacterController character)
+    {
+        return charactersInLocation.Contains(character);
     }
 
     public void UpdateCharacterAvailableActions(UniversalCharacterController character)
@@ -91,33 +100,31 @@ public class LocationManager : MonoBehaviourPunCallbacks
         GameManager.Instance.UpdatePlayerScore(character.characterName, ScoreConstants.GetActionPoints(action.duration), action.actionName, action.tags);
     }
 
- public void PlayEurekaEffect()
-{
-    if (PhotonNetwork.IsMasterClient)
+    public void PlayEurekaEffect()
     {
-        Debug.Log($"Attempting to instantiate EurekaEffect at {transform.position}");
-        GameObject eurekaEffect = PhotonNetwork.Instantiate("EurekaEffect", transform.position, Quaternion.identity);
-        if (eurekaEffect == null)
+        if (PhotonNetwork.IsMasterClient)
         {
-            Debug.LogError("Failed to instantiate EurekaEffect");
-        }
-        else
-        {
-            Debug.Log("EurekaEffect instantiated successfully");
-            EurekaEffectController effectController = eurekaEffect.GetComponent<EurekaEffectController>();
-            if (effectController != null)
+            Debug.Log($"Attempting to instantiate EurekaEffect at {transform.position}");
+            GameObject eurekaEffect = PhotonNetwork.Instantiate("EurekaEffect", transform.position, Quaternion.identity);
+            if (eurekaEffect == null)
             {
-                effectController.Initialize(locationColor);
+                Debug.LogError("Failed to instantiate EurekaEffect");
             }
             else
             {
-                Debug.LogError("EurekaEffectController component not found on instantiated object");
+                Debug.Log("EurekaEffect instantiated successfully");
+                EurekaEffectController effectController = eurekaEffect.GetComponent<EurekaEffectController>();
+                if (effectController != null)
+                {
+                    effectController.Initialize(locationColor);
+                }
+                else
+                {
+                    Debug.LogError("EurekaEffectController component not found on instantiated object");
+                }
             }
         }
     }
-}
-
-
 
     private IEnumerator DestroyEurekaEffectAfterDelay(float delay)
     {

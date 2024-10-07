@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 5.8914247, g: 3.6988358, b: 2.3957675, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -3316,7 +3316,7 @@ MonoBehaviour:
   locationName: Economics Center
   availableActions:
   - actionName: Model
-    description: Create economic simulations
+    description: Create Economic Simulations
     baseSuccessRate: 50
     duration: 5
     requiredRole: 
@@ -3326,7 +3326,7 @@ MonoBehaviour:
     - Analyze
     - Forecast
   - actionName: Forecast
-    description: Predict market trends
+    description: Predict Market Trends
     baseSuccessRate: 50
     duration: 10
     requiredRole: 
@@ -3336,7 +3336,7 @@ MonoBehaviour:
     - Strategize
     - Trade
   - actionName: Trade
-    description: Engage in virtual market exchanges
+    description: Engage in Virtual Market Exchanges
     baseSuccessRate: 50
     duration: 20
     requiredRole: 
@@ -3345,8 +3345,9 @@ MonoBehaviour:
     - Trade
     - Negotiate
     - Collaborate
-  locationColor: {r: 1, g: 0.20392157, b: 0.85490197, a: 0}
+  locationColor: {r: 1, g: 0.20392157, b: 0.85490197, a: 1}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
+  acclimationDelay: 0.5
 --- !u!4 &280927794 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8898971650372228527, guid: 83b20a8f513964749998474b6c251422, type: 3}
@@ -5099,7 +5100,7 @@ MonoBehaviour:
   locationName: Gallery
   availableActions:
   - actionName: Create
-    description: Produce bio-infused artworks
+    description: Produce Bio-Infused Artworks
     baseSuccessRate: 50
     duration: 5
     requiredRole: 
@@ -5109,7 +5110,7 @@ MonoBehaviour:
     - Innovate
     - Explore
   - actionName: Exhibit
-    description: Showcase artistic creations
+    description: Showcase Artistic Creations
     baseSuccessRate: 50
     duration: 10
     requiredRole: 
@@ -5119,7 +5120,7 @@ MonoBehaviour:
     - Broadcast
     - Collaborate
   - actionName: Critique
-    description: Analyze and discuss art pieces
+    description: Analyze and Discuss Art Pieces
     baseSuccessRate: 50
     duration: 20
     requiredRole: 
@@ -5128,8 +5129,9 @@ MonoBehaviour:
     - Critique
     - Analyze
     - Debate
-  locationColor: {r: 0.06666667, g: 0.6901961, b: 0.12156863, a: 0}
+  locationColor: {r: 0.06666667, g: 0.6901961, b: 0.12156863, a: 1}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
+  acclimationDelay: 0.5
 --- !u!1 &346536219
 GameObject:
   m_ObjectHideFlags: 0
@@ -6941,7 +6943,7 @@ MonoBehaviour:
   locationName: Space Center
   availableActions:
   - actionName: Simulate
-    description: Run space environment tests
+    description: Run Space Environment Tests
     baseSuccessRate: 50
     duration: 5
     requiredRole: 
@@ -6951,7 +6953,7 @@ MonoBehaviour:
     - Analyze
     - Experiment
   - actionName: Innovate
-    description: Develop space technologies
+    description: Develop Space Tech
     baseSuccessRate: 50
     duration: 10
     requiredRole: 
@@ -6961,7 +6963,7 @@ MonoBehaviour:
     - Engineer
     - Prototype
   - actionName: Explore
-    description: Study extraterrestrial biology
+    description: Study Extraterrestrial Biology
     baseSuccessRate: 50
     duration: 20
     requiredRole: 
@@ -6970,8 +6972,9 @@ MonoBehaviour:
     - Explore
     - Research
     - Collaborate
-  locationColor: {r: 0, g: 0, b: 0, a: 0}
+  locationColor: {r: 0, g: 0, b: 0, a: 1}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
+  acclimationDelay: 0.5
 --- !u!1 &498126928
 GameObject:
   m_ObjectHideFlags: 0
@@ -9427,7 +9430,7 @@ MonoBehaviour:
   locationName: Think Tank
   availableActions:
   - actionName: Debate
-    description: Engage in ethical discussions
+    description: Engage in Ethical Discussions
     baseSuccessRate: 50
     duration: 5
     requiredRole: 
@@ -9436,7 +9439,7 @@ MonoBehaviour:
     - Debate
     - Philosophize
   - actionName: Strategize
-    description: Develop ethical guidelines
+    description: Develop Ethical Guidelines
     baseSuccessRate: 50
     duration: 10
     requiredRole: 
@@ -9446,7 +9449,7 @@ MonoBehaviour:
     - Ideate
     - Forecast
   - actionName: Philosophize
-    description: Explore moral implications
+    description: Explore Moral Implications
     baseSuccessRate: 50
     duration: 20
     requiredRole: 
@@ -9455,8 +9458,9 @@ MonoBehaviour:
     - Philosophize
     - Debate
     - Analyze
-  locationColor: {r: 1, g: 0.6666667, b: 0.9607843, a: 0}
+  locationColor: {r: 1, g: 0.6666667, b: 0.9607843, a: 1}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
+  acclimationDelay: 0.5
 --- !u!1 &636418888
 GameObject:
   m_ObjectHideFlags: 0
@@ -11353,6 +11357,10 @@ PrefabInstance:
       propertyPath: m_hasFontAssetChanged
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7693320483460816350, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8077986820939153141, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_LocalPosition.x
       value: -88.92
@@ -11430,7 +11438,7 @@ MonoBehaviour:
   locationName: Maker Space
   availableActions:
   - actionName: Tinker
-    description: Work on DIY inventions
+    description: Work on DIY Inventions
     baseSuccessRate: 50
     duration: 5
     requiredRole: 
@@ -11440,7 +11448,7 @@ MonoBehaviour:
     - Experiment
     - Innovate
   - actionName: Fabricate
-    description: Create physical prototypes
+    description: Create Physical Prototypes
     baseSuccessRate: 50
     duration: 10
     requiredRole: 
@@ -11450,7 +11458,7 @@ MonoBehaviour:
     - Engineer
     - Automate
   - actionName: Collaborate
-    description: Work on community projects
+    description: Work on Community Projects
     baseSuccessRate: 50
     duration: 20
     requiredRole: 
@@ -11459,8 +11467,9 @@ MonoBehaviour:
     - Collaborate
     - Innovate
     - Strategize
-  locationColor: {r: 0.43137255, g: 0.07058824, b: 0.69803923, a: 0}
+  locationColor: {r: 0.43137255, g: 0.07058824, b: 0.69803923, a: 1}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
+  acclimationDelay: 0.5
 --- !u!4 &711526837 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2656687253269163865, guid: 52e8cd2300843c44d89b2f83f5d0d617, type: 3}
@@ -18916,7 +18925,7 @@ MonoBehaviour:
   locationName: Media Center
   availableActions:
   - actionName: Broadcast
-    description: Share news and updates
+    description: Share News and Updates
     baseSuccessRate: 50
     duration: 5
     requiredRole: 
@@ -18925,7 +18934,7 @@ MonoBehaviour:
     - Broadcast
     - Produce
   - actionName: Interview
-    description: Gather information from characters
+    description: Gather iInfo from Other Characters
     baseSuccessRate: 50
     duration: 10
     requiredRole: 
@@ -18935,7 +18944,7 @@ MonoBehaviour:
     - Analyze
     - Document
   - actionName: Produce
-    description: Create and edit media content
+    description: Create and Edit Media Content
     baseSuccessRate: 50
     duration: 20
     requiredRole: 
@@ -18946,6 +18955,7 @@ MonoBehaviour:
     - Innovate
   locationColor: {r: 1, g: 1, b: 1, a: 1}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
+  acclimationDelay: 0.5
 --- !u!1 &1262407247
 GameObject:
   m_ObjectHideFlags: 0
@@ -22651,7 +22661,7 @@ MonoBehaviour:
   locationName: Research Lab
   availableActions:
   - actionName: Experiment
-    description: Conduct scientific tests
+    description: Conduct Scientific Tests
     baseSuccessRate: 50
     duration: 5
     requiredRole: 
@@ -22661,7 +22671,7 @@ MonoBehaviour:
     - Research
     - Analyze
   - actionName: Analyze
-    description: Examine research data
+    description: Examine Research Data
     baseSuccessRate: 50
     duration: 10
     requiredRole: 
@@ -22671,7 +22681,7 @@ MonoBehaviour:
     - Document
     - Model
   - actionName: Document
-    description: Record findings and results
+    description: Record Findings and Results
     baseSuccessRate: 50
     duration: 20
     requiredRole: 
@@ -22680,8 +22690,9 @@ MonoBehaviour:
     - Document
     - Rsearch
     - Collaborate
-  locationColor: {r: 0.93333334, g: 0.6313726, b: 0.10980392, a: 0}
+  locationColor: {r: 0.93333334, g: 0.6313726, b: 0.10980392, a: 1}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
+  acclimationDelay: 0.5
 --- !u!1 &1547602006
 GameObject:
   m_ObjectHideFlags: 0
@@ -24747,6 +24758,43 @@ MonoBehaviour:
   scenarioMusic: {fileID: 8300000, guid: 8e825e4d8c71942799c2348f28883e30, type: 3}
   fadeInDuration: 1
   fadeOutDuration: 1
+--- !u!84 &1615328463
+RenderTexture:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_ImageContentsHash:
+    serializedVersion: 2
+    Hash: 00000000000000000000000000000000
+  m_ForcedFallbackFormat: 4
+  m_DownscaleFallback: 0
+  m_IsAlphaChannelOptional: 0
+  serializedVersion: 5
+  m_Width: 513
+  m_Height: 513
+  m_AntiAliasing: 1
+  m_MipCount: -1
+  m_DepthStencilFormat: 0
+  m_ColorFormat: 49
+  m_MipMap: 0
+  m_GenerateMips: 1
+  m_SRGB: 0
+  m_UseDynamicScale: 0
+  m_BindMS: 0
+  m_EnableCompatibleFormat: 1
+  m_TextureSettings:
+    serializedVersion: 2
+    m_FilterMode: 1
+    m_Aniso: 1
+    m_MipBias: 0
+    m_WrapU: 1
+    m_WrapV: 1
+    m_WrapW: 1
+  m_Dimension: 2
+  m_VolumeDepth: 1
+  m_ShadowSamplingMode: 2
 --- !u!1 &1636730266
 GameObject:
   m_ObjectHideFlags: 0
@@ -25689,7 +25737,7 @@ MonoBehaviour:
   locationName: Innovation Hub
   availableActions:
   - actionName: Ideate
-    description: Generate new business concepts
+    description: Generate New Business Concepts
     baseSuccessRate: 50
     duration: 5
     requiredRole: 
@@ -25699,7 +25747,7 @@ MonoBehaviour:
     - Innovate
     - Explore
   - actionName: Prototype
-    description: Create startup project models
+    description: Create Startup Project Models
     baseSuccessRate: 50
     duration: 10
     requiredRole: 
@@ -25709,7 +25757,7 @@ MonoBehaviour:
     - Engineer
     - Fabricate
   - actionName: Pitch
-    description: Present ideas to potential investors
+    description: Present Ideas to Potential Investors
     baseSuccessRate: 50
     duration: 20
     requiredRole: 
@@ -25718,8 +25766,9 @@ MonoBehaviour:
     - Pitch
     - Strategize
     - Collaborate
-  locationColor: {r: 0.6509804, g: 0.15686275, b: 0.0627451, a: 0}
+  locationColor: {r: 0.9019608, g: 0.15686275, b: 0.0627451, a: 1}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
+  acclimationDelay: 0.5
 --- !u!1 &1712194766
 GameObject:
   m_ObjectHideFlags: 0
@@ -26065,7 +26114,7 @@ MonoBehaviour:
   locationName: Biofoundry
   availableActions:
   - actionName: Engineer
-    description: Design biological systems
+    description: Design Biological Systems
     baseSuccessRate: 50
     duration: 5
     requiredRole: 
@@ -26075,7 +26124,7 @@ MonoBehaviour:
     - Innovate
     - Experiment
   - actionName: Cultivate
-    description: Grow biological samples
+    description: Grow Biological Samples
     baseSuccessRate: 50
     duration: 10
     requiredRole: 
@@ -26085,7 +26134,7 @@ MonoBehaviour:
     - Research
     - Analyze
   - actionName: Automate
-    description: Optimize bioprocesses
+    description: Optimize Bioprocesses
     baseSuccessRate: 50
     duration: 20
     requiredRole: 
@@ -26094,8 +26143,9 @@ MonoBehaviour:
     - Automate
     - Innovate
     - Fabricate
-  locationColor: {r: 0.3882353, g: 0.3882353, b: 0.3882353, a: 0}
+  locationColor: {r: 0.3882353, g: 0.3882353, b: 0.3882353, a: 1}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
+  acclimationDelay: 0.5
 --- !u!1 &1739473774
 GameObject:
   m_ObjectHideFlags: 0
@@ -26365,7 +26415,7 @@ MonoBehaviour:
   m_stamperUndoOperations: []
   m_linkedBiomeController: {fileID: 0}
   m_cachedRenderTexture: {fileID: 0}
-  m_cachedMaskTexture: {fileID: 2066322208}
+  m_cachedMaskTexture: {fileID: 1615328463}
   m_drawPreview: 1
   m_showSeaLevelinStampPreview: 1
   m_maxCurrentTerrainHeight: 0
@@ -30578,43 +30628,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1992242691}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!84 &2066322208
-RenderTexture:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_ImageContentsHash:
-    serializedVersion: 2
-    Hash: 00000000000000000000000000000000
-  m_ForcedFallbackFormat: 4
-  m_DownscaleFallback: 0
-  m_IsAlphaChannelOptional: 0
-  serializedVersion: 5
-  m_Width: 513
-  m_Height: 513
-  m_AntiAliasing: 1
-  m_MipCount: -1
-  m_DepthStencilFormat: 0
-  m_ColorFormat: 49
-  m_MipMap: 0
-  m_GenerateMips: 1
-  m_SRGB: 0
-  m_UseDynamicScale: 0
-  m_BindMS: 0
-  m_EnableCompatibleFormat: 1
-  m_TextureSettings:
-    serializedVersion: 2
-    m_FilterMode: 1
-    m_Aniso: 1
-    m_MipBias: 0
-    m_WrapU: 1
-    m_WrapV: 1
-    m_WrapW: 1
-  m_Dimension: 2
-  m_VolumeDepth: 1
-  m_ShadowSamplingMode: 2
 --- !u!1 &2074765403
 GameObject:
   m_ObjectHideFlags: 0
@@ -33532,19 +33545,19 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1176121979287296209, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1176121979287296209, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1176121979287296209, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 41.666664
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1176121979287296209, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1270919956152844884, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_IsActive
@@ -33552,131 +33565,123 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1440869712906706617, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1440869712906706617, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1440869712906706617, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 208.33331
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1440869712906706617, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1482909629270809805, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1482909629270809805, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1482909629270809805, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 215
-      objectReference: {fileID: 0}
-    - target: {fileID: 1482909629270809805, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -150
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2983113946182403522, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2983113946182403522, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2983113946182403522, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 41.666664
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2983113946182403522, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3083476730861175722, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3083476730861175722, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3083476730861175722, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 208.33331
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3083476730861175722, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3287645947969192414, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3287645947969192414, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3287645947969192414, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 1035
-      objectReference: {fileID: 0}
-    - target: {fileID: 3287645947969192414, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -150
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3651889415903409914, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3651889415903409914, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3651889415903409914, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 124.99999
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3651889415903409914, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4683489612161540126, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4683489612161540126, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4683489612161540126, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 41.666664
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4683489612161540126, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4851374155255277174, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4851374155255277174, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4851374155255277174, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 208.33331
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4851374155255277174, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5802207359054735342, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_Pivot.x
@@ -33688,7 +33693,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5802207359054735342, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5802207359054735342, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
@@ -33696,19 +33701,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5802207359054735342, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.x
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5802207359054735342, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5802207359054735342, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 100
+      value: -2590
       objectReference: {fileID: 0}
     - target: {fileID: 5802207359054735342, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 100
+      value: -1160
       objectReference: {fileID: 0}
     - target: {fileID: 5802207359054735342, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_LocalPosition.x
@@ -33744,7 +33749,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5802207359054735342, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -2092.8
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5802207359054735342, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -33760,35 +33765,35 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6572758171340231462, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6572758171340231462, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6572758171340231462, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 124.99999
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6572758171340231462, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7062605578648047157, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7062605578648047157, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7062605578648047157, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 124.99999
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7062605578648047157, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8065790662219798683, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_Name
@@ -33796,19 +33801,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9010969324052609297, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9010969324052609297, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9010969324052609297, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 625
-      objectReference: {fileID: 0}
-    - target: {fileID: 9010969324052609297, guid: 0a134f1ce3a804082b4443a79178eeb2, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -150
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -34535,7 +34536,7 @@ MonoBehaviour:
   locationName: Medical Bay
   availableActions:
   - actionName: Treat
-    description: Provide medical care to patients
+    description: Provide Medical Care to Patients
     baseSuccessRate: 50
     duration: 5
     requiredRole: 
@@ -34544,7 +34545,7 @@ MonoBehaviour:
     - Treat
     - Consult
   - actionName: Research
-    description: Conduct medical experiments
+    description: Conduct Medical Experiments
     baseSuccessRate: 50
     duration: 10
     requiredRole: 
@@ -34554,7 +34555,7 @@ MonoBehaviour:
     - Analyze
     - Experiment
   - actionName: Consult
-    description: Advise on medical issues
+    description: Advise on Medical Issues
     baseSuccessRate: 50
     duration: 20
     requiredRole: 
@@ -34563,8 +34564,9 @@ MonoBehaviour:
     - Consult
     - Debate
     - Strategize
-  locationColor: {r: 0.050980393, g: 0.5254902, b: 0.972549, a: 0}
+  locationColor: {r: 0.050980393, g: 0.5254902, b: 0.972549, a: 1}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
+  acclimationDelay: 0.5
 --- !u!224 &8906645219026930148
 RectTransform:
   m_ObjectHideFlags: 0

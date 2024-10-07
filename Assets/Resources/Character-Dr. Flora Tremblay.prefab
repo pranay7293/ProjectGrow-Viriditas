@@ -380,6 +380,7 @@ MonoBehaviour:
   currentObjective: 
   acclimationTime: 5
   initialDelay: 10
+  spawnProtectionTime: 2
   hasWhiteLabCoat: 0
   coatMaterial: {fileID: 2100000, guid: f5545f721073d444686b4d936407549d, type: 2}
   shirtMaterial: {fileID: 2100000, guid: c4908d94e993248e1ac8ea96e9c8a629, type: 2}

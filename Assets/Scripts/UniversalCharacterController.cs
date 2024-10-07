@@ -44,6 +44,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public string currentObjective;
     public float acclimationTime = 5f;
     public float initialDelay = 10f;
+    [SerializeField] private float spawnProtectionTime = 2f;
 
     [Header("Special Character Settings")]
     public bool hasWhiteLabCoat = false;
@@ -90,6 +91,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private CharacterProgressBar progressBar;
     private float locationEntryTime;
     private bool isAcclimating = false;
+    private Coroutine acclimationCoroutine;
 
     public bool IsCollaborating { get; private set; }
     public string currentCollabID;
@@ -109,6 +111,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private string currentGroupId;
     private GameObject cameraRigInstance;
+
+    private bool hasSpawnProtection = false;
+    private Coroutine spawnProtectionCoroutine;
 
     private void Awake()
     {
@@ -228,6 +233,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 SetupAIControlled();
             }
             InitializeProgressBar();
+            StartSpawnProtection();
         }
         InitializePersonalGoals();
         StartCoroutine(DelayedAcclimation());
@@ -244,7 +250,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     private IEnumerator DelayedAcclimation()
     {
         yield return new WaitForSeconds(initialDelay);
-        StartAcclimation();
+        if (currentLocation != null)
+        {
+            StartAcclimation();
+        }
     }
 
     private void SetCharacterProperties(string name, bool isPlayerControlled, Color color)
@@ -390,16 +399,16 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         CollaborationTimeElapsed += Time.deltaTime;
     }
 
-   public void StartCollaboration(LocationManager.LocationAction action, string collabID)
-{
-    IsCollaborating = true;
-    AddState(CharacterState.Collaborating);
-    currentCollabID = collabID;
-    currentAction = action;
-    CollaborationTimeElapsed = 0f;
-    StartAction(action);
-    Debug.Log($"{characterName} started collaboration on {action.actionName} with ID {collabID}");
-}
+    public void StartCollaboration(LocationManager.LocationAction action, string collabID)
+    {
+        IsCollaborating = true;
+        AddState(CharacterState.Collaborating);
+        currentCollabID = collabID;
+        currentAction = action;
+        CollaborationTimeElapsed = 0f;
+        StartAction(action);
+        Debug.Log($"{characterName} started collaboration on {action.actionName} with ID {collabID}");
+    }
 
     private void UpdateMovement()
     {
@@ -489,18 +498,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
         RemoveState(CharacterState.Idle);
         AddState(CharacterState.Moving);
-    }
-
-    public void StartCollaboration(UniversalCharacterController collaborator)
-    {
-        AddState(CharacterState.Collaborating);
-        // Logic to start collaboration
-    }
-
-    public void EndCollaboration()
-    {
-        RemoveState(CharacterState.Collaborating);
-        // Logic to end collaboration
     }
 
     private void UpdateRotation()
@@ -670,11 +667,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         CompleteAction();
     }
 
-    private void CompleteAction()
+    public void CompleteAction()
     {
         if (photonView.IsMine || !IsPlayerControlled)
         {
-            // Removed penalties for failed actions
             if (CollabManager.Instance != null && IsCollaborating && !string.IsNullOrEmpty(currentCollabID))
             {
                 CollabManager.Instance.FinalizeCollaboration(currentCollabID);
@@ -686,15 +682,21 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             {
                 GameManager.Instance.UpdateGameState(characterName, currentAction.actionName);
             }
-        }
 
-        if (currentAction != null)
-        {
-            CheckPersonalGoalProgress(currentAction.actionName);
+            if (currentAction != null)
+            {
+                CheckPersonalGoalProgress(currentAction.actionName);
+            }
+            currentAction = null;
+            RemoveState(CharacterState.PerformingAction);
+            Debug.Log($"{characterName} completed action: {currentAction?.actionName}");
+
+            // Signal LocationActionUI to dismiss
+            if (LocationActionUI.Instance != null)
+            {
+                LocationActionUI.Instance.HideActions();
+            }
         }
-        currentAction = null;
-        RemoveState(CharacterState.PerformingAction);
-        Debug.Log($"{characterName} completed action: {currentAction?.actionName}");
     }
 
     private void InitializePersonalGoals()
@@ -725,7 +727,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goalTag}");
     }
 
-     public void UpdateGoalProgress(string actionName)
+    public void UpdateGoalProgress(string actionName)
     {
         List<(string tag, float weight)> tagsWithWeights = TagSystem.GetTagsForAction(actionName);
         float[] progressUpdate = new float[aiSettings.personalGoalTags.Count];
@@ -792,14 +794,17 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     public void EnterLocation(LocationManager location)
     {
+        if (hasSpawnProtection)
+        {
+            return;
+        }
+
         currentLocation = location;
         StartAcclimation();
         availableActions.Clear();
-        if (IsPlayerControlled && photonView.IsMine)
-        {
-            StartCoroutine(DelayedShowActions(location));
-        }
-        else
+        location.UpdateCharacterAvailableActions(this);
+
+        if (!IsPlayerControlled)
         {
             NPC_Behavior npcBehavior = GetComponent<NPC_Behavior>();
             if (npcBehavior != null)
@@ -807,7 +812,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 npcBehavior.SetCurrentLocation(location);
             }
         }
-        location.UpdateCharacterAvailableActions(this);
     }
 
     public void UpdateAvailableActions(List<LocationManager.LocationAction> actions)
@@ -818,15 +822,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public bool IsActionAvailable(string actionName)
     {
         return availableActions.Exists(a => a.actionName == actionName);
-    }
-
-    private IEnumerator DelayedShowActions(LocationManager location)
-    {
-        yield return new WaitForSeconds(acclimationTime);
-        if (LocationActionUI.Instance != null && currentLocation == location)
-        {
-            LocationActionUI.Instance.ShowActionsForLocation(this, location);
-        }
     }
 
     public void ExitLocation()
@@ -855,11 +850,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 }
             }
 
-            if (progressBar != null)
-            {
-                progressBar.EndAcclimation();
-            }
-
+            StopAcclimation();
             currentLocation = null;
             availableActions.Clear();
         }
@@ -917,39 +908,110 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
                 navMeshAgent.Warp(spawnPosition);
             }
             RemoveState(CharacterState.Moving);
+            StartSpawnProtection();
+        }
+    }
+
+    private void StartSpawnProtection()
+    {
+        hasSpawnProtection = true;
+        if (spawnProtectionCoroutine != null)
+        {
+            StopCoroutine(spawnProtectionCoroutine);
+        }
+        spawnProtectionCoroutine = StartCoroutine(SpawnProtectionCoroutine());
+    }
+
+    private IEnumerator SpawnProtectionCoroutine()
+    {
+        yield return new WaitForSeconds(spawnProtectionTime);
+        hasSpawnProtection = false;
+        if (currentLocation != null)
+        {
             StartAcclimation();
         }
     }
 
     private void StartAcclimation()
     {
-        locationEntryTime = Time.time;
+        if (acclimationCoroutine != null)
+        {
+            StopCoroutine(acclimationCoroutine);
+        }
+        acclimationCoroutine = StartCoroutine(AcclimationCoroutine());
+    }
+
+    private IEnumerator AcclimationCoroutine()
+    {
         isAcclimating = true;
         AddState(CharacterState.Acclimating);
         if (progressBar != null)
         {
             progressBar.StartAcclimation();
         }
+
+        locationEntryTime = Time.time;
+        float elapsedTime = 0f;
+        while (elapsedTime < acclimationTime)
+        {
+            if (currentLocation == null)
+            {
+                break;
+            }
+
+            elapsedTime = Time.time - locationEntryTime;
+            float progress = elapsedTime / acclimationTime;
+            if (progressBar != null)
+            {
+                progressBar.UpdateAcclimationProgress(1 - progress);
+            }
+            yield return null;
+        }
+
+        FinishAcclimation();
     }
 
+    private void FinishAcclimation()
+    {
+        isAcclimating = false;
+        RemoveState(CharacterState.Acclimating);
+        if (progressBar != null)
+        {
+            progressBar.EndAcclimation();
+        }
+
+        if (IsPlayerControlled && photonView.IsMine && currentLocation != null)
+        {
+            LocationActionUI.Instance.ShowActionsForLocation(this, currentLocation);
+        }
+    }
+
+    private void StopAcclimation()
+    {
+        if (acclimationCoroutine != null)
+        {
+            StopCoroutine(acclimationCoroutine);
+        }
+        isAcclimating = false;
+        RemoveState(CharacterState.Acclimating);
+        if (progressBar != null)
+        {
+            progressBar.EndAcclimation();
+        }
+    }
     private void UpdateAcclimation()
     {
-        float elapsedTime = Time.time - locationEntryTime;
-        if (elapsedTime >= acclimationTime)
+        if (isAcclimating && currentLocation != null)
         {
-            isAcclimating = false;
-            RemoveState(CharacterState.Acclimating);
+            float elapsedTime = Time.time - locationEntryTime;
+            float progress = elapsedTime / acclimationTime;
             if (progressBar != null)
             {
-                progressBar.EndAcclimation();
+                progressBar.UpdateAcclimationProgress(1 - progress);
             }
-        }
-        else
-        {
-            float progress = 1 - (elapsedTime / acclimationTime);
-            if (progressBar != null)
+            if (progress >= 1f)
             {
-                progressBar.UpdateAcclimationProgress(progress);
+                FinishAcclimation();
             }
         }
     }
@@ -959,24 +1021,24 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         return characterColor;
     }
 
-   public void InitiateCollab(string actionName, UniversalCharacterController collaborator)
-{
-    if (!photonView.IsMine || IsCollaborating || currentLocation == null || 
-        HasState(CharacterState.Acclimating) || collaborator == null)
+    public void InitiateCollab(string actionName, UniversalCharacterController collaborator)
     {
-        return;
-    }
-
-    if (CollabManager.Instance.CanInitiateCollab(this) && IsActionAvailable(actionName))
-    {
-        LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
-        if (action != null)
+        if (!photonView.IsMine || IsCollaborating || currentLocation == null || 
+            HasState(CharacterState.Acclimating) || collaborator == null)
         {
-            currentAction = action;
-            CollabManager.Instance.InitiateCollab(actionName, photonView.ViewID, new int[] { collaborator.photonView.ViewID }, System.Guid.NewGuid().ToString());
+            return;
+        }
+
+        if (CollabManager.Instance.CanInitiateCollab(this) && IsActionAvailable(actionName))
+        {
+            LocationManager.LocationAction action = availableActions.Find(a => a.actionName == actionName);
+            if (action != null)
+            {
+                currentAction = action;
+                CollabManager.Instance.InitiateCollab(actionName, photonView.ViewID, new int[] { collaborator.photonView.ViewID }, System.Guid.NewGuid().ToString());
+            }
         }
     }
-}
 
     [PunRPC]
     private void RPC_InitiateCollab(string actionName, int initiatorViewID, int[] collaboratorViewIDs, string collabID)
@@ -1032,16 +1094,16 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     [PunRPC]
-private void RPC_EndCollab(string actionName, float actionDuration)
-{
-    if (!string.IsNullOrEmpty(currentCollabID))
+    private void RPC_EndCollab(string actionName, float actionDuration)
     {
-        CollabManager.Instance.FinalizeCollaboration(currentCollabID);
+        if (!string.IsNullOrEmpty(currentCollabID))
+        {
+            CollabManager.Instance.FinalizeCollaboration(currentCollabID);
+        }
+        RemoveState(CharacterState.Collaborating);
+        AddState(CharacterState.Cooldown);
+        currentCollabID = null;
     }
-    RemoveState(CharacterState.Collaborating);
-    AddState(CharacterState.Cooldown);
-    currentCollabID = null;
-}
 
     public void JoinGroup(string groupId)
     {
@@ -1097,6 +1159,8 @@ private void RPC_EndCollab(string actionName, float actionDuration)
             stream.SendNext(moveDirection);
             stream.SendNext(IsCollaborating);
             stream.SendNext(CollaborationTimeElapsed);
+            stream.SendNext(isAcclimating);
+            stream.SendNext(locationEntryTime);
         }
         else
         {
@@ -1117,6 +1181,8 @@ private void RPC_EndCollab(string actionName, float actionDuration)
             moveDirection = (Vector3)stream.ReceiveNext();
             IsCollaborating = (bool)stream.ReceiveNext();
             CollaborationTimeElapsed = (float)stream.ReceiveNext();
+            isAcclimating = (bool)stream.ReceiveNext();
+            locationEntryTime = (float)stream.ReceiveNext();
 
             if (string.IsNullOrEmpty(currentCollabID))
             {
