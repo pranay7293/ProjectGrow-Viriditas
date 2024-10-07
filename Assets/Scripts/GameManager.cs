@@ -481,27 +481,28 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
         else
         {
-            // Debug.Log($"{characterName} performed action: {actionName}");
             AddPlayerAction(actionName);
             ActionLogManager.Instance.LogAction(characterName, actionName);
 
             UniversalCharacterController character = GetCharacterByName(characterName);
-    if (character != null && character.currentAction != null)
-    {
-        int scoreChange = ScoreConstants.GetActionPoints(character.currentAction.duration);
-        List<string> actionTags = TagSystem.GetTagsForAction(actionName);
-        UpdatePlayerScore(characterName, scoreChange, actionName, actionTags);
-        UpdateMilestoneProgress(characterName, actionName, actionTags);
-
-        if (!character.IsPlayerControlled && !character.HasState(UniversalCharacterController.CharacterState.PerformingAction))
-        {
-            AIManager aiManager = character.GetComponent<AIManager>();
-            if (aiManager != null)
+            if (character != null && character.currentAction != null)
             {
-                aiManager.ConsiderCollaboration();
+                int scoreChange = ScoreConstants.GetActionPoints(character.currentAction.duration);
+                List<(string tag, float weight)> tagsWithWeights = TagSystem.GetTagsForAction(actionName);
+                List<string> tags = tagsWithWeights.Select(t => t.tag).ToList();
+
+                UpdatePlayerScore(characterName, scoreChange, actionName, tags);
+                UpdateMilestoneProgress(characterName, actionName, tagsWithWeights);
+
+                if (!character.IsPlayerControlled && !character.HasState(UniversalCharacterController.CharacterState.PerformingAction))
+                {
+                    AIManager aiManager = character.GetComponent<AIManager>();
+                    if (aiManager != null)
+                    {
+                        aiManager.ConsiderCollaboration();
+                    }
+                }
             }
-        }
-    }   
         }
     }
 
@@ -607,18 +608,29 @@ public class GameManager : MonoBehaviourPunCallbacks
             }
             playerScores[playerName] += score;
 
-            UpdateProgressBasedOnTags(playerName, tags, score);
+            UpdateProgressBasedOnTags(playerName, tags);
 
             photonView.RPC("SyncPlayerScore", RpcTarget.All, playerName, playerScores[playerName], score, actionName);
         }
     }
 
-    private void UpdateProgressBasedOnTags(string playerName, List<string> tags, int score)
+    public void UpdateProgressBasedOnTags(string playerName, List<string> tags)
     {
+        if (!playerProgress.ContainsKey(playerName))
+        {
+            playerProgress[playerName] = new Dictionary<string, float>();
+        }
+
         foreach (var tag in tags)
         {
-            UpdateProgress(playerName, tag, score);
+            if (!playerProgress[playerName].ContainsKey(tag))
+            {
+                playerProgress[playerName][tag] = 0f;
+            }
+            playerProgress[playerName][tag] = Mathf.Clamp01(playerProgress[playerName][tag] + ScoreConstants.PRIMARY_TAG_CONTRIBUTION);
         }
+
+        UpdatePlayerProfileUI(playerName);
     }
 
     private void UpdateProgress(string playerName, string tag, int score)
@@ -688,12 +700,6 @@ public class GameManager : MonoBehaviourPunCallbacks
         // Log the score change
         string logMessage = $"{playerName} {(scoreChange >= 0 ? "gained" : "lost")} {Mathf.Abs(scoreChange)} points. Action: {actionName}";
         ActionLogManager.Instance.LogAction("SYSTEM", logMessage);
-    }
-
-    public void HandleActionFailure(string playerName, int duration)
-    {
-        int penaltyPoints = ScoreConstants.GetActionFailurePoints(duration);
-        UpdatePlayerScore(playerName, penaltyPoints, "Action Failure", new List<string> { "Failure" });
     }
 
     public void EndChallenge()
@@ -857,29 +863,36 @@ public class GameManager : MonoBehaviourPunCallbacks
         return currentHub.hubColor;
     }
 
-    public void UpdateMilestoneProgress(string characterName, string action, List<string> tags = null)
+    public void UpdateMilestoneProgress(string characterName, string actionName, List<(string tag, float weight)> tagsWithWeights)
     {
-        float progressIncrement = 0.05f; // Reduced to 5% progress per relevant action
         float[] milestoneProgress = new float[currentChallenge.milestones.Count];
 
         for (int i = 0; i < currentChallenge.milestones.Count; i++)
         {
-            if (currentChallenge.milestones[i].ToLower().Contains(action.ToLower()) || 
-                (tags != null && tags.Any(tag => currentChallenge.milestones[i].ToLower().Contains(tag.ToLower()))))
+            string milestone = currentChallenge.milestones[i];
+            if (!milestoneCompletion[milestone])
             {
-                milestoneProgress[i] = Mathf.Min(milestoneCompletion[currentChallenge.milestones[i]] ? 1f : milestoneProgress[i] + progressIncrement, 1f);
-                if (milestoneProgress[i] >= 1f && !milestoneCompletion[currentChallenge.milestones[i]])
+                float progressIncrement = 0f;
+                foreach (var (tag, weight) in tagsWithWeights)
                 {
-                    CompleteMilestone(characterName, currentChallenge.milestones[i], i);
+                    if (milestone.Contains(tag))
+                    {
+                        progressIncrement += weight;
+                    }
+                }
+                milestoneProgress[i] = Mathf.Min(milestoneProgress[i] + progressIncrement, 1f);
+                if (milestoneProgress[i] >= 1f)
+                {
+                    CompleteMilestone(characterName, milestone, i);
                 }
             }
             else
             {
-                milestoneProgress[i] = milestoneCompletion[currentChallenge.milestones[i]] ? 1f : 0f;
+                milestoneProgress[i] = 1f;
             }
         }
 
         challengeProgressUI.UpdateMilestoneProgress(milestoneProgress);
-        UpdateScoreDisplay(); // Ensure all UI elements are updated
+        UpdateScoreDisplay();
     }
 }

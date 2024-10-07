@@ -293,7 +293,8 @@ public class AIManager : MonoBehaviourPunCallbacks
             score += 2f;
         }
         score += characterController.aiSettings.personalGoalTags.Count(goalTag => action.actionName.ToLower().Contains(goalTag.ToLower())) * 1.5f;
-        score += TagSystem.GetTagsForAction(action.actionName).Count(tag => tag.StartsWith("Challenge") || tag.StartsWith("PersonalGoal")) * 0.5f;
+        score += TagSystem.GetTagsForAction(action.actionName)
+    .Count(t => t.tag.StartsWith("Challenge") || t.tag.StartsWith("PersonalGoal")) * 0.5f;
         score += Random.Range(0f, 0.5f);
         return score;
     }

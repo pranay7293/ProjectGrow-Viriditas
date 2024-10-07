@@ -40,18 +40,18 @@ public class OpenAIService : MonoBehaviour
         }
     }
 
-    private string ModelToString(OpenAIModel model)
+       private string ModelToString(OpenAIModel model)
     {
         switch (model)
         {
             case OpenAIModel.GPT4o:
-                return "gpt-4";
+                return "gpt-4o";
             case OpenAIModel.GPT4oMini:
-                return "gpt-3.5-turbo";
+                return "gpt-4o-mini";
             case OpenAIModel.FineTunedNaturalDialog:
                 return "ft:gpt-4o-2024-08-06:karyo-studios:naturaldialog3:A7A1XgRr";
             default:
-                return "gpt-4";
+                return "gpt-4o";
         }
     }
 
@@ -121,28 +121,6 @@ public class OpenAIService : MonoBehaviour
         lastApiCallTime = Time.time;
 
         return string.IsNullOrEmpty(response) ? "Let me consider that option..." : response.Trim();
-    }
-
-    // Existing Method: Get Response (used for generalized responses)
-    public async Task<string> GetResponse(string prompt, AISettings aiSettings, string memoryContext = "", string reflection = "")
-    {
-        await EnforceApiCooldown();
-
-        List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
-        string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join("; ", recentEurekas)}" : "";
-
-        string fullPrompt = aiSettings != null
-            ? $"You are a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n" +
-              $"Recent memories: {memoryContext}\n\n" +
-              $"Your current reflection: {reflection}\n\n" +
-              $"{eurekaContext}\n\n{prompt}\n\n" +
-              "Respond in character, keeping your response concise (max 50 words) and natural. Consider your memories and current reflection in your response:"
-            : prompt;
-
-        string response = await GetChatCompletionAsync(fullPrompt, selectedModel);
-        lastApiCallTime = Time.time;
-
-        return string.IsNullOrEmpty(response) ? "Not sure how to respond to that..." : response;
     }
 
     // Generate Agent Greeting Prompt
@@ -236,8 +214,8 @@ public class OpenAIService : MonoBehaviour
         return options;
     }
 
-    // Existing Method: Generate Eureka Description
-    public async Task<string> GenerateEurekaDescription(List<UniversalCharacterController> collaborators, GameState gameState, string actionName)
+    // New Method: Generate Eureka Description and Tags
+    public async Task<(string description, List<string> tags)> GenerateEurekaDescriptionAndTags(List<UniversalCharacterController> collaborators, GameState gameState, string actionName)
     {
         await EnforceApiCooldown();
 
@@ -248,7 +226,8 @@ public class OpenAIService : MonoBehaviour
 
         string recentEurekas = string.Join("; ", EurekaManager.Instance.GetRecentEurekas());
 
-        string prompt = $@"{collaboratorNamesAndRoles} collaborated on the action '{actionName}' as part of the challenge '{gameState.CurrentChallenge.title}'.
+        string prompt = $@"
+{collaboratorNamesAndRoles} collaborated on the action '{actionName}' as part of the challenge '{gameState.CurrentChallenge.title}'.
 {collaboratorBackgrounds}
 {collaboratorPersonalities}
 {collaboratorGoals}
@@ -256,9 +235,54 @@ Current game progress: {gameState.CollectiveProgress}% complete.
 Completed milestones: {string.Join(", ", gameState.MilestoneCompletion.Where(m => m.Value).Select(m => m.Key))}
 Incomplete milestones: {string.Join(", ", gameState.MilestoneCompletion.Where(m => !m.Value).Select(m => m.Key))}
 Recent Eureka moments: {recentEurekas}
-Describe an unexpected and significant breakthrough resulting from their collaboration. Emphasize the interplay of their diverse roles, backgrounds, and personalities, and how this led to solving a key aspect of the challenge. Be concise (max 30 words) and compelling:";
+Describe an unexpected and significant breakthrough resulting from their collaboration. Emphasize the interplay of their diverse roles, backgrounds, and personalities, and how this led to solving a key aspect of the challenge. Be concise (max 30 words) and compelling.
 
-        return await GetResponse(prompt, null);
+Based on this description, generate a list of relevant tags that match the existing PersonalGoalTags and/or ChallengeTags. Provide the tags in a comma-separated format.
+
+---
+Description:
+";
+
+        string response = await GetChatCompletionAsync(prompt, selectedModel);
+
+        // Split the response into description and tags
+        string[] parts = response.Split(new string[] { "---\nTags: ", "---\r\nTags: " }, StringSplitOptions.None);
+        if (parts.Length >= 2)
+        {
+            string description = parts[0].Trim();
+            string tagsPart = parts[1].Trim();
+            List<string> tags = tagsPart.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                        .Select(tag => tag.Trim())
+                                        .ToList();
+            return (description, tags);
+        }
+        else
+        {
+            Debug.LogWarning("Eureka description and tags not properly formatted.");
+            return (response.Trim(), new List<string>());
+        }
+    }
+
+     // Existing Method: Get Response (used for generalized responses)
+    public async Task<string> GetResponse(string prompt, AISettings aiSettings, string memoryContext = "", string reflection = "")
+    {
+        await EnforceApiCooldown();
+
+        List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
+        string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join("; ", recentEurekas)}" : "";
+
+        string fullPrompt = aiSettings != null
+            ? $"You are a {aiSettings.characterRole}. {aiSettings.characterBackground} Your personality: {aiSettings.characterPersonality}\n\n" +
+              $"Recent memories: {memoryContext}\n\n" +
+              $"Your current reflection: {reflection}\n\n" +
+              $"{eurekaContext}\n\n{prompt}\n\n" +
+              "Respond in character, keeping your response concise (max 50 words) and natural. Consider your memories and current reflection in your response:"
+            : prompt;
+
+        string response = await GetChatCompletionAsync(fullPrompt, selectedModel);
+        lastApiCallTime = Time.time;
+
+        return string.IsNullOrEmpty(response) ? "Not sure how to respond to that..." : response;
     }
 
     // Existing Method: Generate Scenarios
@@ -276,7 +300,7 @@ Incomplete milestones: {incompleteMilestones}
 Collective progress: {gameState.CollectiveProgress}%
 Top players: {topPlayers}
 Time remaining: {Mathf.FloorToInt(gameState.RemainingTime / 60)} minutes
-Recent player actions: {string.Join(", ", recentPlayerActions)}
+Recent player ac    tions: {string.Join(", ", recentPlayerActions)}
 
 Based on this game state, generate three distinct, high-stakes 'What If...?' scenarios that could dramatically alter the course of the challenge. Each scenario should:
 1. Start with '...'
@@ -319,6 +343,8 @@ Format the response as follows:
     // Method to get chat completion from OpenAI
     private async Task<string> GetChatCompletionAsync(string prompt, OpenAIModel model)
     {
+        await EnforceApiCooldown();
+
         var requestBody = new
         {
             model = ModelToString(model),
@@ -360,5 +386,6 @@ Format the response as follows:
             float waitTime = apiCallCooldown - (Time.time - lastApiCallTime);
             await Task.Delay(TimeSpan.FromSeconds(waitTime));
         }
+        lastApiCallTime = Time.time;
     }
 }

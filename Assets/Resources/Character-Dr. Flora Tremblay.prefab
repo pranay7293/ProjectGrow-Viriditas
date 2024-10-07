@@ -388,6 +388,7 @@ MonoBehaviour:
   logoMaterial: {fileID: 2100000, guid: 19d54fb6433ba43da9f17abac954018d, type: 2}
   baseMaterial: {fileID: 2100000, guid: d9d85df797543453bb9cda48d460b615, type: 2}
   currentLocation: {fileID: 0}
+  aiManager: {fileID: 0}
   currentAction:
     actionName: 
     description: 
@@ -433,6 +434,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ed10f2d34fdf4a568d5d2358cc55553, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  npcData: {fileID: 0}
   memoryConsolidationInterval: 60
   reflectionInterval: 120
   dialogueInitiationCooldown: 300

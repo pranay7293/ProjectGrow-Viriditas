@@ -671,35 +671,31 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     private void CompleteAction()
-{
-    if (photonView.IsMine || !IsPlayerControlled)
     {
-        if (RiskRewardManager.Instance != null)
+        if (photonView.IsMine || !IsPlayerControlled)
         {
-            RiskRewardManager.Instance.EvaluateActionOutcome(this, currentAction?.actionName ?? "Unknown Action");
+            // Removed penalties for failed actions
+            if (CollabManager.Instance != null && IsCollaborating && !string.IsNullOrEmpty(currentCollabID))
+            {
+                CollabManager.Instance.FinalizeCollaboration(currentCollabID);
+                IsCollaborating = false;
+                RemoveState(CharacterState.Collaborating);
+                currentCollabID = null;
+            }
+            else if (currentAction != null)
+            {
+                GameManager.Instance.UpdateGameState(characterName, currentAction.actionName);
+            }
         }
 
-        if (CollabManager.Instance != null && IsCollaborating && !string.IsNullOrEmpty(currentCollabID))
+        if (currentAction != null)
         {
-            CollabManager.Instance.FinalizeCollaboration(currentCollabID);
-            IsCollaborating = false;
-            RemoveState(CharacterState.Collaborating);
-            currentCollabID = null;
+            CheckPersonalGoalProgress(currentAction.actionName);
         }
-        else if (currentAction != null)
-        {
-            GameManager.Instance.UpdateGameState(characterName, currentAction.actionName);
-        }
+        currentAction = null;
+        RemoveState(CharacterState.PerformingAction);
+        Debug.Log($"{characterName} completed action: {currentAction?.actionName}");
     }
-
-    if (currentAction != null)
-    {
-        CheckPersonalGoalProgress(currentAction.actionName);
-    }
-    currentAction = null;
-    RemoveState(CharacterState.PerformingAction);
-    Debug.Log($"{characterName} completed action: {currentAction?.actionName}");
-}
 
     private void InitializePersonalGoals()
     {
@@ -729,13 +725,15 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         GameManager.Instance.UpdateGameState(characterName, $"Completed personal goal: {goalTag}");
     }
 
-    private void UpdateGoalProgress(string actionName)
+     private void UpdateGoalProgress(string actionName)
     {
-        for (int i = 0; i < PersonalProgress.Length; i++)
+        List<(string tag, float weight)> tagsWithWeights = TagSystem.GetTagsForAction(actionName);
+        foreach (var (tag, weight) in tagsWithWeights)
         {
-            if (i < aiSettings.personalGoalTags.Count && actionName.ToLower().Contains(aiSettings.personalGoalTags[i].ToLower()))
+            if (aiSettings.personalGoalTags.Contains(tag))
             {
-                PersonalProgress[i] = Mathf.Min(PersonalProgress[i] + 0.05f, 1f);
+                int index = aiSettings.personalGoalTags.IndexOf(tag);
+                PersonalProgress[index] = Mathf.Clamp01(PersonalProgress[index] + weight);
             }
         }
 
@@ -744,7 +742,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             progressBar.SetPersonalGoalProgress(PersonalProgress);
         }
 
-        GameManager.Instance.UpdateMilestoneProgress(characterName, actionName);
+        GameManager.Instance.UpdateMilestoneProgress(characterName, actionName, tagsWithWeights);
     }
 
     public List<string> GetPersonalGoalTags()
