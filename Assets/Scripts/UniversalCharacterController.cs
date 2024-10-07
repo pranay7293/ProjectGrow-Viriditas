@@ -1077,33 +1077,33 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     public void EndCollab()
+{
+    if (photonView.IsMine && IsCollaborating)
     {
-        if (photonView.IsMine && IsCollaborating)
+        IsCollaborating = false;
+        if (currentAction != null)
         {
-            IsCollaborating = false;
-            if (currentAction != null)
-            {
-                photonView.RPC("RPC_EndCollab", RpcTarget.All, currentAction.actionName, currentAction.duration);
-            }
-            else
-            {
-                Debug.LogWarning($"EndCollab called for {characterName} but currentAction is null");
-                photonView.RPC("RPC_EndCollab", RpcTarget.All, "Unknown", 0);
-            }
+            photonView.RPC("RPC_EndCollab", RpcTarget.All, currentAction.actionName, currentAction.duration);
+        }
+        else
+        {
+            Debug.LogWarning($"EndCollab called for {characterName} but currentAction is null");
+            photonView.RPC("RPC_EndCollab", RpcTarget.All, "Unknown", 0);
         }
     }
+}
 
-    [PunRPC]
-    private void RPC_EndCollab(string actionName, float actionDuration)
+[PunRPC]
+private void RPC_EndCollab(string actionName, int actionDuration)
+{
+    if (!string.IsNullOrEmpty(currentCollabID))
     {
-        if (!string.IsNullOrEmpty(currentCollabID))
-        {
-            CollabManager.Instance.FinalizeCollaboration(currentCollabID);
-        }
-        RemoveState(CharacterState.Collaborating);
-        AddState(CharacterState.Cooldown);
-        currentCollabID = null;
+        CollabManager.Instance.FinalizeCollaboration(currentCollabID);
     }
+    RemoveState(CharacterState.Collaborating);
+    AddState(CharacterState.Cooldown);
+    currentCollabID = null;
+}
 
     public void JoinGroup(string groupId)
     {
