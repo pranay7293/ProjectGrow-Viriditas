@@ -13,14 +13,14 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         None = 0,
         Moving = 1,
-        Idle = 2,
-        Interacting = 3,
-        Acclimating = 4,
-        PerformingAction = 5,
-        Chatting = 6,
-        Collaborating = 7,
-        Cooldown = 8,
-        InGroup = 9,
+        InGroup = 2,
+        Idle = 3,
+        Interacting = 4,
+        Acclimating = 5,
+        PerformingAction = 6,
+        Chatting = 7,
+        Collaborating = 8,
+        Cooldown = 9,
         FormingGroup = 10
     }
 
@@ -36,6 +36,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public float accelerationTime = 0.1f;
     public float decelerationTime = 0.1f;
     public float rotationSmoothTime = 0.1f;
+    private Vector3 stateMovementDestination;
+    private float stateMovementSpeed;
 
     [Header("AI Settings")]
     public AISettings aiSettings;
@@ -374,23 +376,42 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         progressBar.Initialize(this);
     }
 
+public void MoveWhileInState(Vector3 destination, float speed)
+    {
+        stateMovementDestination = destination;
+        stateMovementSpeed = speed;
+    }
+
     private void Update()
     {
-        if (photonView.IsMine)
+        if (!photonView.IsMine) return;
+
+        UpdateMovement();
+        UpdateAnimator();
+        UpdateRotation();
+
+        if (HasState(CharacterState.Chatting) || HasState(CharacterState.Collaborating) || HasState(CharacterState.InGroup))
         {
-            UpdateMovement();
-            UpdateAnimator();
-            UpdateRotation();
+            HandleStateMovement();
+        }
 
-            if (isAcclimating)
-            {
-                UpdateAcclimation();
-            }
+        if (isAcclimating)
+        {
+            UpdateAcclimation();
+        }
 
-            if (IsCollaborating)
-            {
-                UpdateCollaboration();
-            }
+        if (IsCollaborating)
+        {
+            UpdateCollaboration();
+        }
+    }
+
+    private void HandleStateMovement()
+    {
+        if (navMeshAgent != null && navMeshAgent.enabled && stateMovementDestination != Vector3.zero)
+        {
+            navMeshAgent.speed = stateMovementSpeed;
+            navMeshAgent.SetDestination(stateMovementDestination);
         }
     }
 

@@ -14,29 +14,31 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private NavMeshAgent navMeshAgent;
     private AIManager aiManager;
 
-    private float lastDecisionTime;
-    private float interactionCooldown = 10f;
-    private float lastInteractionTime;
-    private float interactionDistance = 5f;
+    [SerializeField] private float decisionInterval = 10f;
+    [SerializeField] private float interactionCooldown = 10f;
+    [SerializeField] private float interactionDistance = 5f;
     [SerializeField] private float interactionPauseTime = 3f;
-    private float lastInteractionPauseTime = 0f;
-
     [SerializeField] private float interactionCheckInterval = 2f;
-    private float lastInteractionCheckTime = 0f;
     [SerializeField] private float waypointPauseTime = 2f;
-    private bool isPausedAtWaypoint = false;
-
-    private LocationManager currentLocationManager;
     [SerializeField] private float locationChangeCooldown = 60f;
+    [SerializeField] private float backgroundThinkingInterval = 5f;
+    [SerializeField] private float idleMovementRadius = 2f;
+    [SerializeField] private float idleMovementInterval = 15f;
+    [SerializeField] private float majorMovementInterval = 60f;
+
+    private float lastDecisionTime;
+    private float lastInteractionTime;
+    private float lastInteractionPauseTime = 0f;
+    private float lastInteractionCheckTime = 0f;
     private float lastLocationChangeTime = 0f;
+    private float lastBackgroundThinkingTime;
+    private float lastIdleMovementTime;
+    private float lastMajorMovementTime;
+
+    private bool isPausedAtWaypoint = false;
     private bool isAcclimating = false;
 
-    private float backgroundThinkingInterval = 5f;
-    private float lastBackgroundThinkingTime;
-
-    private float idleMovementRadius = 2f;
-    private float idleMovementInterval = 5f;
-    private float lastIdleMovementTime;
+    private LocationManager currentLocationManager;
 
     public void Initialize(UniversalCharacterController controller, NPC_Data data, AIManager manager)
     {
@@ -53,6 +55,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         lastInteractionTime = Time.time;
         lastBackgroundThinkingTime = Time.time;
         lastIdleMovementTime = Time.time;
+        lastMajorMovementTime = Time.time;
     }
 
     private void Update()
@@ -72,6 +75,11 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             lastBackgroundThinkingTime = Time.time;
         }
 
+        if (Time.time - lastMajorMovementTime > majorMovementInterval)
+        {
+            ConsiderMajorMovement();
+        }
+
         if (characterController.HasState(UniversalCharacterController.CharacterState.Idle))
         {
             UpdateIdleMovement();
@@ -80,9 +88,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
     public void UpdateBehavior()
     {
-        if (isAcclimating || characterController == null || aiManager == null) return;
+        if (isAcclimating) return;
 
-        if (Time.time - lastDecisionTime > characterController.aiSettings.decisionInterval)
+        if (Time.time - lastDecisionTime > decisionInterval)
         {
             StartCoroutine(MakeDecisionCoroutine());
         }
@@ -301,6 +309,16 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         return await aiManager.MakeDecision(options, currentState);
     }
 
+    private void ConsiderMajorMovement()
+    {
+        lastMajorMovementTime = Time.time;
+        if (Random.value < 0.5f) // 50% chance to consider movement
+        {
+            string targetLocation = LocationManagerMaster.Instance.GetTargetLocation(GameManager.Instance.GetCurrentChallenge().milestones);
+            MoveToLocation(targetLocation);
+        }
+    }
+
     private IEnumerator MakeDecisionCoroutine()
     {
         if (characterController == null || aiManager == null || GameManager.Instance == null) yield break;
@@ -319,6 +337,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             "Interact with nearby character",
             "Work on current challenge",
             "Pursue personal goal",
+            "Initiate collaboration",
             "Idle"
         };
 
@@ -344,6 +363,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
                 break;
             case "Pursue personal goal":
                 PursuePersonalGoal();
+                break;
+            case "Initiate collaboration":
+                InitiateCollaboration();
                 break;
             case "Idle":
                 EnterIdleState();
@@ -498,7 +520,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         return Random.value > 0.5f || target.currentLocation == characterController.currentLocation;
     }
 
-    private void InitiateCollaboration(UniversalCharacterController target)
+    private void InitiateCollaboration(UniversalCharacterController target = null)
     {
         if (CollabManager.Instance.CanInitiateCollab(characterController))
         {
@@ -515,7 +537,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (currentLocationManager == null) return null;
 
         List<LocationManager.LocationAction> availableActions = currentLocationManager.GetAvailableActions(characterController.aiSettings.characterRole);
-        List<LocationManager.LocationAction> targetActions = currentLocationManager.GetAvailableActions(target.aiSettings.characterRole);
+        List<LocationManager.LocationAction> targetActions = target != null 
+            ? currentLocationManager.GetAvailableActions(target.aiSettings.characterRole)
+            : availableActions;
 
         var commonActions = availableActions.Intersect(targetActions, new LocationActionComparer());
         return commonActions.Any() ? commonActions.First().actionName : null;

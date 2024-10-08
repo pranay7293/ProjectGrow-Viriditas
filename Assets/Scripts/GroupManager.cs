@@ -9,6 +9,8 @@ public class GroupManager : MonoBehaviour
     [SerializeField] private float groupFormationDistance = 2f;
     [SerializeField] private float groupMovementSpeed = 3f;
     [SerializeField] private float maxGroupDuration = 120f; // 2 minutes
+    private const float GROUP_DISSOLUTION_CHANCE = 0.1f;
+    private const float GROUP_MOVEMENT_INTERVAL = 15f;
 
     private Dictionary<string, Group> activeGroups = new Dictionary<string, Group>();
 
@@ -28,9 +30,10 @@ public class GroupManager : MonoBehaviour
         }
     }
 
-    private void Update()
+     private void Update()
     {
         CheckGroupDurations();
+        MoveGroups();
     }
 
     public void FormGroup(List<UniversalCharacterController> characters)
@@ -86,6 +89,36 @@ public class GroupManager : MonoBehaviour
         }
     }
 
+    private void MoveGroups()
+    {
+        foreach (var group in activeGroups.Values)
+        {
+            if (Time.time - group.LastMovementTime > GROUP_MOVEMENT_INTERVAL)
+            {
+                Vector3 newDestination = GetRandomDestinationForGroup(group);
+                MoveGroup(group.Id, newDestination);
+                group.LastMovementTime = Time.time;
+            }
+
+            if (Random.value < GROUP_DISSOLUTION_CHANCE)
+            {
+                DisbandGroup(group.Id);
+            }
+        }
+    }
+
+private Vector3 GetRandomDestinationForGroup(Group group)
+{
+    // Get a list of all available locations
+    List<string> allLocations = LocationManagerMaster.Instance.GetAllLocations();
+    
+    // Choose a random location
+    string randomLocation = allLocations[Random.Range(0, allLocations.Count)];
+    
+    // Get a waypoint near the chosen location
+    return WaypointsManager.Instance.GetWaypointNearLocation(randomLocation);
+}
+
     public void DisbandGroup(string groupId)
     {
         if (activeGroups.TryGetValue(groupId, out Group group))
@@ -98,18 +131,15 @@ public class GroupManager : MonoBehaviour
         }
     }
 
-    public void MoveGroup(string groupId, Vector3 destination)
+   public void MoveGroup(string groupId, Vector3 destination)
     {
         if (activeGroups.TryGetValue(groupId, out Group group))
         {
-            Vector3 groupCenter = GetGroupCenter(group.Members);
-            Vector3 moveDirection = (destination - groupCenter).normalized;
-
             for (int i = 0; i < group.Members.Count; i++)
             {
                 Vector3 offset = CalculateFormationOffset(i, group.Members.Count);
                 Vector3 targetPosition = destination + offset;
-                group.Members[i].MoveTo(targetPosition);
+                group.Members[i].MoveWhileInState(targetPosition, groupMovementSpeed);
             }
         }
     }
@@ -185,6 +215,7 @@ public class GroupManager : MonoBehaviour
         public string Id { get; private set; }
         public List<UniversalCharacterController> Members { get; private set; }
         public float Duration { get; set; }
+        public float LastMovementTime { get; set; }
 
         public Group(string id, List<UniversalCharacterController> members)
         {
