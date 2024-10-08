@@ -18,7 +18,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     [SerializeField] private float interactionCooldown = 10f;
     [SerializeField] private float interactionDistance = 5f;
     [SerializeField] private float interactionPauseTime = 3f;
-    [SerializeField] private float interactionCheckInterval = 2f;
     [SerializeField] private float waypointPauseTime = 2f;
     [SerializeField] private float locationChangeCooldown = 60f;
     [SerializeField] private float backgroundThinkingInterval = 5f;
@@ -29,7 +28,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private float lastDecisionTime;
     private float lastInteractionTime;
     private float lastInteractionPauseTime = 0f;
-    private float lastInteractionCheckTime = 0f;
     private float lastLocationChangeTime = 0f;
     private float lastBackgroundThinkingTime;
     private float lastIdleMovementTime;
@@ -51,6 +49,11 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             navMeshAgent = gameObject.AddComponent<NavMeshAgent>();
         }
         navMeshAgent.speed = characterController.walkSpeed;
+        ResetTimers();
+    }
+
+    private void ResetTimers()
+    {
         lastDecisionTime = Time.time;
         lastInteractionTime = Time.time;
         lastBackgroundThinkingTime = Time.time;
@@ -69,21 +72,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             UpdateBehavior();
         }
 
-        if (Time.time - lastBackgroundThinkingTime > backgroundThinkingInterval)
-        {
-            PerformBackgroundThinking();
-            lastBackgroundThinkingTime = Time.time;
-        }
-
-        if (Time.time - lastMajorMovementTime > majorMovementInterval)
-        {
-            ConsiderMajorMovement();
-        }
-
-        if (characterController.HasState(UniversalCharacterController.CharacterState.Idle))
-        {
-            UpdateIdleMovement();
-        }
+        PerformBackgroundThinking();
+        ConsiderMajorMovement();
+        UpdateIdleMovement();
     }
 
     public void UpdateBehavior()
@@ -137,10 +128,12 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
     private void PerformBackgroundThinking()
     {
+        if (Time.time - lastBackgroundThinkingTime < backgroundThinkingInterval) return;
+
+        lastBackgroundThinkingTime = Time.time;
         if (GameManager.Instance == null || npcData == null) return;
 
         GameState currentState = GameManager.Instance.GetCurrentGameState();
-
         UpdateMentalModelFromGameState(currentState);
         EvaluateObjectives(currentState);
         ConsiderGroupActions();
@@ -206,15 +199,13 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         int totalMilestones = currentState.MilestoneCompletion.Count;
         float progress = totalMilestones > 0 ? (float)completedMilestones / totalMilestones : 0f;
 
-        EmotionalState newState;
-        if (progress > 0.75f)
-            newState = EmotionalState.Excited;
-        else if (progress > 0.5f)
-            newState = EmotionalState.Confident;
-        else if (progress > 0.25f)
-            newState = EmotionalState.Neutral;
-        else
-            newState = EmotionalState.Anxious;
+        EmotionalState newState = progress switch
+        {
+            > 0.75f => EmotionalState.Excited,
+            > 0.5f => EmotionalState.Confident,
+            > 0.25f => EmotionalState.Neutral,
+            _ => EmotionalState.Anxious
+        };
 
         npcData.UpdateEmotionalState(newState);
     }
@@ -238,6 +229,8 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
         List<UniversalCharacterController> groupMembers = GroupManager.Instance.GetGroupMembers(groupId);
         List<string> groupObjectives = GetGroupObjectives(groupMembers);
+
+        if (groupObjectives.Count == 0) return;
 
         GameState currentState = GameManager.Instance.GetCurrentGameState();
         string bestGroupObjective = npcData.GetMentalModel().MakeDecision(groupObjectives, currentState);
@@ -304,13 +297,10 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         return nearbyCharacters.Count >= 2 && Random.value < 0.3f;
     }
 
-    private async Task<string> MakeDecisionWithMemory(List<string> options, GameState currentState)
-    {
-        return await aiManager.MakeDecision(options, currentState);
-    }
-
     private void ConsiderMajorMovement()
     {
+        if (Time.time - lastMajorMovementTime < majorMovementInterval) return;
+
         lastMajorMovementTime = Time.time;
         if (Random.value < 0.5f) // 50% chance to consider movement
         {
@@ -559,7 +549,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     {
         if (npcData == null) return null;
 
-        return nearbyCharacters.OrderBy(character => npcData.GetRelationship(character.characterName)).FirstOrDefault();
+        return nearbyCharacters.OrderByDescending(character => npcData.GetRelationship(character.characterName)).FirstOrDefault();
     }
 
     private void InitiateInteraction(UniversalCharacterController target)
@@ -628,17 +618,17 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
     private void UpdateIdleMovement()
     {
-        if (Time.time - lastIdleMovementTime >= idleMovementInterval)
-        {
-            Vector3 randomDirection = Random.insideUnitSphere * idleMovementRadius;
-            randomDirection += transform.position;
-            NavMeshHit hit;
-            NavMesh.SamplePosition(randomDirection, out hit, idleMovementRadius, 1);
-            Vector3 finalPosition = hit.position;
+        if (!characterController.HasState(UniversalCharacterController.CharacterState.Idle)) return;
+        if (Time.time - lastIdleMovementTime < idleMovementInterval) return;
 
-            characterController.MoveTo(finalPosition);
-            lastIdleMovementTime = Time.time;
-        }
+        Vector3 randomDirection = Random.insideUnitSphere * idleMovementRadius;
+        randomDirection += transform.position;
+        NavMeshHit hit;
+        NavMesh.SamplePosition(randomDirection, out hit, idleMovementRadius, 1);
+        Vector3 finalPosition = hit.position;
+
+        characterController.MoveTo(finalPosition);
+        lastIdleMovementTime = Time.time;
     }
 
     public void SetCurrentLocation(LocationManager location)

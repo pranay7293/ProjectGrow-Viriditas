@@ -90,22 +90,29 @@ public class GroupManager : MonoBehaviour
     }
 
     private void MoveGroups()
+{
+    List<string> groupsToDisband = new List<string>();
+    foreach (var group in activeGroups.Values.ToList()) // Create a copy of the values to iterate over
     {
-        foreach (var group in activeGroups.Values)
+        if (Time.time - group.LastMovementTime > GROUP_MOVEMENT_INTERVAL)
         {
-            if (Time.time - group.LastMovementTime > GROUP_MOVEMENT_INTERVAL)
-            {
-                Vector3 newDestination = GetRandomDestinationForGroup(group);
-                MoveGroup(group.Id, newDestination);
-                group.LastMovementTime = Time.time;
-            }
+            Vector3 newDestination = GetRandomDestinationForGroup(group);
+            MoveGroup(group.Id, newDestination);
+            group.LastMovementTime = Time.time;
+        }
 
-            if (Random.value < GROUP_DISSOLUTION_CHANCE)
-            {
-                DisbandGroup(group.Id);
-            }
+        if (Random.value < GROUP_DISSOLUTION_CHANCE)
+        {
+            groupsToDisband.Add(group.Id);
         }
     }
+
+    // Disband groups after the loop
+    foreach (var groupId in groupsToDisband)
+    {
+        DisbandGroup(groupId);
+    }
+}
 
 private Vector3 GetRandomDestinationForGroup(Group group)
 {
@@ -120,16 +127,16 @@ private Vector3 GetRandomDestinationForGroup(Group group)
 }
 
     public void DisbandGroup(string groupId)
+{
+    if (activeGroups.TryGetValue(groupId, out Group group))
     {
-        if (activeGroups.TryGetValue(groupId, out Group group))
+        foreach (var character in group.Members)
         {
-            foreach (var character in group.Members)
-            {
-                character.LeaveGroup(false);
-            }
-            activeGroups.Remove(groupId);
+            character.LeaveGroup(false);
         }
+        activeGroups.Remove(groupId);
     }
+}
 
    public void MoveGroup(string groupId, Vector3 destination)
     {
@@ -210,18 +217,19 @@ private Vector3 GetRandomDestinationForGroup(Group group)
         }
     }
 
-    private class Group
-    {
-        public string Id { get; private set; }
-        public List<UniversalCharacterController> Members { get; private set; }
-        public float Duration { get; set; }
-        public float LastMovementTime { get; set; }
+   private class Group
+{
+    public string Id { get; private set; }
+    public List<UniversalCharacterController> Members { get; private set; }
+    public float Duration { get; set; }
+    public float LastMovementTime { get; set; }
 
-        public Group(string id, List<UniversalCharacterController> members)
-        {
-            Id = id;
-            Members = members;
-            Duration = 0f;
-        }
+    public Group(string id, List<UniversalCharacterController> members)
+    {
+        Id = id;
+        Members = members;
+        Duration = 0f;
+        LastMovementTime = Time.time;
     }
+}
 }

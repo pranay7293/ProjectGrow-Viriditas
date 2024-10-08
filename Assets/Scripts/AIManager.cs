@@ -18,7 +18,7 @@ public class AIManager : MonoBehaviourPunCallbacks
     [SerializeField] private float dialogueInitiationCooldown = 300f;
     [SerializeField] private float collabConsiderationInterval = 5f;
     [SerializeField] private float movementConsiderationInterval = 10f;
-    [SerializeField] private float explorationProbability = 0.2f;
+    [SerializeField] private float explorationProbability = 0.25f;
     private float lastMovementConsiderationTime = 0f;
     private float lastCollabConsiderationTime = 0f;
 
@@ -81,8 +81,7 @@ public class AIManager : MonoBehaviourPunCallbacks
         lastMovementConsiderationTime = Time.time;
 
         if (characterController.HasState(UniversalCharacterController.CharacterState.Moving) ||
-            characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
-            characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction))
+            characterController.HasState(UniversalCharacterController.CharacterState.Acclimating))
         {
             return;
         }
