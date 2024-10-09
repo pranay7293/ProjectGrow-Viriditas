@@ -13,11 +13,11 @@ public class AIManager : MonoBehaviourPunCallbacks
     public NPC_Data npcData;
     private AIDecisionMaker decisionMaker;
 
-    [SerializeField] private float memoryConsolidationInterval = 60f;
-    [SerializeField] private float reflectionInterval = 120f;
-    [SerializeField] private float dialogueInitiationCooldown = 300f;
+    [SerializeField] private float memoryConsolidationInterval = 30f;
+    [SerializeField] private float reflectionInterval = 60f;
+    [SerializeField] private float dialogueInitiationCooldown = 120f;
     [SerializeField] private float collabConsiderationInterval = 5f;
-    [SerializeField] private float movementConsiderationInterval = 10f;
+    [SerializeField] private float movementConsiderationInterval = 5f;
     [SerializeField] private float explorationProbability = 0.25f;
     private float lastMovementConsiderationTime = 0f;
     private float lastCollabConsiderationTime = 0f;
@@ -48,9 +48,8 @@ public class AIManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        if (!characterController.IsCollaborating)
+        if (!characterController.HasState(CharacterState.Collaborating))
         {
-            npcBehavior.UpdateBehavior();
             ConsiderMovement();
             ConsiderCollaboration();
         }
@@ -80,8 +79,8 @@ public class AIManager : MonoBehaviourPunCallbacks
 
         lastMovementConsiderationTime = Time.time;
 
-        if (characterController.HasState(UniversalCharacterController.CharacterState.Moving) ||
-            characterController.HasState(UniversalCharacterController.CharacterState.Acclimating))
+        if (characterController.HasState(CharacterState.Moving) ||
+            characterController.HasState(CharacterState.Acclimating))
         {
             return;
         }
@@ -112,63 +111,63 @@ public class AIManager : MonoBehaviourPunCallbacks
     }
 
     private void ConsiderMovingToNewLocation()
+{
+    string bestLocation = EvaluateBestLocation();
+    if (characterController.currentLocation == null || bestLocation != characterController.currentLocation.locationName)
     {
-        string bestLocation = EvaluateBestLocation();
-        if (characterController.currentLocation == null || bestLocation != characterController.currentLocation.locationName)
+        if (WaypointsManager.Instance != null)
         {
-            if (WaypointsManager.Instance != null)
-            {
-                Vector3 waypointNearLocation = WaypointsManager.Instance.GetWaypointNearLocation(bestLocation);
-                npcBehavior.MoveToPosition(waypointNearLocation);
-            }
-            else
-            {
-                Debug.LogWarning("AIManager: WaypointsManager.Instance is null");
-            }
+            Vector3 waypointNearLocation = WaypointsManager.Instance.GetWaypointNearLocation(bestLocation);
+            npcBehavior.MoveToPosition(waypointNearLocation);
+        }
+        else
+        {
+            Debug.LogWarning("AIManager: WaypointsManager.Instance is null");
         }
     }
+}
 
-    private string EvaluateBestLocation()
+private string EvaluateBestLocation()
+{
+    Dictionary<string, float> locationScores = new Dictionary<string, float>();
+    List<string> allLocations = LocationManagerMaster.Instance.GetAllLocations();
+
+    foreach (string location in allLocations)
     {
-        Dictionary<string, float> locationScores = new Dictionary<string, float>();
-        List<string> allLocations = LocationManagerMaster.Instance.GetAllLocations();
+        float score = 0f;
 
-        foreach (string location in allLocations)
+        List<LocationManager.LocationAction> actions = LocationManagerMaster.Instance.GetLocationActions(location, characterController.aiSettings.characterRole);
+        foreach (var action in actions)
         {
-            float score = 0f;
-
-            List<LocationManager.LocationAction> actions = LocationManagerMaster.Instance.GetLocationActions(location, characterController.aiSettings.characterRole);
-            foreach (var action in actions)
+            if (!string.IsNullOrEmpty(characterController.currentObjective) && action.actionName.ToLower().Contains(characterController.currentObjective.ToLower()))
             {
-                if (!string.IsNullOrEmpty(characterController.currentObjective) && action.actionName.ToLower().Contains(characterController.currentObjective.ToLower()))
-                {
-                    score += 2f;
-                }
-                if (npcData.GetMentalModel().GoalImportance.TryGetValue(action.actionName, out float importance))
-                {
-                    score += importance;
-                }
+                score += 2f;
             }
-
-            List<UniversalCharacterController> charactersAtLocation = GameManager.Instance.GetAllCharacters()
-                .Where(c => c != null && c.currentLocation != null && c.currentLocation.locationName == location)
-                .ToList();
-
-            foreach (var character in charactersAtLocation)
+            if (npcData.GetMentalModel().GoalImportance.TryGetValue(action.actionName, out float importance))
             {
-                if (npcData.GetMentalModel().Relationships.TryGetValue(character.characterName, out float relationship))
-                {
-                    score += relationship * 0.5f;
-                }
+                score += importance;
             }
-
-            score += Random.Range(0f, 0.5f);
-
-            locationScores[location] = score;
         }
 
-        return locationScores.OrderByDescending(kvp => kvp.Value).FirstOrDefault().Key;
+        List<UniversalCharacterController> charactersAtLocation = GameManager.Instance.GetAllCharacters()
+            .Where(c => c != null && c.currentLocation != null && c.currentLocation.locationName == location)
+            .ToList();
+
+        foreach (var character in charactersAtLocation)
+        {
+            if (npcData.GetMentalModel().Relationships.TryGetValue(character.characterName, out float relationship))
+            {
+                score += relationship * 0.5f;
+            }
+        }
+
+        score += Random.Range(0f, 0.5f);
+
+        locationScores[location] = score;
     }
+
+    return locationScores.OrderByDescending(kvp => kvp.Value).FirstOrDefault().Key;
+}
 
     public void ConsiderCollaboration(UniversalCharacterController potentialCollaborator = null)
     {
@@ -176,7 +175,7 @@ public class AIManager : MonoBehaviourPunCallbacks
 
         lastCollabConsiderationTime = Time.time;
 
-        if (characterController.IsCollaborating)
+        if (characterController.HasState(CharacterState.Collaborating))
         {
             return;
         }
@@ -230,9 +229,9 @@ public class AIManager : MonoBehaviourPunCallbacks
             Debug.LogError("AIManager.DecideOnCollaboration: characterController is null.");
             return false;
         }
-        if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating) ||
-            characterController.HasState(UniversalCharacterController.CharacterState.PerformingAction) ||
-            characterController.IsCollaborating)
+        if (characterController.HasState(CharacterState.Acclimating) ||
+            characterController.HasState(CharacterState.PerformingAction) ||
+            characterController.HasState(CharacterState.Collaborating))
         {
             return false;
         }
@@ -293,7 +292,7 @@ public class AIManager : MonoBehaviourPunCallbacks
         }
         score += characterController.aiSettings.personalGoalTags.Count(goalTag => action.actionName.ToLower().Contains(goalTag.ToLower())) * 1.5f;
         score += TagSystem.GetTagsForAction(action.actionName)
-    .Count(t => t.tag.StartsWith("Challenge") || t.tag.StartsWith("PersonalGoal")) * 0.5f;
+            .Count(t => t.tag.StartsWith("Challenge") || t.tag.StartsWith("PersonalGoal")) * 0.5f;
         score += Random.Range(0f, 0.5f);
         return score;
     }
@@ -378,7 +377,7 @@ public class AIManager : MonoBehaviourPunCallbacks
         npcData.UpdateEmotionalState(newState);
     }
 
-    public void UpdateRelationship(string characterName, float change)
+   public void UpdateRelationship(string characterName, float change)
     {
         npcData.UpdateRelationship(characterName, change);
     }
@@ -412,6 +411,112 @@ public class AIManager : MonoBehaviourPunCallbacks
         var topScenarios = scenarioScores.Where(kvp => Mathf.Approximately(kvp.Value, maxScore)).ToList();
         
         return topScenarios[Random.Range(0, topScenarios.Count)].Key;
+    }
+
+    private void UpdateIdleMovement()
+    {
+        if (!characterController.HasState(CharacterState.Idle)) return;
+
+        Vector3 randomDirection = Random.insideUnitSphere * 2f; // Small radius for idle movement
+        randomDirection += transform.position;
+        UnityEngine.AI.NavMeshHit hit;
+        if (UnityEngine.AI.NavMesh.SamplePosition(randomDirection, out hit, 2f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            characterController.MoveWhileInState(hit.position, characterController.walkSpeed * 0.5f);
+        }
+    }
+
+    private void CheckForGroupFormation()
+    {
+        if (characterController.HasState(CharacterState.InGroup)) return;
+
+        Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, interactionRadius);
+        List<UniversalCharacterController> nearbyCharacters = new List<UniversalCharacterController>();
+
+        foreach (Collider collider in nearbyColliders)
+        {
+            UniversalCharacterController otherCharacter = collider.GetComponent<UniversalCharacterController>();
+            if (otherCharacter != null && otherCharacter != characterController && !otherCharacter.HasState(CharacterState.InGroup))
+            {
+                nearbyCharacters.Add(otherCharacter);
+            }
+        }
+
+        if (nearbyCharacters.Count >= 2 && Random.value < 0.1f) // 10% chance to form a group when 3 or more characters are nearby
+        {
+            List<UniversalCharacterController> groupMembers = new List<UniversalCharacterController> { characterController };
+            groupMembers.AddRange(nearbyCharacters.Take(2)); // Form a group of up to 3 characters
+            GroupManager.Instance.FormGroup(groupMembers);
+        }
+    }
+
+    private void UpdateGroupBehavior()
+    {
+        if (!characterController.HasState(CharacterState.InGroup)) return;
+
+        string groupId = characterController.GetCurrentGroupId();
+        if (string.IsNullOrEmpty(groupId)) return;
+
+        List<UniversalCharacterController> groupMembers = GroupManager.Instance.GetGroupMembers(groupId);
+        Vector3 groupCenter = CalculateGroupCenter(groupMembers);
+
+        // Move towards group center with some randomness
+        Vector3 targetPosition = groupCenter + Random.insideUnitSphere * 2f;
+        characterController.MoveWhileInState(targetPosition, characterController.walkSpeed * 0.75f);
+
+        // Occasionally suggest a new destination for the group
+        if (Random.value < 0.05f) // 5% chance each frame
+        {
+            SuggestGroupDestination(groupId);
+        }
+    }
+
+    private Vector3 CalculateGroupCenter(List<UniversalCharacterController> groupMembers)
+    {
+        Vector3 sum = Vector3.zero;
+        foreach (var member in groupMembers)
+        {
+            sum += member.transform.position;
+        }
+        return sum / groupMembers.Count;
+    }
+
+    private void SuggestGroupDestination(string groupId)
+{
+    List<string> allLocations = LocationManagerMaster.Instance.GetAllLocations();
+    if (allLocations.Count > 0)
+    {
+        string newLocation = allLocations[Random.Range(0, allLocations.Count)];
+        Vector3 destination = WaypointsManager.Instance.GetWaypointNearLocation(newLocation);
+        GroupManager.Instance.MoveGroup(groupId, destination);
+    }
+}
+
+    public void OnCollaborationStart(string actionName, List<UniversalCharacterController> collaborators)
+    {
+        characterController.AddState(CharacterState.Collaborating);
+        string collaboratorNames = string.Join(", ", collaborators.Select(c => c.characterName));
+        AddMemory($"Started collaboration on {actionName} with {collaboratorNames}");
+    }
+
+    public void OnCollaborationEnd(string actionName, bool success)
+    {
+        characterController.RemoveState(CharacterState.Collaborating);
+        string outcome = success ? "successfully" : "unsuccessfully";
+        AddMemory($"Ended collaboration on {actionName} {outcome}");
+
+        if (success)
+        {
+            // Increase relationships with collaborators
+            List<UniversalCharacterController> collaborators = CollabManager.Instance.GetCollaborators(characterController.currentCollabID);
+            foreach (var collaborator in collaborators)
+            {
+                if (collaborator != characterController)
+                {
+                    UpdateRelationship(collaborator.characterName, 0.1f);
+                }
+            }
+        }
     }
 }
 

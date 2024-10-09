@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
 using UnityEngine.EventSystems;
+using static CharacterState;
 
 public class LocationActionUI : MonoBehaviour
 {
@@ -135,7 +136,7 @@ public class LocationActionUI : MonoBehaviour
     {
         yield return new WaitForSeconds(debounceDuration);
 
-        if (!location.IsCharacterInLocation(character) || character.HasState(UniversalCharacterController.CharacterState.Acclimating))
+        if (!location.IsCharacterInLocation(character) || character.HasState(CharacterState.Acclimating))
         {
             yield break;
         }

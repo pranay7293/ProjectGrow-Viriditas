@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
+using System;
 
 public class CharacterProgressBar : MonoBehaviour
 {
@@ -24,7 +25,7 @@ public class CharacterProgressBar : MonoBehaviour
 
     private Camera mainCamera;
     private UniversalCharacterController characterController;
-    private UniversalCharacterController.CharacterState currentKeyState = UniversalCharacterController.CharacterState.None;
+    private CharacterState currentKeyState = CharacterState.None;
     private float[] personalGoalProgress;
 
     public void Initialize(UniversalCharacterController controller)
@@ -107,7 +108,7 @@ public class CharacterProgressBar : MonoBehaviour
 
     private void ResetUIState()
     {
-        UpdateKeyState(UniversalCharacterController.CharacterState.None);
+        UpdateKeyState(CharacterState.None);
         if (cooldownBarObject != null) cooldownBarObject.SetActive(false);
         if (locationAcclimationObject != null) locationAcclimationObject.SetActive(false);
     }
@@ -174,42 +175,63 @@ public class CharacterProgressBar : MonoBehaviour
         }
     }
 
-    public void UpdateKeyState(UniversalCharacterController.CharacterState state)
+    public void UpdateKeyState(CharacterState state)
     {
-        if (state == currentKeyState) return;
+        CharacterState highestPriorityState = GetHighestPriorityState(state);
+        
+        if (highestPriorityState == currentKeyState) return;
 
-        currentKeyState = state;
-        bool showKeyState = (int)state >= 4;
+        currentKeyState = highestPriorityState;
+        bool showKeyState = (int)highestPriorityState >= 4;
         keyStateOverlay.gameObject.SetActive(showKeyState);
         
-        string displayText = state.ToString();
-        switch (state)
-        {
-            case UniversalCharacterController.CharacterState.PerformingAction:
-                displayText = "Performing Action";
-                break;
-            case UniversalCharacterController.CharacterState.Collaborating:
-                displayText = "Collabing";
-                break;
-            case UniversalCharacterController.CharacterState.FormingGroup:
-                displayText = "Forming Group";
-                break;
-            case UniversalCharacterController.CharacterState.Cooldown:
-                displayText = "Cooling Down";
-                break;
-        }
-        
+        string displayText = GetDisplayTextForState(highestPriorityState);
         keyStateText.text = showKeyState ? displayText : "";
 
+        HandleSpecialStates(highestPriorityState);
+    }
+
+    private CharacterState GetHighestPriorityState(CharacterState state)
+    {
+        for (int i = Enum.GetValues(typeof(CharacterState)).Length - 1; i >= 0; i--)
+        {
+            CharacterState currentState = (CharacterState)(1 << i);
+            if (state.HasFlag(currentState))
+            {
+                return currentState;
+            }
+        }
+        return CharacterState.None;
+    }
+
+    private string GetDisplayTextForState(CharacterState state)
+    {
         switch (state)
         {
-            case UniversalCharacterController.CharacterState.Cooldown:
+            case CharacterState.PerformingAction:
+                return "Performing Action";
+            case CharacterState.Collaborating:
+                return "Collabing";
+            case CharacterState.FormingGroup:
+                return "Forming Group";
+            case CharacterState.Cooldown:
+                return "Cooling Down";
+            default:
+                return state.ToString();
+        }
+    }
+
+    private void HandleSpecialStates(CharacterState state)
+    {
+        switch (state)
+        {
+            case CharacterState.Cooldown:
                 SetCooldown(collabCooldown);
                 break;
-            case UniversalCharacterController.CharacterState.Acclimating:
+            case CharacterState.Acclimating:
                 StartAcclimation();
                 break;
-            case UniversalCharacterController.CharacterState.None:
+            case CharacterState.None:
                 ResetUIState();
                 break;
         }
@@ -240,7 +262,7 @@ public class CharacterProgressBar : MonoBehaviour
         {
             cooldownBarObject.SetActive(false);
         }
-        UpdateKeyState(UniversalCharacterController.CharacterState.None);
+        UpdateKeyState(CharacterState.None);
     }
 
     public void StartAcclimation()
@@ -269,6 +291,6 @@ public class CharacterProgressBar : MonoBehaviour
         {
             locationAcclimationObject.SetActive(false);
         }
-        UpdateKeyState(UniversalCharacterController.CharacterState.None);
+        UpdateKeyState(CharacterState.None);
     }
 }

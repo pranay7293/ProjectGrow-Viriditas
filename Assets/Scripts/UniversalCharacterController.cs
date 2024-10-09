@@ -9,21 +9,6 @@ using EPOOutline;
 
 public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObservable
 {
-    public enum CharacterState
-    {
-        None = 0,
-        Moving = 1,
-        InGroup = 2,
-        Idle = 3,
-        Interacting = 4,
-        Acclimating = 5,
-        PerformingAction = 6,
-        Chatting = 7,
-        Collaborating = 8,
-        Cooldown = 9,
-        FormingGroup = 10
-    }
-
     [Header("Character Settings")]
     public string characterName;
     public Color characterColor = Color.white;
@@ -99,7 +84,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     public string currentCollabID;
     public float CollaborationTimeElapsed { get; private set; }
 
-    private HashSet<CharacterState> activeStates = new HashSet<CharacterState>();
+    private CharacterState activeStates = CharacterState.None;
 
     private List<LocationManager.LocationAction> availableActions = new List<LocationManager.LocationAction>();
 
@@ -376,12 +361,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         progressBar.Initialize(this);
     }
 
-public void MoveWhileInState(Vector3 destination, float speed)
-    {
-        stateMovementDestination = destination;
-        stateMovementSpeed = speed;
-    }
-
     private void Update()
     {
         if (!photonView.IsMine) return;
@@ -601,26 +580,34 @@ public void MoveWhileInState(Vector3 destination, float speed)
         currentObjective = objective;
     }
 
-    public void AddState(CharacterState newState)
+     public void AddState(CharacterState state)
     {
-        activeStates.Add(newState);
+        activeStates |= state;
         UpdateProgressBarState();
     }
 
     public void RemoveState(CharacterState state)
     {
-        activeStates.Remove(state);
+        activeStates &= ~state;
         UpdateProgressBarState();
     }
 
     public bool HasState(CharacterState state)
     {
-        return activeStates.Contains(state);
+        return (activeStates & state) != 0;
     }
 
     public CharacterState GetHighestPriorityState()
     {
-        return activeStates.Count > 0 ? activeStates.Max() : CharacterState.None;
+        for (int i = 9; i >= 0; i--)
+        {
+            CharacterState state = (CharacterState)(1 << i);
+            if (HasState(state))
+            {
+                return state;
+            }
+        }
+        return CharacterState.None;
     }
 
     private void UpdateProgressBarState()
@@ -629,6 +616,13 @@ public void MoveWhileInState(Vector3 destination, float speed)
         {
             progressBar.UpdateKeyState(GetHighestPriorityState());
         }
+    }
+
+    public void MoveWhileInState(Vector3 destination, float speed)
+    {
+        stateMovementDestination = destination;
+        stateMovementSpeed = speed;
+        AddState(CharacterState.Moving);
     }
 
     public void StartAction(LocationManager.LocationAction action)
@@ -669,7 +663,7 @@ public void MoveWhileInState(Vector3 destination, float speed)
         }
     }
 
-    private IEnumerator PerformAction()
+   private IEnumerator PerformAction()
     {
         float elapsedTime = 0f;
         while (elapsedTime < currentAction.duration)
@@ -712,7 +706,6 @@ public void MoveWhileInState(Vector3 destination, float speed)
             RemoveState(CharacterState.PerformingAction);
             Debug.Log($"{characterName} completed action: {currentAction?.actionName}");
 
-            // Signal LocationActionUI to dismiss
             if (LocationActionUI.Instance != null)
             {
                 LocationActionUI.Instance.HideActions();
@@ -1159,14 +1152,14 @@ private void RPC_EndCollab(string actionName, int actionDuration)
         return currentGroupId;
     }
 
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+   public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
         {
             // Sending data
             stream.SendNext(transform.position);
             stream.SendNext(transform.rotation);
-            stream.SendNext(activeStates.ToArray());
+            stream.SendNext((int)activeStates);
             stream.SendNext(currentObjective);
             stream.SendNext(actionIndicator.text);
             stream.SendNext(characterColor);
@@ -1188,7 +1181,7 @@ private void RPC_EndCollab(string actionName, int actionDuration)
             // Receiving data
             transform.position = (Vector3)stream.ReceiveNext();
             transform.rotation = (Quaternion)stream.ReceiveNext();
-            activeStates = new HashSet<CharacterState>((CharacterState[])stream.ReceiveNext());
+            activeStates = (CharacterState)stream.ReceiveNext();
             currentObjective = (string)stream.ReceiveNext();
             actionIndicator.text = (string)stream.ReceiveNext();
             Color receivedColor = (Color)stream.ReceiveNext();
@@ -1278,3 +1271,14 @@ private void RPC_EndCollab(string actionName, int actionDuration)
         }
     }
 }
+
+// public void StartCollaboration(LocationManager.LocationAction action, string collabID)
+//     {
+//         IsCollaborating = true;
+//         AddState(CharacterState.Collaborating);
+//         currentCollabID = collabID;
+//         currentAction = action;
+//         CollaborationTimeElapsed = 0f;
+//         StartAction(action);
+//         Debug.Log($"{characterName} started collaboration on {action.actionName} with ID {collabID}");
+//     }

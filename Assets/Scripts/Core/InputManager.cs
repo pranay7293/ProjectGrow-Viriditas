@@ -1,6 +1,7 @@
 using UnityEngine;
 using Photon.Pun;
 using UnityEngine.EventSystems;
+using static CharacterState;
 
 public class InputManager : MonoBehaviourPunCallbacks
 {
@@ -221,9 +222,9 @@ public class InputManager : MonoBehaviourPunCallbacks
     {
         if (currentInteractableCharacter != null)
         {
-            if (currentInteractableCharacter.HasState(UniversalCharacterController.CharacterState.Chatting) ||
-                currentInteractableCharacter.HasState(UniversalCharacterController.CharacterState.Collaborating) ||
-                currentInteractableCharacter.HasState(UniversalCharacterController.CharacterState.PerformingAction))
+            if (currentInteractableCharacter.HasState(CharacterState.Chatting) ||
+                currentInteractableCharacter.HasState(CharacterState.Collaborating) ||
+                currentInteractableCharacter.HasState(CharacterState.PerformingAction))
             {
                 Debug.Log($"{currentInteractableCharacter.characterName} is currently busy.");
             }

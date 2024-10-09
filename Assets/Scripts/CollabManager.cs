@@ -4,12 +4,13 @@
     using Photon.Pun;
     using System.Linq;
     using System.Threading.Tasks;
+    using static CharacterState;
 
     public class CollabManager : MonoBehaviourPunCallbacks
     {
         public static CollabManager Instance { get; private set; }
 
-        [SerializeField] private float collabRadius = 50f;
+        [SerializeField] private float collabRadius = 10f;
         [SerializeField] private float collabCooldown = 5f;
         [SerializeField] private int maxCollaborators = 3;
         [SerializeField] private float collabBonusMultiplier = 0.5f;
@@ -368,7 +369,7 @@
                     CharacterProgressBar progressBar = character.GetComponentInChildren<CharacterProgressBar>();
                     if (progressBar != null)
                     {
-                        progressBar.UpdateKeyState(UniversalCharacterController.CharacterState.Cooldown);
+                        progressBar.UpdateKeyState(CharacterState.Cooldown);
                         progressBar.SetCooldown(collabCooldown);
                     }
                 }
@@ -390,7 +391,7 @@
                     UniversalCharacterController character = GameManager.Instance.GetCharacterByName(characterName);
                     if (character != null)
                     {
-                        character.RemoveState(UniversalCharacterController.CharacterState.Cooldown);
+                        character.RemoveState(CharacterState.Cooldown);
                     }
                 }
                 else

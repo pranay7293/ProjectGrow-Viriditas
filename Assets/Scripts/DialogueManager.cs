@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static CharacterState;
 
 public class DialogueManager : MonoBehaviourPunCallbacks
 {
@@ -143,7 +144,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         }
 
         currentAgent = agent;
-        currentAgent.AddState(UniversalCharacterController.CharacterState.Chatting);
+        currentAgent.AddState(CharacterState.Chatting);
         InputManager.Instance.StartDialogue();
 
         // Generate a dynamic greeting using OpenAIService
@@ -329,7 +330,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         if (currentAgent != null)
         {
-            currentAgent.RemoveState(UniversalCharacterController.CharacterState.Chatting);
+            currentAgent.RemoveState(CharacterState.Chatting);
         }
         dialoguePanel.SetActive(false);
         SetCustomInputActive(false);
@@ -499,7 +500,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         }
 
         currentAgent = agentNPC;
-        currentAgent.AddState(UniversalCharacterController.CharacterState.Chatting);
+        currentAgent.AddState(CharacterState.Chatting);
         InputManager.Instance.StartDialogue();
 
         // Agent initiates the conversation
@@ -546,7 +547,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         }
 
         currentAgent = agentNPC;
-        currentAgent.AddState(UniversalCharacterController.CharacterState.Chatting);
+        currentAgent.AddState(CharacterState.Chatting);
         InputManager.Instance.StartDialogue();
 
         string initialDialogue = await OpenAIService.Instance.GetAgentResponse(currentAgent.characterName, "", currentAgent.aiSettings);

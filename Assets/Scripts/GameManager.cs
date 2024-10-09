@@ -4,6 +4,7 @@ using Photon.Pun;
 using System.Collections.Generic;
 using TMPro;
 using System.Linq;
+using static CharacterState;
 
 public class GameManager : MonoBehaviourPunCallbacks
 {
@@ -494,7 +495,7 @@ public class GameManager : MonoBehaviourPunCallbacks
                 UpdatePlayerScore(characterName, scoreChange, actionName, tags);
                 UpdateMilestoneProgress(characterName, actionName, tagsWithWeights);
 
-                if (!character.IsPlayerControlled && !character.HasState(UniversalCharacterController.CharacterState.PerformingAction))
+                if (!character.IsPlayerControlled && !character.HasState(CharacterState.PerformingAction))
                 {
                     AIManager aiManager = character.GetComponent<AIManager>();
                     if (aiManager != null)

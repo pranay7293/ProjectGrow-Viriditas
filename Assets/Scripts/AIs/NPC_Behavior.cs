@@ -14,7 +14,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private NavMeshAgent navMeshAgent;
     private AIManager aiManager;
 
-    [SerializeField] private float decisionInterval = 10f;
+    [SerializeField] private float decisionInterval = 5f;
     [SerializeField] private float interactionCooldown = 10f;
     [SerializeField] private float interactionDistance = 5f;
     [SerializeField] private float interactionPauseTime = 3f;
@@ -66,12 +66,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (!photonView.IsMine) return;
         if (characterController == null || aiManager == null) return;
 
-        if (!characterController.HasState(UniversalCharacterController.CharacterState.Chatting) &&
-            !characterController.HasState(UniversalCharacterController.CharacterState.Collaborating))
-        {
-            UpdateBehavior();
-        }
-
+        UpdateBehavior();
         PerformBackgroundThinking();
         ConsiderMajorMovement();
         UpdateIdleMovement();
@@ -86,7 +81,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             StartCoroutine(MakeDecisionCoroutine());
         }
 
-        if (characterController.HasState(UniversalCharacterController.CharacterState.Moving))
+        if (characterController.HasState(CharacterState.Moving))
         {
             CheckForNearbyCharacters();
         }
@@ -212,7 +207,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
     private void ConsiderGroupActions()
     {
-        if (characterController.IsInGroup())
+        if (characterController.HasState(CharacterState.InGroup))
         {
             EvaluateGroupObjectives();
         }
@@ -267,7 +262,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private void ConsiderJoiningGroup()
     {
         List<UniversalCharacterController> nearbyCharacters = GetNearbyCharacters();
-        UniversalCharacterController potentialGroupMember = nearbyCharacters.FirstOrDefault(c => c.IsInGroup() && !c.IsPlayerControlled);
+        UniversalCharacterController potentialGroupMember = nearbyCharacters.FirstOrDefault(c => c.HasState(CharacterState.InGroup) && !c.IsPlayerControlled);
 
         if (potentialGroupMember != null && ShouldJoinGroup(potentialGroupMember))
         {
@@ -315,7 +310,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
         lastDecisionTime = Time.time;
 
-        if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating))
+        if (characterController.HasState(CharacterState.Acclimating))
         {
             yield break;
         }
@@ -379,14 +374,14 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (navMeshAgent != null && navMeshAgent.enabled)
         {
             navMeshAgent.SetDestination(position);
-            characterController.AddState(UniversalCharacterController.CharacterState.Moving);
+            characterController.AddState(CharacterState.Moving);
             StartCoroutine(CheckWaypointArrival());
         }
     }
 
     private IEnumerator CheckWaypointArrival()
     {
-        while (characterController.HasState(UniversalCharacterController.CharacterState.Moving))
+        while (characterController.HasState(CharacterState.Moving))
         {
             if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
             {
@@ -396,8 +391,8 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
                 }
                 else
                 {
-                    characterController.RemoveState(UniversalCharacterController.CharacterState.Moving);
-                    characterController.AddState(UniversalCharacterController.CharacterState.Idle);
+                    characterController.RemoveState(CharacterState.Moving);
+                    characterController.AddState(CharacterState.Idle);
                     break;
                 }
             }
@@ -409,14 +404,14 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     {
         isPausedAtWaypoint = true;
         navMeshAgent.isStopped = true;
-        characterController.RemoveState(UniversalCharacterController.CharacterState.Moving);
-        characterController.AddState(UniversalCharacterController.CharacterState.Idle);
+        characterController.RemoveState(CharacterState.Moving);
+        characterController.AddState(CharacterState.Idle);
 
         yield return new WaitForSeconds(waypointPauseTime);
 
         navMeshAgent.isStopped = false;
-        characterController.RemoveState(UniversalCharacterController.CharacterState.Idle);
-        characterController.AddState(UniversalCharacterController.CharacterState.Moving);
+        characterController.RemoveState(CharacterState.Idle);
+        characterController.AddState(CharacterState.Moving);
         isPausedAtWaypoint = false;
     }
 
@@ -612,13 +607,13 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
     private void EnterIdleState()
     {
-        characterController.AddState(UniversalCharacterController.CharacterState.Idle);
+        characterController.AddState(CharacterState.Idle);
         lastIdleMovementTime = Time.time - idleMovementInterval;
     }
 
     private void UpdateIdleMovement()
     {
-        if (!characterController.HasState(UniversalCharacterController.CharacterState.Idle)) return;
+        if (!characterController.HasState(CharacterState.Idle)) return;
         if (Time.time - lastIdleMovementTime < idleMovementInterval) return;
 
         Vector3 randomDirection = Random.insideUnitSphere * idleMovementRadius;
@@ -627,7 +622,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         NavMesh.SamplePosition(randomDirection, out hit, idleMovementRadius, 1);
         Vector3 finalPosition = hit.position;
 
-        characterController.MoveTo(finalPosition);
+        characterController.MoveWhileInState(finalPosition, characterController.walkSpeed * 0.5f);
         lastIdleMovementTime = Time.time;
     }
 
@@ -639,7 +634,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (location != null)
         {
             isAcclimating = true;
-            characterController.AddState(UniversalCharacterController.CharacterState.Acclimating);
+            characterController.AddState(CharacterState.Acclimating);
             StartCoroutine(AcclimationCoroutine());
         }
     }
@@ -650,9 +645,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
         yield return new WaitForSeconds(characterController.acclimationTime);
         isAcclimating = false;
-        if (characterController.HasState(UniversalCharacterController.CharacterState.Acclimating))
+        if (characterController.HasState(CharacterState.Acclimating))
         {
-            characterController.RemoveState(UniversalCharacterController.CharacterState.Acclimating);
+            characterController.RemoveState(CharacterState.Acclimating);
             EnterIdleState();
         }
     }
