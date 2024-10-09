@@ -100,6 +100,7 @@ public class GroupManager : MonoBehaviour
         List<string> groupsToDisband = new List<string>();
         foreach (var group in activeGroups.Values)
         {
+            Debug.Log($"Group {group.Id}: Updating movement for {group.Members.Count} members");
             UpdateGroupMovement(group);
             group.Duration += Time.deltaTime;
 
@@ -124,12 +125,16 @@ public class GroupManager : MonoBehaviour
     Vector3 groupCenter = GetGroupCenter(group.Members);
     Vector3 newDestination = groupCenter + cohesion + alignment + separation;
 
-    // Find the nearest waypoint to the new destination
+    Debug.Log($"Group {group.Id}: New destination calculated: {newDestination}");
+
     Vector3 nearestWaypoint = WaypointsManager.Instance.GetNearestWaypoint(newDestination);
+
+    Debug.Log($"Group {group.Id}: Nearest waypoint: {nearestWaypoint}");
 
     foreach (var member in group.Members)
     {
         Vector3 memberDestination = nearestWaypoint + (member.transform.position - groupCenter).normalized * groupFormationDistance;
+        Debug.Log($"Group {group.Id}: Moving {member.characterName} to {memberDestination}");
         member.MoveWhileInState(memberDestination, groupMovementSpeed);
     }
 }

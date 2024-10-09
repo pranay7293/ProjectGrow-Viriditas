@@ -86,6 +86,11 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private CharacterState activeStates = CharacterState.None;
 
+    public CharacterState GetActiveStates()
+{
+    return activeStates;
+}
+
     private List<LocationManager.LocationAction> availableActions = new List<LocationManager.LocationAction>();
 
     public GameObject guideTextBoxPrefab;
@@ -374,6 +379,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             HandleStateMovement();
         }
 
+        // Add this debug log
+    if (HasState(CharacterState.Moving))
+    {
+        Debug.Log($"{characterName}: Current position: {transform.position}, Destination: {stateMovementDestination}, Distance: {Vector3.Distance(transform.position, stateMovementDestination)}");
+    }
+
         if (isAcclimating)
         {
             UpdateAcclimation();
@@ -581,16 +592,16 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
      public void AddState(CharacterState state)
-    {
-        activeStates |= state;
-        UpdateProgressBarState();
-    }
+{
+    activeStates |= state;
+    UpdateProgressBarState();
+}
 
-    public void RemoveState(CharacterState state)
-    {
-        activeStates &= ~state;
-        UpdateProgressBarState();
-    }
+public void RemoveState(CharacterState state)
+{
+    activeStates &= ~state;
+    UpdateProgressBarState();
+}
 
     public bool HasState(CharacterState state)
     {
@@ -619,11 +630,12 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     public void MoveWhileInState(Vector3 destination, float speed)
-    {
-        stateMovementDestination = destination;
-        stateMovementSpeed = speed;
-        AddState(CharacterState.Moving);
-    }
+{
+    stateMovementDestination = destination;
+    stateMovementSpeed = speed;
+    AddState(CharacterState.Moving);
+    Debug.Log($"{characterName}: Moving to {destination} at speed {speed}");
+}
 
     public void StartAction(LocationManager.LocationAction action)
     {

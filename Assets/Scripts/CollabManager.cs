@@ -222,7 +222,7 @@
             {
                 UniversalCharacterController collaborator = collaborators[i];
                 if (collaborator != null)
-                {
+                {   
                     SetCollabCooldown(collaborator.characterName);
                     collaborator.StartCollaboration(action, collabID);
 

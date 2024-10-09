@@ -19,11 +19,11 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     [SerializeField] private float interactionDistance = 5f;
     [SerializeField] private float interactionPauseTime = 3f;
     [SerializeField] private float waypointPauseTime = 2f;
-    [SerializeField] private float locationChangeCooldown = 60f;
+    [SerializeField] private float locationChangeCooldown = 5f;
     [SerializeField] private float backgroundThinkingInterval = 5f;
     [SerializeField] private float idleMovementRadius = 2f;
     [SerializeField] private float idleMovementInterval = 15f;
-    [SerializeField] private float majorMovementInterval = 60f;
+    [SerializeField] private float majorMovementInterval = 30f;
 
     private float lastDecisionTime;
     private float lastInteractionTime;
@@ -370,35 +370,42 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     }
 
     public void MoveToPosition(Vector3 position)
+{
+    if (navMeshAgent != null && navMeshAgent.enabled)
     {
-        if (navMeshAgent != null && navMeshAgent.enabled)
-        {
-            navMeshAgent.SetDestination(position);
-            characterController.AddState(CharacterState.Moving);
-            StartCoroutine(CheckWaypointArrival());
-        }
+        navMeshAgent.SetDestination(position);
+        characterController.AddState(CharacterState.Moving);
+        Debug.Log($"{characterController.characterName}: Setting destination to {position}. NavMeshAgent.hasPath: {navMeshAgent.hasPath}, NavMeshAgent.pathStatus: {navMeshAgent.pathStatus}");
+        StartCoroutine(CheckWaypointArrival());
     }
+    else
+    {
+        Debug.LogWarning($"{characterController.characterName}: NavMeshAgent is null or disabled. Cannot move.");
+    }
+}
 
     private IEnumerator CheckWaypointArrival()
+{
+    while (characterController.HasState(CharacterState.Moving))
     {
-        while (characterController.HasState(CharacterState.Moving))
+        Debug.Log($"{characterController.characterName}: Checking waypoint arrival. Remaining distance: {navMeshAgent.remainingDistance}, Path pending: {navMeshAgent.pathPending}");
+        if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
         {
-            if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
+            if (WaypointsManager.Instance.IsNearWaypoint(transform.position) && !isPausedAtWaypoint)
             {
-                if (WaypointsManager.Instance.IsNearWaypoint(transform.position) && !isPausedAtWaypoint)
-                {
-                    yield return StartCoroutine(PauseAtWaypoint());
-                }
-                else
-                {
-                    characterController.RemoveState(CharacterState.Moving);
-                    characterController.AddState(CharacterState.Idle);
-                    break;
-                }
+                yield return StartCoroutine(PauseAtWaypoint());
             }
-            yield return null;
+            else
+            {
+                characterController.RemoveState(CharacterState.Moving);
+                characterController.AddState(CharacterState.Idle);
+                Debug.Log($"{characterController.characterName}: Reached destination. Switching to Idle state.");
+                break;
+            }
         }
+        yield return null;
     }
+}
 
     private IEnumerator PauseAtWaypoint()
     {

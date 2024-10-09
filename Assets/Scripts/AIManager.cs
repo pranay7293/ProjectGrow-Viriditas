@@ -15,7 +15,7 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     [SerializeField] private float memoryConsolidationInterval = 30f;
     [SerializeField] private float reflectionInterval = 60f;
-    [SerializeField] private float dialogueInitiationCooldown = 120f;
+    [SerializeField] private float dialogueInitiationCooldown = 30f;
     [SerializeField] private float collabConsiderationInterval = 5f;
     [SerializeField] private float movementConsiderationInterval = 5f;
     [SerializeField] private float explorationProbability = 0.25f;
@@ -74,26 +74,31 @@ public class AIManager : MonoBehaviourPunCallbacks
     }
 
     private void ConsiderMovement()
+{
+    if (Time.time - lastMovementConsiderationTime < movementConsiderationInterval) return;
+
+    lastMovementConsiderationTime = Time.time;
+
+    Debug.Log($"{characterController.characterName}: Considering movement. Current states: {characterController.GetActiveStates()}");
+
+    if (characterController.HasState(CharacterState.Moving) ||
+        characterController.HasState(CharacterState.Acclimating))
     {
-        if (Time.time - lastMovementConsiderationTime < movementConsiderationInterval) return;
-
-        lastMovementConsiderationTime = Time.time;
-
-        if (characterController.HasState(CharacterState.Moving) ||
-            characterController.HasState(CharacterState.Acclimating))
-        {
-            return;
-        }
-
-        if (Random.value < explorationProbability)
-        {
-            ExploreRandomWaypoint();
-        }
-        else
-        {
-            ConsiderMovingToNewLocation();
-        }
+        Debug.Log($"{characterController.characterName}: Already moving or acclimating. Skipping movement consideration.");
+        return;
     }
+
+    if (Random.value < explorationProbability)
+    {
+        Debug.Log($"{characterController.characterName}: Deciding to explore random waypoint.");
+        ExploreRandomWaypoint();
+    }
+    else
+    {
+        Debug.Log($"{characterController.characterName}: Considering moving to new location.");
+        ConsiderMovingToNewLocation();
+    }
+}
 
     private void ExploreRandomWaypoint()
     {
