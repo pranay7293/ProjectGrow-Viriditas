@@ -133,9 +133,12 @@ public class GroupManager : MonoBehaviour
 
     foreach (var member in group.Members)
     {
-        Vector3 memberDestination = nearestWaypoint + (member.transform.position - groupCenter).normalized * groupFormationDistance;
-        Debug.Log($"Group {group.Id}: Moving {member.characterName} to {memberDestination}");
-        member.MoveWhileInState(memberDestination, groupMovementSpeed);
+        if (!member.HasState(CharacterState.PerformingAction))
+        {
+            Vector3 memberDestination = nearestWaypoint + (member.transform.position - groupCenter).normalized * groupFormationDistance;
+            Debug.Log($"Group {group.Id}: Moving {member.characterName} to {memberDestination}");
+            member.MoveWhileInState(memberDestination, groupMovementSpeed);
+        }
     }
 }
 

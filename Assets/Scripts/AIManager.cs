@@ -39,21 +39,22 @@ public class AIManager : MonoBehaviourPunCallbacks
     }
 
     private void Update()
+{
+    if (!photonView.IsMine || !isInitialized) return;
+
+    if (characterController == null)
     {
-        if (!photonView.IsMine || !isInitialized) return;
-
-        if (characterController == null)
-        {
-            Debug.LogWarning($"AIManager: CharacterController is null for {gameObject.name}");
-            return;
-        }
-
-        if (!characterController.HasState(CharacterState.Collaborating))
-        {
-            ConsiderMovement();
-            ConsiderCollaboration();
-        }
+        Debug.LogWarning($"AIManager: CharacterController is null for {gameObject.name}");
+        return;
     }
+
+    if (!characterController.HasState(CharacterState.PerformingAction))
+    {
+        ConsiderMovement();
+    }
+
+    ConsiderCollaboration();
+}
 
     public void Initialize(UniversalCharacterController controller)
     {

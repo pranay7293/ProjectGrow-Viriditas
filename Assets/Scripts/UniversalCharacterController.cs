@@ -422,15 +422,15 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     private void UpdateMovement()
+    {   
+    if (IsPlayerControlled)
     {
-        if (IsPlayerControlled)
-        {
-            HandlePlayerMovement();
-        }
-        else if (!HasState(CharacterState.Interacting))
-        {
-            HandleAIMovement();
-        }
+        HandlePlayerMovement();
+    }
+    else
+    {
+        HandleAIMovement();
+    }
     }
 
     private void HandlePlayerMovement()
@@ -458,24 +458,29 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     private void HandleAIMovement()
+{
+    if (HasState(CharacterState.PerformingAction))
     {
-        if (navMeshAgent.enabled && navMeshAgent.hasPath)
-        {
-            currentSpeed = navMeshAgent.velocity.magnitude;
-            moveDirection = navMeshAgent.desiredVelocity.normalized;
-
-            if (moveDirection != Vector3.zero)
-            {
-                targetRotation = Quaternion.LookRotation(moveDirection);
-            }
-        }
-        else
-        {
-            currentSpeed = 0f;
-        }
-
-        UpdateMovementState();
+        return;
     }
+
+    if (navMeshAgent.enabled && navMeshAgent.hasPath)
+    {
+        currentSpeed = navMeshAgent.velocity.magnitude;
+        moveDirection = navMeshAgent.desiredVelocity.normalized;
+
+        if (moveDirection != Vector3.zero)
+        {
+            targetRotation = Quaternion.LookRotation(moveDirection);
+        }
+    }
+    else
+    {
+        currentSpeed = 0f;
+    }
+
+    UpdateMovementState();
+}
 
     private void UpdateMovementState()
     {
@@ -591,8 +596,16 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         currentObjective = objective;
     }
 
-     public void AddState(CharacterState state)
+public void AddState(CharacterState state)
 {
+    if (state == CharacterState.Moving)
+    {
+        activeStates &= ~CharacterState.Idle;
+    }
+    else if (state == CharacterState.Idle)
+    {
+        activeStates &= ~CharacterState.Moving;
+    }
     activeStates |= state;
     UpdateProgressBarState();
 }
@@ -600,6 +613,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 public void RemoveState(CharacterState state)
 {
     activeStates &= ~state;
+    if (state == CharacterState.Moving && !HasState(CharacterState.Idle))
+    {
+        AddState(CharacterState.Idle);
+    }
     UpdateProgressBarState();
 }
 
@@ -631,8 +648,20 @@ public void RemoveState(CharacterState state)
 
     public void MoveWhileInState(Vector3 destination, float speed)
 {
+    if (HasState(CharacterState.PerformingAction))
+    {
+        return;
+    }
+
     stateMovementDestination = destination;
     stateMovementSpeed = speed;
+
+    if (navMeshAgent != null && navMeshAgent.enabled)
+    {
+        navMeshAgent.speed = speed;
+        navMeshAgent.SetDestination(destination);
+    }
+
     AddState(CharacterState.Moving);
     Debug.Log($"{characterName}: Moving to {destination} at speed {speed}");
 }
@@ -1283,14 +1312,3 @@ private void RPC_EndCollab(string actionName, int actionDuration)
         }
     }
 }
-
-// public void StartCollaboration(LocationManager.LocationAction action, string collabID)
-//     {
-//         IsCollaborating = true;
-//         AddState(CharacterState.Collaborating);
-//         currentCollabID = collabID;
-//         currentAction = action;
-//         CollaborationTimeElapsed = 0f;
-//         StartAction(action);
-//         Debug.Log($"{characterName} started collaboration on {action.actionName} with ID {collabID}");
-//     }

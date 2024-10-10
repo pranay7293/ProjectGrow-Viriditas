@@ -14,7 +14,7 @@
         [SerializeField] private float collabCooldown = 5f;
         [SerializeField] private int maxCollaborators = 3;
         [SerializeField] private float collabBonusMultiplier = 0.5f;
-        [SerializeField] private float collabDuration = 15f;
+        [SerializeField] private float collabDuration = 30f;
 
         private Dictionary<string, List<UniversalCharacterController>> activeCollabs = new Dictionary<string, List<UniversalCharacterController>>();
         private Dictionary<string, float> collabCooldowns = new Dictionary<string, float>();

@@ -369,9 +369,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         Debug.Log($"{characterController.characterName} moved to {newLocation}");
     }
 
-    public void MoveToPosition(Vector3 position)
+   public void MoveToPosition(Vector3 position)
 {
-    if (navMeshAgent != null && navMeshAgent.enabled)
+    if (navMeshAgent != null && navMeshAgent.enabled && !characterController.HasState(CharacterState.PerformingAction))
     {
         navMeshAgent.SetDestination(position);
         characterController.AddState(CharacterState.Moving);
@@ -380,7 +380,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     }
     else
     {
-        Debug.LogWarning($"{characterController.characterName}: NavMeshAgent is null or disabled. Cannot move.");
+        Debug.LogWarning($"{characterController.characterName}: Cannot move. NavMeshAgent status: {(navMeshAgent == null ? "null" : navMeshAgent.enabled ? "enabled" : "disabled")}. PerformingAction: {characterController.HasState(CharacterState.PerformingAction)}");
     }
 }
 
