@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Photon.Pun;
-using System.Threading.Tasks;
 using ProjectGrow.AI;
 
 public class NPC_Behavior : MonoBehaviourPunCallbacks
@@ -14,24 +13,17 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     private NavMeshAgent navMeshAgent;
     private AIManager aiManager;
 
-    [SerializeField] private float decisionInterval = 5f;
     [SerializeField] private float interactionCooldown = 10f;
     [SerializeField] private float interactionDistance = 5f;
     [SerializeField] private float interactionPauseTime = 3f;
     [SerializeField] private float waypointPauseTime = 2f;
     [SerializeField] private float locationChangeCooldown = 5f;
     [SerializeField] private float backgroundThinkingInterval = 5f;
-    [SerializeField] private float idleMovementRadius = 2f;
-    [SerializeField] private float idleMovementInterval = 15f;
-    [SerializeField] private float majorMovementInterval = 30f;
 
-    private float lastDecisionTime;
     private float lastInteractionTime;
     private float lastInteractionPauseTime = 0f;
     private float lastLocationChangeTime = 0f;
     private float lastBackgroundThinkingTime;
-    private float lastIdleMovementTime;
-    private float lastMajorMovementTime;
 
     private bool isPausedAtWaypoint = false;
     private bool isAcclimating = false;
@@ -54,11 +46,8 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
     private void ResetTimers()
     {
-        lastDecisionTime = Time.time;
         lastInteractionTime = Time.time;
         lastBackgroundThinkingTime = Time.time;
-        lastIdleMovementTime = Time.time;
-        lastMajorMovementTime = Time.time;
     }
 
     private void Update()
@@ -68,18 +57,11 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
 
         UpdateBehavior();
         PerformBackgroundThinking();
-        ConsiderMajorMovement();
-        UpdateIdleMovement();
     }
 
     public void UpdateBehavior()
     {
         if (isAcclimating) return;
-
-        if (Time.time - lastDecisionTime > decisionInterval)
-        {
-            StartCoroutine(MakeDecisionCoroutine());
-        }
 
         if (characterController.HasState(CharacterState.Moving))
         {
@@ -131,7 +113,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         GameState currentState = GameManager.Instance.GetCurrentGameState();
         UpdateMentalModelFromGameState(currentState);
         EvaluateObjectives(currentState);
-        ConsiderGroupActions();
     }
 
     private void UpdateMentalModelFromGameState(GameState currentState)
@@ -205,207 +186,43 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         npcData.UpdateEmotionalState(newState);
     }
 
-    private void ConsiderGroupActions()
+    public void MoveToPosition(Vector3 position)
     {
-        if (characterController.HasState(CharacterState.InGroup))
+        if (navMeshAgent != null && navMeshAgent.enabled && !characterController.HasState(CharacterState.PerformingAction))
         {
-            EvaluateGroupObjectives();
+            navMeshAgent.SetDestination(position);
+            characterController.AddState(CharacterState.Moving);
+            Debug.Log($"{characterController.characterName}: Setting destination to {position}. NavMeshAgent.hasPath: {navMeshAgent.hasPath}, NavMeshAgent.pathStatus: {navMeshAgent.pathStatus}");
+            StartCoroutine(CheckWaypointArrival());
         }
         else
         {
-            ConsiderJoiningGroup();
+            Debug.LogWarning($"{characterController.characterName}: Cannot move. NavMeshAgent status: {(navMeshAgent == null ? "null" : navMeshAgent.enabled ? "enabled" : "disabled")}. PerformingAction: {characterController.HasState(CharacterState.PerformingAction)}");
         }
     }
-
-    private void EvaluateGroupObjectives()
-    {
-        string groupId = characterController.GetCurrentGroupId();
-        if (string.IsNullOrEmpty(groupId)) return;
-
-        List<UniversalCharacterController> groupMembers = GroupManager.Instance.GetGroupMembers(groupId);
-        List<string> groupObjectives = GetGroupObjectives(groupMembers);
-
-        if (groupObjectives.Count == 0) return;
-
-        GameState currentState = GameManager.Instance.GetCurrentGameState();
-        string bestGroupObjective = npcData.GetMentalModel().MakeDecision(groupObjectives, currentState);
-
-        MoveGroupToObjective(groupId, bestGroupObjective);
-    }
-
-    private List<string> GetGroupObjectives(List<UniversalCharacterController> groupMembers)
-    {
-        HashSet<string> groupObjectives = new HashSet<string>();
-        foreach (var member in groupMembers)
-        {
-            groupObjectives.UnionWith(GetCurrentObjectives());
-        }
-        return new List<string>(groupObjectives);
-    }
-
-    private void MoveGroupToObjective(string groupId, string objective)
-    {
-        LocationManager targetLocation = FindLocationForObjective(objective);
-        if (targetLocation != null)
-        {
-            GroupManager.Instance.MoveGroup(groupId, targetLocation.transform.position);
-        }
-    }
-
-    private LocationManager FindLocationForObjective(string objective)
-    {
-        return LocationManagerMaster.Instance.GetAllLocations()
-            .Select(locationName => LocationManagerMaster.Instance.GetLocation(locationName))
-            .FirstOrDefault(l => l != null && l.availableActions.Any(a => a.actionName.Contains(objective)));
-    }
-
-    private void ConsiderJoiningGroup()
-    {
-        List<UniversalCharacterController> nearbyCharacters = GetNearbyCharacters();
-        UniversalCharacterController potentialGroupMember = nearbyCharacters.FirstOrDefault(c => c.HasState(CharacterState.InGroup) && !c.IsPlayerControlled);
-
-        if (potentialGroupMember != null && ShouldJoinGroup(potentialGroupMember))
-        {
-            string groupId = potentialGroupMember.GetCurrentGroupId();
-            if (!string.IsNullOrEmpty(groupId))
-            {
-                GroupManager.Instance.AddToGroup(groupId, characterController);
-            }
-        }
-        else if (nearbyCharacters.Count > 0 && ShouldFormGroup(nearbyCharacters))
-        {
-            List<UniversalCharacterController> groupMembers = new List<UniversalCharacterController> { characterController };
-            groupMembers.AddRange(nearbyCharacters.Where(c => !c.IsPlayerControlled).Take(2));
-            GroupManager.Instance.FormGroup(groupMembers);
-        }
-    }
-
-    private bool ShouldJoinGroup(UniversalCharacterController groupMember)
-    {
-        float relationshipScore = npcData.GetRelationship(groupMember.characterName);
-        return relationshipScore > 0.6f && Random.value < 0.5f;
-    }
-
-    private bool ShouldFormGroup(List<UniversalCharacterController> nearbyCharacters)
-    {
-        nearbyCharacters = nearbyCharacters.Where(c => !c.IsPlayerControlled).ToList();
-        return nearbyCharacters.Count >= 2 && Random.value < 0.3f;
-    }
-
-    private void ConsiderMajorMovement()
-    {
-        if (Time.time - lastMajorMovementTime < majorMovementInterval) return;
-
-        lastMajorMovementTime = Time.time;
-        if (Random.value < 0.5f) // 50% chance to consider movement
-        {
-            string targetLocation = LocationManagerMaster.Instance.GetTargetLocation(GameManager.Instance.GetCurrentChallenge().milestones);
-            MoveToLocation(targetLocation);
-        }
-    }
-
-    private IEnumerator MakeDecisionCoroutine()
-    {
-        if (characterController == null || aiManager == null || GameManager.Instance == null) yield break;
-
-        lastDecisionTime = Time.time;
-
-        if (characterController.HasState(CharacterState.Acclimating))
-        {
-            yield break;
-        }
-
-        List<string> options = new List<string>
-        {
-            "Move to new location",
-            "Perform location action",
-            "Interact with nearby character",
-            "Work on current challenge",
-            "Pursue personal goal",
-            "Initiate collaboration",
-            "Idle"
-        };
-
-        GameState currentState = GameManager.Instance.GetCurrentGameState();
-        Task<string> decisionTask = aiManager.MakeDecision(options, currentState);
-        yield return new WaitUntil(() => decisionTask.IsCompleted);
-
-        string decision = decisionTask.Result;
-
-        switch (decision)
-        {
-            case "Move to new location":
-                MoveToNewLocation();
-                break;
-            case "Perform location action":
-                PerformLocationAction();
-                break;
-            case "Interact with nearby character":
-                AttemptInteraction();
-                break;
-            case "Work on current challenge":
-                WorkOnChallenge();
-                break;
-            case "Pursue personal goal":
-                PursuePersonalGoal();
-                break;
-            case "Initiate collaboration":
-                InitiateCollaboration();
-                break;
-            case "Idle":
-                EnterIdleState();
-                break;
-        }
-    }
-
-    private void MoveToNewLocation()
-    {
-        if (LocationManagerMaster.Instance == null || GameManager.Instance == null || characterController == null) return;
-
-        string newLocation = LocationManagerMaster.Instance.GetTargetLocation(GameManager.Instance.GetCurrentChallenge().milestones);
-        MoveToLocation(newLocation);
-
-        lastLocationChangeTime = Time.time;
-        Debug.Log($"{characterController.characterName} moved to {newLocation}");
-    }
-
-   public void MoveToPosition(Vector3 position)
-{
-    if (navMeshAgent != null && navMeshAgent.enabled && !characterController.HasState(CharacterState.PerformingAction))
-    {
-        navMeshAgent.SetDestination(position);
-        characterController.AddState(CharacterState.Moving);
-        Debug.Log($"{characterController.characterName}: Setting destination to {position}. NavMeshAgent.hasPath: {navMeshAgent.hasPath}, NavMeshAgent.pathStatus: {navMeshAgent.pathStatus}");
-        StartCoroutine(CheckWaypointArrival());
-    }
-    else
-    {
-        Debug.LogWarning($"{characterController.characterName}: Cannot move. NavMeshAgent status: {(navMeshAgent == null ? "null" : navMeshAgent.enabled ? "enabled" : "disabled")}. PerformingAction: {characterController.HasState(CharacterState.PerformingAction)}");
-    }
-}
 
     private IEnumerator CheckWaypointArrival()
-{
-    while (characterController.HasState(CharacterState.Moving))
     {
-        Debug.Log($"{characterController.characterName}: Checking waypoint arrival. Remaining distance: {navMeshAgent.remainingDistance}, Path pending: {navMeshAgent.pathPending}");
-        if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
+        while (characterController.HasState(CharacterState.Moving))
         {
-            if (WaypointsManager.Instance.IsNearWaypoint(transform.position) && !isPausedAtWaypoint)
+            Debug.Log($"{characterController.characterName}: Checking waypoint arrival. Remaining distance: {navMeshAgent.remainingDistance}, Path pending: {navMeshAgent.pathPending}");
+            if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
             {
-                yield return StartCoroutine(PauseAtWaypoint());
+                if (WaypointsManager.Instance.IsNearWaypoint(transform.position) && !isPausedAtWaypoint)
+                {
+                    yield return StartCoroutine(PauseAtWaypoint());
+                }
+                else
+                {
+                    characterController.RemoveState(CharacterState.Moving);
+                    characterController.AddState(CharacterState.Idle);
+                    Debug.Log($"{characterController.characterName}: Reached destination. Switching to Idle state.");
+                    break;
+                }
             }
-            else
-            {
-                characterController.RemoveState(CharacterState.Moving);
-                characterController.AddState(CharacterState.Idle);
-                Debug.Log($"{characterController.characterName}: Reached destination. Switching to Idle state.");
-                break;
-            }
+            yield return null;
         }
-        yield return null;
     }
-}
 
     private IEnumerator PauseAtWaypoint()
     {
@@ -432,61 +249,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         }
     }
 
-    private void PerformLocationAction()
-    {
-        if (currentLocationManager == null || characterController == null || aiManager == null) return;
-
-        List<LocationManager.LocationAction> availableActions = currentLocationManager.GetAvailableActions(characterController.aiSettings.characterRole);
-        if (availableActions.Count == 0) return;
-
-        LocationManager.LocationAction selectedAction = ChooseBestAction(availableActions);
-        ExecuteAction(selectedAction);
-    }
-
-    private void ExecuteAction(LocationManager.LocationAction action)
-    {
-        if (characterController == null || currentLocationManager == null) return;
-
-        characterController.StartAction(action);
-        ActionLogManager.Instance?.LogAction(characterController.characterName, $"performing {action.actionName} at {currentLocationManager.locationName}");
-    }
-
-    private LocationManager.LocationAction ChooseBestAction(List<LocationManager.LocationAction> actions)
-    {
-        if (GameManager.Instance == null || aiManager == null) return null;
-
-        GameState currentState = GameManager.Instance.GetCurrentGameState();
-        List<string> personalGoalTags = aiManager.GetPersonalGoalTags();
-        string currentChallenge = currentState.CurrentChallenge.title;
-
-        var scoredActions = actions.Select(action => new
-        {
-            Action = action,
-            Score = ScoreAction(action, personalGoalTags, currentChallenge)
-        }).ToList();
-
-        return scoredActions.OrderByDescending(sa => sa.Score).FirstOrDefault()?.Action;
-    }
-
-    private float ScoreAction(LocationManager.LocationAction action, List<string> personalGoalTags, string currentChallenge)
-    {
-        float score = 0;
-
-        if (personalGoalTags.Any(goal => action.actionName.ToLower().Contains(goal.ToLower())))
-        {
-            score += 2;
-        }
-
-        if (action.actionName.ToLower().Contains(currentChallenge.ToLower()))
-        {
-            score += 3;
-        }
-
-        score += Random.Range(0f, 0.5f);
-
-        return score;
-    }
-
     private void AttemptInteraction()
     {
         List<UniversalCharacterController> nearbyCharacters = GetNearbyCharacters();
@@ -495,46 +257,9 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
             UniversalCharacterController target = ChooseInteractionTarget(nearbyCharacters);
             if (target != null)
             {
-                if (ShouldAttemptCollaboration(target))
-                {
-                    InitiateCollaboration(target);
-                }
-                else
-                {
-                    InitiateInteraction(target);
-                }
+                InitiateInteraction(target);
             }
         }
-    }
-
-    private bool ShouldAttemptCollaboration(UniversalCharacterController target)
-    {
-        return Random.value > 0.5f || target.currentLocation == characterController.currentLocation;
-    }
-
-    private void InitiateCollaboration(UniversalCharacterController target = null)
-    {
-        if (CollabManager.Instance.CanInitiateCollab(characterController))
-        {
-            string actionName = ChooseCollaborationAction(target);
-            if (!string.IsNullOrEmpty(actionName))
-            {
-                characterController.InitiateCollab(actionName, target);
-            }
-        }
-    }
-
-    private string ChooseCollaborationAction(UniversalCharacterController target)
-    {
-        if (currentLocationManager == null) return null;
-
-        List<LocationManager.LocationAction> availableActions = currentLocationManager.GetAvailableActions(characterController.aiSettings.characterRole);
-        List<LocationManager.LocationAction> targetActions = target != null 
-            ? currentLocationManager.GetAvailableActions(target.aiSettings.characterRole)
-            : availableActions;
-
-        var commonActions = availableActions.Intersect(targetActions, new LocationActionComparer());
-        return commonActions.Any() ? commonActions.First().actionName : null;
     }
 
     private List<UniversalCharacterController> GetNearbyCharacters()
@@ -569,70 +294,6 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         }
     }
 
-    private void WorkOnChallenge()
-    {
-        if (GameManager.Instance == null || characterController == null) return;
-
-        string currentChallenge = GameManager.Instance.GetCurrentChallenge().title;
-        LocationManager.LocationAction action = new LocationManager.LocationAction
-        {
-            actionName = $"Working on {currentChallenge}",
-            duration = 30,
-            baseSuccessRate = 0.7f,
-            description = $"Focusing intensely on solving {currentChallenge}"
-        };
-
-        characterController.StartAction(action);
-    }
-
-    private void PursuePersonalGoal()
-    {
-        if (aiManager == null || characterController == null) return;
-
-        List<string> personalGoalTags = aiManager.GetPersonalGoalTags();
-        Dictionary<string, bool> personalGoalCompletion = aiManager.GetPersonalGoalCompletion();
-
-        string incompleteGoal = personalGoalTags.FirstOrDefault(goal => !personalGoalCompletion[goal]);
-
-        if (incompleteGoal != null)
-        {
-            LocationManager.LocationAction action = new LocationManager.LocationAction
-            {
-                actionName = $"Pursuing personal goal: {incompleteGoal}",
-                duration = 30,
-                baseSuccessRate = 0.8f,
-                description = $"Focusing on personal goal: {incompleteGoal}"
-            };
-
-            characterController.StartAction(action);
-        }
-        else
-        {
-            WorkOnChallenge();
-        }
-    }
-
-    private void EnterIdleState()
-    {
-        characterController.AddState(CharacterState.Idle);
-        lastIdleMovementTime = Time.time - idleMovementInterval;
-    }
-
-    private void UpdateIdleMovement()
-    {
-        if (!characterController.HasState(CharacterState.Idle)) return;
-        if (Time.time - lastIdleMovementTime < idleMovementInterval) return;
-
-        Vector3 randomDirection = Random.insideUnitSphere * idleMovementRadius;
-        randomDirection += transform.position;
-        NavMeshHit hit;
-        NavMesh.SamplePosition(randomDirection, out hit, idleMovementRadius, 1);
-        Vector3 finalPosition = hit.position;
-
-        characterController.MoveWhileInState(finalPosition, characterController.walkSpeed * 0.5f);
-        lastIdleMovementTime = Time.time;
-    }
-
     public void SetCurrentLocation(LocationManager location)
     {
         if (characterController == null) return;
@@ -655,7 +316,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (characterController.HasState(CharacterState.Acclimating))
         {
             characterController.RemoveState(CharacterState.Acclimating);
-            EnterIdleState();
+            characterController.AddState(CharacterState.Idle);
         }
     }
 }

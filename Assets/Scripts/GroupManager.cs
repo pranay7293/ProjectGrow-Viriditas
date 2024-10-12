@@ -13,11 +13,13 @@ public class GroupManager : MonoBehaviour
     [SerializeField] private float alignmentStrength = 0.3f;
     [SerializeField] private float separationStrength = 0.7f;
     [SerializeField] private float separationDistance = 1.5f;
+    [SerializeField] private float groupFormationCheckInterval = 5f;
 
     private const float GROUP_DISSOLUTION_CHANCE = 0.1f;
     private const float GROUP_MOVEMENT_INTERVAL = 15f;
 
     private Dictionary<string, Group> activeGroups = new Dictionary<string, Group>();
+    private float lastGroupFormationCheckTime;
 
     private void Awake()
     {
@@ -38,6 +40,38 @@ public class GroupManager : MonoBehaviour
     private void Update()
     {
         UpdateGroups();
+        CheckForNewGroupFormations();
+    }
+
+    private void CheckForNewGroupFormations()
+    {
+        if (Time.time - lastGroupFormationCheckTime < groupFormationCheckInterval) return;
+
+        lastGroupFormationCheckTime = Time.time;
+
+        var characters = FindObjectsOfType<UniversalCharacterController>()
+            .Where(c => !c.IsPlayerControlled && !IsInGroup(c))
+            .ToList();
+
+        for (int i = 0; i < characters.Count; i++)
+        {
+            if (IsInGroup(characters[i])) continue;
+
+            List<UniversalCharacterController> potentialGroup = new List<UniversalCharacterController> { characters[i] };
+
+            for (int j = i + 1; j < characters.Count; j++)
+            {
+                if (Vector3.Distance(characters[i].transform.position, characters[j].transform.position) <= groupFormationDistance)
+                {
+                    potentialGroup.Add(characters[j]);
+                }
+            }
+
+            if (potentialGroup.Count >= 2)
+            {
+                FormGroup(potentialGroup);
+            }
+        }
     }
 
     public void FormGroup(List<UniversalCharacterController> characters)
@@ -117,30 +151,25 @@ public class GroupManager : MonoBehaviour
     }
 
     private void UpdateGroupMovement(Group group)
-{
-    Vector3 cohesion = CalculateCohesion(group);
-    Vector3 alignment = CalculateAlignment(group);
-    Vector3 separation = CalculateSeparation(group);
-
-    Vector3 groupCenter = GetGroupCenter(group.Members);
-    Vector3 newDestination = groupCenter + cohesion + alignment + separation;
-
-    Debug.Log($"Group {group.Id}: New destination calculated: {newDestination}");
-
-    Vector3 nearestWaypoint = WaypointsManager.Instance.GetNearestWaypoint(newDestination);
-
-    Debug.Log($"Group {group.Id}: Nearest waypoint: {nearestWaypoint}");
-
-    foreach (var member in group.Members)
     {
-        if (!member.HasState(CharacterState.PerformingAction))
+        Vector3 cohesion = CalculateCohesion(group);
+        Vector3 alignment = CalculateAlignment(group);
+        Vector3 separation = CalculateSeparation(group);
+
+        Vector3 groupCenter = GetGroupCenter(group.Members);
+        Vector3 newDestination = groupCenter + cohesion + alignment + separation;
+
+        Vector3 nearestWaypoint = WaypointsManager.Instance.GetNearestWaypoint(newDestination);
+
+        foreach (var member in group.Members)
         {
-            Vector3 memberDestination = nearestWaypoint + (member.transform.position - groupCenter).normalized * groupFormationDistance;
-            Debug.Log($"Group {group.Id}: Moving {member.characterName} to {memberDestination}");
-            member.MoveWhileInState(memberDestination, groupMovementSpeed);
+            if (!member.HasState(CharacterState.PerformingAction))
+            {
+                Vector3 memberDestination = nearestWaypoint + (member.transform.position - groupCenter).normalized * groupFormationDistance;
+                member.MoveWhileInState(memberDestination, groupMovementSpeed);
+            }
         }
     }
-}
 
     private Vector3 CalculateCohesion(Group group)
     {

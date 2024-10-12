@@ -86,11 +86,6 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private CharacterState activeStates = CharacterState.None;
 
-    public CharacterState GetActiveStates()
-{
-    return activeStates;
-}
-
     private List<LocationManager.LocationAction> availableActions = new List<LocationManager.LocationAction>();
 
     public GameObject guideTextBoxPrefab;
@@ -106,6 +101,9 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private bool hasSpawnProtection = false;
     private Coroutine spawnProtectionCoroutine;
+
+    private const float MinimumActionDuration = 3f;
+    private float lastActionTime;
 
     private void Awake()
     {
@@ -257,7 +255,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void UpdateCharacterColor()
     {
-        Color baseColor = new Color(224f/255f, 224f/255f, 224f/255f); // #E0E0E0
+        Color baseColor = new Color(224f/255f, 224f/255f, 224f/255f);
         Color whiteColor = Color.white;
         Color logoColor = hasWhiteLabCoat ? Color.black : Color.white;
 
@@ -379,11 +377,10 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             HandleStateMovement();
         }
 
-        // Add this debug log
-    if (HasState(CharacterState.Moving))
-    {
-        Debug.Log($"{characterName}: Current position: {transform.position}, Destination: {stateMovementDestination}, Distance: {Vector3.Distance(transform.position, stateMovementDestination)}");
-    }
+        if (HasState(CharacterState.Moving))
+        {
+            Debug.Log($"{characterName}: Current position: {transform.position}, Destination: {stateMovementDestination}, Distance: {Vector3.Distance(transform.position, stateMovementDestination)}");
+        }
 
         if (isAcclimating)
         {
@@ -423,14 +420,14 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
     private void UpdateMovement()
     {   
-    if (IsPlayerControlled)
-    {
-        HandlePlayerMovement();
-    }
-    else
-    {
-        HandleAIMovement();
-    }
+        if (IsPlayerControlled)
+        {
+            HandlePlayerMovement();
+        }
+        else
+        {
+            HandleAIMovement();
+        }
     }
 
     private void HandlePlayerMovement()
@@ -458,29 +455,29 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     }
 
     private void HandleAIMovement()
-{
-    if (HasState(CharacterState.PerformingAction))
     {
-        return;
-    }
-
-    if (navMeshAgent.enabled && navMeshAgent.hasPath)
-    {
-        currentSpeed = navMeshAgent.velocity.magnitude;
-        moveDirection = navMeshAgent.desiredVelocity.normalized;
-
-        if (moveDirection != Vector3.zero)
+        if (HasState(CharacterState.PerformingAction))
         {
-            targetRotation = Quaternion.LookRotation(moveDirection);
+            return;
         }
-    }
-    else
-    {
-        currentSpeed = 0f;
-    }
 
-    UpdateMovementState();
-}
+        if (navMeshAgent.enabled && navMeshAgent.hasPath)
+        {
+            currentSpeed = navMeshAgent.velocity.magnitude;
+            moveDirection = navMeshAgent.desiredVelocity.normalized;
+
+            if (moveDirection != Vector3.zero)
+            {
+                targetRotation = Quaternion.LookRotation(moveDirection);
+            }
+        }
+        else
+        {
+            currentSpeed = 0f;
+        }
+
+        UpdateMovementState();
+    }
 
     private void UpdateMovementState()
     {
@@ -596,29 +593,35 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         currentObjective = objective;
     }
 
-public void AddState(CharacterState state)
-{
-    if (state == CharacterState.Moving)
+    public void AddState(CharacterState state)
     {
-        activeStates &= ~CharacterState.Idle;
+        CharacterState previousStates = activeStates;
+        if (state == CharacterState.Moving)
+        {
+            activeStates &= ~CharacterState.Idle;
+        }
+        else if (state == CharacterState.Idle)
+        {
+            activeStates &= ~CharacterState.Moving;
+        }
+        activeStates |= state;
+        UpdateProgressBarState();
+        
+        Debug.Log($"{characterName}: Added state {state}. Previous states: {previousStates}, New states: {activeStates}");
     }
-    else if (state == CharacterState.Idle)
-    {
-        activeStates &= ~CharacterState.Moving;
-    }
-    activeStates |= state;
-    UpdateProgressBarState();
-}
 
-public void RemoveState(CharacterState state)
-{
-    activeStates &= ~state;
-    if (state == CharacterState.Moving && !HasState(CharacterState.Idle))
+    public void RemoveState(CharacterState state)
     {
-        AddState(CharacterState.Idle);
+        CharacterState previousStates = activeStates;
+        activeStates &= ~state;
+        if (state == CharacterState.Moving && !HasState(CharacterState.Idle))
+        {
+            AddState(CharacterState.Idle);
+        }
+        UpdateProgressBarState();
+        
+        Debug.Log($"{characterName}: Removed state {state}. Previous states: {previousStates}, New states: {activeStates}");
     }
-    UpdateProgressBarState();
-}
 
     public bool HasState(CharacterState state)
     {
@@ -647,30 +650,54 @@ public void RemoveState(CharacterState state)
     }
 
     public void MoveWhileInState(Vector3 destination, float speed)
-{
-    if (HasState(CharacterState.PerformingAction))
     {
-        return;
+        if (HasState(CharacterState.PerformingAction))
+        {
+            Debug.Log($"{characterName}: Cannot move while performing action.");
+            return;
+        }
+
+        if (Time.time - lastActionTime < MinimumActionDuration)
+        {
+            Debug.Log($"{characterName}: Cannot move yet. Minimum action duration not met.");
+            return;
+        }
+
+        if (IsInGroup())
+        {
+            // Let GroupManager handle movement
+            return;
+        }
+
+        stateMovementDestination = destination;
+        stateMovementSpeed = speed;
+
+        if (navMeshAgent != null && navMeshAgent.enabled)
+        {
+            navMeshAgent.speed = speed;
+            navMeshAgent.SetDestination(destination);
+            Debug.Log($"{characterName}: Moving to {destination} at speed {speed}. NavMeshAgent.hasPath: {navMeshAgent.hasPath}, NavMeshAgent.pathStatus: {navMeshAgent.pathStatus}");
+        }
+        else
+        {
+            Debug.LogWarning($"{characterName}: NavMeshAgent is null or disabled. Cannot move.");
+        }
+
+        AddState(CharacterState.Moving);
+        lastActionTime = Time.time;
     }
-
-    stateMovementDestination = destination;
-    stateMovementSpeed = speed;
-
-    if (navMeshAgent != null && navMeshAgent.enabled)
-    {
-        navMeshAgent.speed = speed;
-        navMeshAgent.SetDestination(destination);
-    }
-
-    AddState(CharacterState.Moving);
-    Debug.Log($"{characterName}: Moving to {destination} at speed {speed}");
-}
 
     public void StartAction(LocationManager.LocationAction action)
     {
         if (HasState(CharacterState.PerformingAction))
         {
             ShowGuide("Already performing an action. Please wait.");
+            return;
+        }
+
+        if (Time.time - lastActionTime < MinimumActionDuration)
+        {
+            Debug.Log($"{characterName}: Cannot start new action yet. Minimum action duration not met.");
             return;
         }
 
@@ -689,6 +716,7 @@ public void RemoveState(CharacterState state)
         GameManager.Instance.UpdateGameState(characterName, action.actionName);
 
         photonView.RPC("RPC_StartAction", RpcTarget.All, action.actionName);
+        lastActionTime = Time.time;
     }
 
     [PunRPC]
@@ -704,7 +732,7 @@ public void RemoveState(CharacterState state)
         }
     }
 
-   private IEnumerator PerformAction()
+    private IEnumerator PerformAction()
     {
         float elapsedTime = 0f;
         while (elapsedTime < currentAction.duration)
@@ -751,6 +779,8 @@ public void RemoveState(CharacterState state)
             {
                 LocationActionUI.Instance.HideActions();
             }
+
+            lastActionTime = Time.time;
         }
     }
 
@@ -1054,6 +1084,7 @@ public void RemoveState(CharacterState state)
             progressBar.EndAcclimation();
         }
     }
+
     private void UpdateAcclimation()
     {
         if (isAcclimating && currentLocation != null)
@@ -1132,33 +1163,33 @@ public void RemoveState(CharacterState state)
     }
 
     public void EndCollab()
-{
-    if (photonView.IsMine && IsCollaborating)
     {
-        IsCollaborating = false;
-        if (currentAction != null)
+        if (photonView.IsMine && IsCollaborating)
         {
-            photonView.RPC("RPC_EndCollab", RpcTarget.All, currentAction.actionName, currentAction.duration);
-        }
-        else
-        {
-            Debug.LogWarning($"EndCollab called for {characterName} but currentAction is null");
-            photonView.RPC("RPC_EndCollab", RpcTarget.All, "Unknown", 0);
+            IsCollaborating = false;
+            if (currentAction != null)
+            {
+                photonView.RPC("RPC_EndCollab", RpcTarget.All, currentAction.actionName, currentAction.duration);
+            }
+            else
+            {
+                Debug.LogWarning($"EndCollab called for {characterName} but currentAction is null");
+                photonView.RPC("RPC_EndCollab", RpcTarget.All, "Unknown", 0);
+            }
         }
     }
-}
 
-[PunRPC]
-private void RPC_EndCollab(string actionName, int actionDuration)
-{
-    if (!string.IsNullOrEmpty(currentCollabID))
+    [PunRPC]
+    private void RPC_EndCollab(string actionName, int actionDuration)
     {
-        CollabManager.Instance.FinalizeCollaboration(currentCollabID);
+        if (!string.IsNullOrEmpty(currentCollabID))
+        {
+            CollabManager.Instance.FinalizeCollaboration(currentCollabID);
+        }
+        RemoveState(CharacterState.Collaborating);
+        AddState(CharacterState.Cooldown);
+        currentCollabID = null;
     }
-    RemoveState(CharacterState.Collaborating);
-    AddState(CharacterState.Cooldown);
-    currentCollabID = null;
-}
 
     public void JoinGroup(string groupId)
     {
@@ -1185,7 +1216,7 @@ private void RPC_EndCollab(string actionName, int actionDuration)
 
     public bool IsInGroup()
     {
-        return currentGroupId != null;
+        return !string.IsNullOrEmpty(currentGroupId);
     }
 
     public string GetCurrentGroupId()
@@ -1193,7 +1224,7 @@ private void RPC_EndCollab(string actionName, int actionDuration)
         return currentGroupId;
     }
 
-   public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
         {
