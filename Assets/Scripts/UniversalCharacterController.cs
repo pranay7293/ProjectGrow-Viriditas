@@ -371,6 +371,8 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         UpdateMovement();
         UpdateAnimator();
         UpdateRotation();
+        UpdateMovementState();
+
 
         if (HasState(CharacterState.Chatting) || HasState(CharacterState.Collaborating) || HasState(CharacterState.InGroup))
         {
