@@ -71,7 +71,7 @@ public class TutorialManager : MonoBehaviour
     {
         // Remove spaces and hyphens
         string formatted = Regex.Replace(challengeTitle, @"[\s-]", "");
-        Debug.Log($"Formatted resource name: {formatted} from title: {challengeTitle}");
+        // Debug.Log($"Formatted resource name: {formatted} from title: {challengeTitle}");
         return formatted;
     }
 
@@ -86,7 +86,7 @@ public class TutorialManager : MonoBehaviour
         }
         else
         {
-            Debug.Log($"Successfully loaded sprite for challenge: {challengeTitle}");
+            // Debug.Log($"Successfully loaded sprite for challenge: {challengeTitle}");
         }
         
         return sprite;
@@ -102,16 +102,16 @@ public class TutorialManager : MonoBehaviour
             challengeIconImage = moonshotStep.GetComponent<Image>();
             if (challengeIconImage != null)
             {
-                Debug.Log("Found challenge icon image in moonshot step");
+                // Debug.Log("Found challenge icon image in moonshot step");
             }
             else
             {
-                Debug.LogError($"No Image component found on {MOONSHOT_STEP_NAME}");
+                // Debug.LogError($"No Image component found on {MOONSHOT_STEP_NAME}");
             }
         }
         else
         {
-            Debug.LogError($"Could not find step container named {MOONSHOT_STEP_NAME}");
+            // Debug.LogError($"Could not find step container named {MOONSHOT_STEP_NAME}");
         }
     }
 
@@ -183,7 +183,7 @@ public class TutorialManager : MonoBehaviour
         }
 
         string characterName = (string)selectedCharacter;
-        Debug.Log($"Local player selected character: {characterName}");
+        // Debug.Log($"Local player selected character: {characterName}");
 
         UniversalCharacterController[] characters = FindObjectsOfType<UniversalCharacterController>();
         var playerChar = characters.FirstOrDefault(c => c.characterName == characterName);
@@ -232,7 +232,7 @@ public class TutorialManager : MonoBehaviour
         {
             challengeIconImage.sprite = challengeSprite;
             challengeIconImage.preserveAspect = true;
-            Debug.Log($"Set challenge icon for: {currentChallenge.title}");
+            // Debug.Log($"Set challenge icon for: {currentChallenge.title}");
         }
     }
 
@@ -281,52 +281,94 @@ public class TutorialManager : MonoBehaviour
     }
 
     private string GetStepText(int stepIndex)
-    {
-        string coloredCharacterName = $"<color=#{ColorUtility.ToHtmlStringRGB(playerCharacter.GetCharacterColor())}>{playerCharacter.characterName}</color>";
-        string coloredMoonshot = $"<color=#{ColorUtility.ToHtmlStringRGB(currentHub.hubColor)}>{currentChallenge.title}</color>";
+{
+    string coloredCharacterName = $"<color=#{ColorUtility.ToHtmlStringRGB(playerCharacter.GetCharacterColor())}>{playerCharacter.characterName}</color>";
+    string coloredRole = $"<color=#{ColorUtility.ToHtmlStringRGB(playerCharacter.GetCharacterColor())}>{playerCharacter.aiSettings.characterRole}</color>";
+    string coloredMoonshot = $"<color=#{ColorUtility.ToHtmlStringRGB(currentHub.hubColor)}>{currentChallenge.title}</color>";
 
-        switch (stepIndex)
-        {
-            case 0:
-                return $"You are {coloredCharacterName}. Click the icon to see your profile.";
-            case 1:
-                return $"Your moonshot is {coloredMoonshot}. Click to see milestones.";
-            case 2:
-                return "Press E to chat with agents";
-            case 3:
-                return "Stay in a location for 5 seconds to see available actions.";
-            case 4:
-                return "Every 5 minutes, 'What If?' scenarios create high-stakes decisions.\nPress F4 for shortcuts.";
-            default:
-                return "";
-        }
+    switch (stepIndex)
+    {
+        case 0:
+            return $"You are {coloredCharacterName}. Your role in this simulation is a {coloredRole}.";
+        case 1:
+            return $"Your moonshot is {coloredMoonshot}.\nPress F2 in-game to view milestones.";
+        case 2:
+            return "Press E to chat with other characters.\nTry it now!";
+        case 3:
+            return "Stand still in a location for 5 seconds to reveal available actions.\nActions are how you make progress.";
+        case 4:
+            return "Press F5 to open EurekaLog and see what happens when AI agents collaborate.";
+        default:
+            return "";
     }
+}
 
     private void NextStep() => ShowStep(currentStepIndex + 1);
     private void PreviousStep() => ShowStep(currentStepIndex - 1);
 
     private void SkipTutorial()
+{
+    var sequence = DOTween.Sequence();
+    sequence.Join(darkOverlay.DOFade(0, fadeSpeed));
+    sequence.Join(stepText.DOFade(0, fadeSpeed));
+    
+    if (currentStepIndex >= 0 && currentStepIndex < stepContainers.Length)
     {
-        var sequence = DOTween.Sequence();
-        sequence.Join(darkOverlay.DOFade(0, fadeSpeed));
-        sequence.Join(stepText.DOFade(0, fadeSpeed));
+        var images = stepContainers[currentStepIndex].GetComponentsInChildren<Image>();
+        var texts = stepContainers[currentStepIndex].GetComponentsInChildren<TextMeshProUGUI>();
         
-        if (currentStepIndex >= 0 && currentStepIndex < stepContainers.Length)
+        foreach (var image in images)
         {
-            var images = stepContainers[currentStepIndex].GetComponentsInChildren<Image>();
-            var texts = stepContainers[currentStepIndex].GetComponentsInChildren<TextMeshProUGUI>();
-            
-            foreach (var image in images)
-            {
-                sequence.Join(image.DOFade(0, fadeSpeed));
-            }
-            
-            foreach (var text in texts)
-            {
-                sequence.Join(text.DOFade(0, fadeSpeed));
-            }
+            sequence.Join(image.DOFade(0, fadeSpeed));
         }
         
-        sequence.OnComplete(() => tutorialPanel.SetActive(false));
+        foreach (var text in texts)
+        {
+            sequence.Join(text.DOFade(0, fadeSpeed));
+        }
     }
+    
+    sequence.OnComplete(() => {
+        tutorialPanel.SetActive(false);
+        if (InputManager.Instance != null)
+        {
+            InputManager.Instance.SetUIActive(false);
+        }
+    });
+}
+
+    private void Update()
+{
+    // Skip with X or Esc
+    if (Input.GetKeyDown(KeyCode.X) || Input.GetKeyDown(KeyCode.Escape))
+    {
+        SkipTutorial();
+    }
+
+    // Handle E key for chat demo
+    if (currentStepIndex == 2 && Input.GetKeyDown(KeyCode.E))
+    {
+        // Toggle chat icon
+        isChatVisible = !isChatVisible;
+        chatIcon.SetActive(isChatVisible);
+    }
+}
+
+private void OnEnable()
+{
+    // Register with InputManager
+    if (InputManager.Instance != null)
+    {
+        InputManager.Instance.SetUIActive(true);
+    }
+}
+
+private void OnDisable()
+{
+    // Unregister with InputManager
+    if (InputManager.Instance != null)
+    {
+        InputManager.Instance.SetUIActive(false);
+    }
+}
 }

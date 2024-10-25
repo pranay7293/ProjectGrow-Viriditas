@@ -50,7 +50,7 @@ public class ChallengeSplashManager : MonoBehaviour
 
     public void DisplayChallengeSplash(string challengeTitle, Color hubColor)
     {
-        Debug.Log($"Displaying splash for: {challengeTitle} with color: {hubColor}");
+        // Debug.Log($"Displaying splash for: {challengeTitle} with color: {hubColor}");
         
         // Ensure components are ready
         if (backgroundImage == null || titleText == null)
@@ -67,7 +67,7 @@ public class ChallengeSplashManager : MonoBehaviour
         
         // Set and verify title text
         titleText.text = formattedTitle;
-        Debug.Log($"Set title text to: {titleText.text}");
+        // Debug.Log($"Set title text to: {titleText.text}");
         
         // Configure text properties
         titleText.alignment = TextAlignmentOptions.Center;

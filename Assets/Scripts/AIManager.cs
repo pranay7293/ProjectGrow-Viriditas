@@ -243,7 +243,7 @@ public class AIManager : MonoBehaviourPunCallbacks
                 // Implement NPC-NPC interaction logic here
                 yield return new WaitForSeconds(3f); // Simulated interaction time
             }
-            Debug.Log($"{characterController.characterName}: Finished interacting with nearby character");
+            // Debug.Log($"{characterController.characterName}: Finished interacting with nearby character");
         }
         isExecutingAction = false;
     }
@@ -476,7 +476,7 @@ public class AIManager : MonoBehaviourPunCallbacks
             if (npcData != null)
             {
                 string reflection = npcData.GetMentalModel().Reflect();
-                Debug.Log($"{characterController.characterName} reflects: {reflection}");
+                // Debug.Log($"{characterController.characterName} reflects: {reflection}");
             }
         }
     }
