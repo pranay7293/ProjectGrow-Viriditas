@@ -32,6 +32,10 @@ public class GameManager : MonoBehaviourPunCallbacks
     [Header("Audio")]
     [SerializeField] private MusicManager musicManager;
 
+    [Header("Tutorial System")]
+    [SerializeField] private ChallengeSplashManager splashManager;
+    [SerializeField] private TutorialManager tutorialManager;
+
 
     private float remainingTime;
     private float gameStartTime;
@@ -72,15 +76,78 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private void Start()
+  private void Start()
 {
-    if (PhotonNetwork.IsMasterClient)
+    if (!PhotonNetwork.IsMasterClient)
     {
-        InitializeGame();
-        ActTitleManager.Instance.DisplayActTitle("ACT I");
+        return;
     }
-    milestonesDisplay.SetActive(false);
+
+    if (milestonesDisplay != null)
+    {
+        milestonesDisplay.SetActive(false);
+    }
+
+    // Verify essential components
+    if (splashManager == null)
+    {
+        Debug.LogWarning("ChallengeSplashManager reference missing in GameManager");
+    }
+    if (tutorialManager == null)
+    {
+        Debug.LogWarning("TutorialManager reference missing in GameManager");
+    }
+
+    StartCoroutine(GameStartSequence());
 }
+
+private System.Collections.IEnumerator GameStartSequence()
+{
+    // Initialize challenge and hub first
+    currentChallenge = GetSelectedChallenge();
+    currentHub = GetSelectedHub();
+    
+    if (currentChallenge == null || currentHub == null)
+    {
+        Debug.LogError("Failed to initialize challenge or hub. Cannot start game sequence.");
+        yield break;
+    }
+
+    // Ensure challenge has its icon
+    if (currentChallenge.iconSprite == null)
+    {
+        Debug.LogError($"Challenge {currentChallenge.title} is missing its icon sprite!");
+    }
+
+    // Show splash with proper challenge title and hub color
+    if (ChallengeSplashManager.Instance != null)
+    {
+        ChallengeSplashManager.Instance.onSplashComplete += OnSplashComplete;
+        ChallengeSplashManager.Instance.DisplayChallengeSplash(currentChallenge.title, currentHub.hubColor);
+    }
+    else
+    {
+        Debug.LogWarning("ChallengeSplashManager not found. Skipping splash screen.");
+    }
+    
+    yield return new WaitForSeconds(4f);
+    
+    InitializeGame();
+    
+    if (TutorialManager.Instance != null)
+    {
+        TutorialManager.Instance.StartTutorial(currentChallenge, currentHub);
+    }
+    else
+    {
+        Debug.LogWarning("TutorialManager not found. Skipping tutorial.");
+    }
+}
+
+    private void OnSplashComplete()
+    {
+        ChallengeSplashManager.Instance.onSplashComplete -= OnSplashComplete;
+    }
 
     private bool hasPlayedFirstMusicCue = false;
     private bool hasPlayedSecondMusicCue = false;
@@ -230,20 +297,44 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     private HubData GetSelectedHub()
+{
+    int selectedHubIndex = PlayerPrefs.GetInt("SelectedHubIndex", 0);
+    HubData[] allHubs = Resources.LoadAll<HubData>("Hubs");
+    
+    // Define the correct order of hub names
+    string[] correctOrder = new string[] 
     {
-        int selectedHubIndex = PlayerPrefs.GetInt("SelectedHubIndex", 0);
-        HubData[] allHubs = Resources.LoadAll<HubData>("Hubs");
-        
-        if (selectedHubIndex >= 0 && selectedHubIndex < allHubs.Length)
+        "EcoHubData",
+        "SpaceHubData",
+        "HealthHubData",
+        "FashionHubData",
+        "FoodHubData",
+        "DefenseHubData"
+    };
+
+    // Reorder the hubs array
+    HubData[] orderedHubs = new HubData[correctOrder.Length];
+    for (int i = 0; i < correctOrder.Length; i++)
+    {
+        orderedHubs[i] = allHubs.FirstOrDefault(h => h.name == correctOrder[i]);
+        if (orderedHubs[i] == null)
         {
-            return allHubs[selectedHubIndex];
-        }
-        else
-        {
-            Debug.LogError("Selected hub index out of range. Using default hub.");
-            return allHubs[0];
+            Debug.LogError($"Could not find hub data for {correctOrder[i]}");
         }
     }
+
+    if (selectedHubIndex >= 0 && selectedHubIndex < orderedHubs.Length)
+    {
+        HubData selectedHub = orderedHubs[selectedHubIndex];
+        // Debug.Log($"Selected Hub: {selectedHub.hubName}, Color: {selectedHub.hubColor}, Index: {selectedHubIndex}");
+        return selectedHub;
+    }
+    else
+    {
+        // Debug.LogError($"Selected hub index {selectedHubIndex} out of range. Using default hub.");
+        return orderedHubs[0];
+    }
+}
     
     private ChallengeData GetSelectedChallenge()
     {
@@ -255,7 +346,7 @@ public class GameManager : MonoBehaviourPunCallbacks
             challengeTitle = (string)title;
         }
         
-        Debug.Log($"Attempting to get challenge: {challengeTitle}");
+        // Debug.Log($"Attempting to get challenge: {challengeTitle}");
         
         ChallengeData[] allChallenges = Resources.LoadAll<ChallengeData>("Challenges");
         
@@ -384,7 +475,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             if (PhotonNetwork.IsMasterClient)
             {
-                Debug.Log($"Triggering 5-minute scenario at {gameTime}");
+                // Debug.Log($"Triggering 5-minute scenario at {gameTime}");
                 if (musicManager != null)
                 {
                     musicManager.StopMusic();
@@ -397,7 +488,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             if (PhotonNetwork.IsMasterClient)
             {
-                Debug.Log($"Triggering 10-minute scenario at {gameTime}");
+                // Debug.Log($"Triggering 10-minute scenario at {gameTime}");
                 if (musicManager != null)
                 {
                     musicManager.StopMusic();

@@ -207,19 +207,16 @@ public class EmergentScenarioUI : MonoBehaviourPunCallbacks
         StartCoroutine(ImplementWinningScenarioSequence(winningScenarioText));
     }
 
-    private IEnumerator ImplementWinningScenarioSequence(string winningScenarioText)
-    {
-        yield return StartCoroutine(HideScenarioPanel());
-        GameManager.Instance.ResetPlayerPositions();
-        GameManager.Instance.ImplementEmergentScenario(winningScenarioText);
-        emergentScenarioNotification.DisplayNotification(winningScenarioText);
-        yield return new WaitForSeconds(emergentScenarioNotification.GetNotificationDuration());
-        string actTitle = GameManager.Instance.GetCurrentActTitle();
-        ActTitleManager.Instance.DisplayActTitle(actTitle);
-        yield return new WaitForSeconds(3.5f);
-        GameManager.Instance.EndEmergentScenario();
-        InputManager.Instance.SetUIActive(false);
-    }
+private IEnumerator ImplementWinningScenarioSequence(string winningScenarioText)
+{
+    yield return StartCoroutine(HideScenarioPanel());
+    GameManager.Instance.ResetPlayerPositions();
+    GameManager.Instance.ImplementEmergentScenario(winningScenarioText);
+    emergentScenarioNotification.DisplayNotification(winningScenarioText);
+    yield return new WaitForSeconds(emergentScenarioNotification.GetNotificationDuration());
+    GameManager.Instance.EndEmergentScenario();
+    InputManager.Instance.SetUIActive(false);
+}
 
     private IEnumerator HideScenarioPanel()
     {

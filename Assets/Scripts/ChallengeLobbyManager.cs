@@ -32,7 +32,7 @@ public class ChallengeLobbyManager : MonoBehaviourPunCallbacks
 
     public override void OnConnectedToMaster()
     {
-        Debug.Log("Connected to Photon server.");
+        // Debug.Log("Connected to Photon server.");
         if (!PhotonNetwork.InRoom)
         {
             RoomOptions roomOptions = new RoomOptions { MaxPlayers = MAX_PLAYERS };
@@ -46,7 +46,7 @@ public class ChallengeLobbyManager : MonoBehaviourPunCallbacks
 
     public override void OnJoinedRoom()
     {
-        Debug.Log("Joined room: " + PhotonNetwork.CurrentRoom.Name);
+        // Debug.Log("Joined room: " + PhotonNetwork.CurrentRoom.Name);
         SetHubButtonsInteractable(true);
         playerProfileManager.UpdatePlayerList();
     }

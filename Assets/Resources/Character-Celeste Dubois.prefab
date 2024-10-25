@@ -440,8 +440,9 @@ MonoBehaviour:
   reflectionInterval: 120
   dialogueInitiationCooldown: 300
   collabConsiderationInterval: 30
-  movementConsiderationInterval: 10
+  decisionMakingInterval: 5
   explorationProbability: 0.2
+  minActionDuration: 5
   interactionRadius: 5
 --- !u!114 &-8581686133794132729
 MonoBehaviour:
@@ -455,16 +456,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e726f43f7e3a49e4928040da9336870, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  decisionInterval: 5
   interactionCooldown: 10
   interactionDistance: 5
   interactionPauseTime: 3
   waypointPauseTime: 2
   locationChangeCooldown: 60
   backgroundThinkingInterval: 5
-  idleMovementRadius: 2
-  idleMovementInterval: 15
-  majorMovementInterval: 30
 --- !u!114 &3216075141410217654
 MonoBehaviour:
   m_ObjectHideFlags: 0

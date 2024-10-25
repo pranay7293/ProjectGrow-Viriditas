@@ -192,12 +192,12 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         {
             navMeshAgent.SetDestination(position);
             characterController.AddState(CharacterState.Moving);
-            Debug.Log($"{characterController.characterName}: Setting destination to {position}. NavMeshAgent.hasPath: {navMeshAgent.hasPath}, NavMeshAgent.pathStatus: {navMeshAgent.pathStatus}");
+            // Debug.Log($"{characterController.characterName}: Setting destination to {position}. NavMeshAgent.hasPath: {navMeshAgent.hasPath}, NavMeshAgent.pathStatus: {navMeshAgent.pathStatus}");
             StartCoroutine(CheckWaypointArrival());
         }
         else
         {
-            Debug.LogWarning($"{characterController.characterName}: Cannot move. NavMeshAgent status: {(navMeshAgent == null ? "null" : navMeshAgent.enabled ? "enabled" : "disabled")}. PerformingAction: {characterController.HasState(CharacterState.PerformingAction)}");
+            // Debug.LogWarning($"{characterController.characterName}: Cannot move. NavMeshAgent status: {(navMeshAgent == null ? "null" : navMeshAgent.enabled ? "enabled" : "disabled")}. PerformingAction: {characterController.HasState(CharacterState.PerformingAction)}");
         }
     }
 
@@ -205,7 +205,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
     {
         while (characterController.HasState(CharacterState.Moving))
         {
-            Debug.Log($"{characterController.characterName}: Checking waypoint arrival. Remaining distance: {navMeshAgent.remainingDistance}, Path pending: {navMeshAgent.pathPending}");
+            // Debug.Log($"{characterController.characterName}: Checking waypoint arrival. Remaining distance: {navMeshAgent.remainingDistance}, Path pending: {navMeshAgent.pathPending}");
             if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.1f)
             {
                 if (WaypointsManager.Instance.IsNearWaypoint(transform.position) && !isPausedAtWaypoint)
@@ -216,7 +216,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
                 {
                     characterController.RemoveState(CharacterState.Moving);
                     characterController.AddState(CharacterState.Idle);
-                    Debug.Log($"{characterController.characterName}: Reached destination. Switching to Idle state.");
+                    // Debug.Log($"{characterController.characterName}: Reached destination. Switching to Idle state.");
                     break;
                 }
             }
@@ -245,7 +245,7 @@ public class NPC_Behavior : MonoBehaviourPunCallbacks
         if (destination != Vector3.zero)
         {
             MoveToPosition(destination);
-            Debug.Log($"{characterController.characterName} is moving to {locationName}");
+            // Debug.Log($"{characterController.characterName} is moving to {locationName}");
         }
     }
 

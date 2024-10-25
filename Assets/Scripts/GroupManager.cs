@@ -134,7 +134,7 @@ public class GroupManager : MonoBehaviour
         List<string> groupsToDisband = new List<string>();
         foreach (var group in activeGroups.Values)
         {
-            Debug.Log($"Group {group.Id}: Updating movement for {group.Members.Count} members");
+            // Debug.Log($"Group {group.Id}: Updating movement for {group.Members.Count} members");
             UpdateGroupMovement(group);
             group.Duration += Time.deltaTime;
 

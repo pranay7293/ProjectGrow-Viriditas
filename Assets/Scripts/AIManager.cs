@@ -89,7 +89,7 @@ public class AIManager : MonoBehaviourPunCallbacks
         if (!photonView.IsMine || !isInitialized || characterController == null) return;
 
         string chosenAction = ChooseAction();
-        Debug.Log($"{characterController.characterName}: Chose action: {chosenAction}");
+        // Debug.Log($"{characterController.characterName}: Chose action: {chosenAction}");
         ExecuteAction(chosenAction);
     }
 
@@ -110,7 +110,7 @@ public class AIManager : MonoBehaviourPunCallbacks
         }
 
         string chosenAction = WeightedRandomSelection(actionWeights);
-        Debug.Log($"{characterController.characterName}: Action weights: {string.Join(", ", actionWeights.Select(kv => $"{kv.Key}:{kv.Value}"))}");
+        // Debug.Log($"{characterController.characterName}: Action weights: {string.Join(", ", actionWeights.Select(kv => $"{kv.Key}:{kv.Value}"))}");
         return chosenAction;
     }
 
@@ -190,7 +190,7 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     private IEnumerator MoveToNewLocationCoroutine()
     {
-        Debug.Log($"{characterController.characterName}: Starting MoveToNewLocation");
+        // Debug.Log($"{characterController.characterName}: Starting MoveToNewLocation");
         string bestLocation = EvaluateBestLocation();
         if (characterController.currentLocation == null || bestLocation != characterController.currentLocation.locationName)
         {
@@ -199,7 +199,7 @@ public class AIManager : MonoBehaviourPunCallbacks
                 Vector3 waypointNearLocation = WaypointsManager.Instance.GetWaypointNearLocation(bestLocation);
                 npcBehavior.MoveToPosition(waypointNearLocation);
                 yield return new WaitUntil(() => !characterController.HasState(CharacterState.Moving));
-                Debug.Log($"{characterController.characterName}: Finished moving to new location");
+                // Debug.Log($"{characterController.characterName}: Finished moving to new location");
             }
         }
         isExecutingAction = false;
@@ -207,7 +207,7 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     private IEnumerator PerformLocationActionCoroutine()
     {
-        Debug.Log($"{characterController.characterName}: Starting PerformLocationAction");
+        // Debug.Log($"{characterController.characterName}: Starting PerformLocationAction");
         if (characterController.currentLocation != null)
         {
             List<LocationManager.LocationAction> availableActions = characterController.currentLocation.GetAvailableActions(characterController.aiSettings.characterRole);
@@ -216,7 +216,7 @@ public class AIManager : MonoBehaviourPunCallbacks
                 LocationManager.LocationAction selectedAction = ChooseBestAction(availableActions);
                 characterController.StartAction(selectedAction);
                 yield return new WaitUntil(() => !characterController.HasState(CharacterState.PerformingAction));
-                Debug.Log($"{characterController.characterName}: Finished performing location action");
+                // Debug.Log($"{characterController.characterName}: Finished performing location action");
             }
         }
         isExecutingAction = false;
@@ -224,7 +224,7 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     private IEnumerator InteractWithNearbyCharacterCoroutine()
     {
-        Debug.Log($"{characterController.characterName}: Starting InteractWithNearbyCharacter");
+        // Debug.Log($"{characterController.characterName}: Starting InteractWithNearbyCharacter");
         Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, interactionRadius);
         List<UniversalCharacterController> nearbyCharacters = nearbyColliders
             .Select(c => c.GetComponent<UniversalCharacterController>())
@@ -250,11 +250,11 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     private IEnumerator IdleCoroutine()
     {
-        Debug.Log($"{characterController.characterName}: Starting Idle");
+        // Debug.Log($"{characterController.characterName}: Starting Idle");
         characterController.AddState(CharacterState.Idle);
         yield return new WaitForSeconds(Random.Range(3f, 7f));
         characterController.RemoveState(CharacterState.Idle);
-        Debug.Log($"{characterController.characterName}: Finished Idle");
+        // Debug.Log($"{characterController.characterName}: Finished Idle");
         isExecutingAction = false;
     }
 

@@ -381,7 +381,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
         if (HasState(CharacterState.Moving))
         {
-            Debug.Log($"{characterName}: Current position: {transform.position}, Destination: {stateMovementDestination}, Distance: {Vector3.Distance(transform.position, stateMovementDestination)}");
+            // Debug.Log($"{characterName}: Current position: {transform.position}, Destination: {stateMovementDestination}, Distance: {Vector3.Distance(transform.position, stateMovementDestination)}");
         }
 
         if (isAcclimating)
@@ -609,7 +609,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         activeStates |= state;
         UpdateProgressBarState();
         
-        Debug.Log($"{characterName}: Added state {state}. Previous states: {previousStates}, New states: {activeStates}");
+        // Debug.Log($"{characterName}: Added state {state}. Previous states: {previousStates}, New states: {activeStates}");
     }
 
     public void RemoveState(CharacterState state)
@@ -622,7 +622,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
         UpdateProgressBarState();
         
-        Debug.Log($"{characterName}: Removed state {state}. Previous states: {previousStates}, New states: {activeStates}");
+        // Debug.Log($"{characterName}: Removed state {state}. Previous states: {previousStates}, New states: {activeStates}");
     }
 
     public bool HasState(CharacterState state)
@@ -678,7 +678,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         {
             navMeshAgent.speed = speed;
             navMeshAgent.SetDestination(destination);
-            Debug.Log($"{characterName}: Moving to {destination} at speed {speed}. NavMeshAgent.hasPath: {navMeshAgent.hasPath}, NavMeshAgent.pathStatus: {navMeshAgent.pathStatus}");
+            // Debug.Log($"{characterName}: Moving to {destination} at speed {speed}. NavMeshAgent.hasPath: {navMeshAgent.hasPath}, NavMeshAgent.pathStatus: {navMeshAgent.pathStatus}");
         }
         else
         {
@@ -775,7 +775,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             }
             currentAction = null;
             RemoveState(CharacterState.PerformingAction);
-            Debug.Log($"{characterName} completed action: {currentAction?.actionName}");
+            // Debug.Log($"{characterName} completed action: {currentAction?.actionName}");
 
             if (LocationActionUI.Instance != null)
             {
