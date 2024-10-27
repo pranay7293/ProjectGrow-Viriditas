@@ -1,3 +1,23 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0fe535e2f0f5af833cb57cff7704f332baa23fec426e6122f9bc296ff0800c3b
-size 805
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04ac5bf1fa4614cc18d32c42cb585ed0, type: 3}
+  m_Name: DefenseHubData
+  m_EditorClassIdentifier: 
+  hubName: Defense Hub
+  description: Biosecurity Hub
+  challenges:
+  - {fileID: 11400000, guid: bd118da965dbf4073bde0c3863a33c8d, type: 2}
+  - {fileID: 11400000, guid: a30cc01efc5fc44019e9ddfd417c7771, type: 2}
+  - {fileID: 11400000, guid: c564f59db20f84ab48d47643f64973b4, type: 2}
+  hubColor: {r: 0.85490197, g: 0.46666667, b: 0.3372549, a: 1}
+  availableChallengeIndex: 0
+  useInvertedColors: 0

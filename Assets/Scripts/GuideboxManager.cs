@@ -5,11 +5,12 @@ public class GuideBoxManager : MonoBehaviour
     public static GuideBoxManager Instance { get; private set; }
 
     [SerializeField] private GameObject guideDisplay;
+    [SerializeField] private GameObject guideDisplayPrompt;
 
     public bool IsGuideDisplayVisible()
-{
-    return guideDisplay != null && guideDisplay.activeSelf;
-}
+    {
+        return guideDisplay != null && guideDisplay.activeSelf;
+    }
 
     private void Awake()
     {
@@ -26,19 +27,22 @@ public class GuideBoxManager : MonoBehaviour
 
     private void Start()
     {
-        if (guideDisplay != null)
+        if (guideDisplay != null && guideDisplayPrompt != null)
         {
-            guideDisplay.SetActive(true); // Start with the guide visible
+            guideDisplay.SetActive(false);     
+            guideDisplayPrompt.SetActive(true); 
         }
         else
         {
-            Debug.LogError("Guide Display is not assigned in the GuideBoxManager!");
+            Debug.LogError("Guide Display or Prompt is not assigned in the GuideBoxManager!");
         }
     }
 
-     public void ToggleGuideDisplay()
+    public void ToggleGuideDisplay()
     {
-        guideDisplay.SetActive(!guideDisplay.activeSelf);
-        InputManager.Instance.SetUIActive(guideDisplay.activeSelf);  // Add this line
+        bool newGuideState = !guideDisplay.activeSelf;
+        guideDisplay.SetActive(newGuideState);
+        guideDisplayPrompt.SetActive(!newGuideState);
+        InputManager.Instance.SetUIActive(newGuideState);
     }
 }

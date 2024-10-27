@@ -24,25 +24,25 @@ public class ChallengeCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     }
 
     public void SetUp(ChallengeData data, ChallengesManager manager, int index, Color hubColor, bool available, Sprite icon)
-    {
-        challengeTitleText.text = FormatTitle(data.title);
-        challengesManager = manager;
-        challengeIndex = index;
-        isAvailable = available;
+{
+    challengeTitleText.text = FormatTitle(data.title);
+    challengesManager = manager;
+    challengeIndex = index;
+    isAvailable = available;
 
-        cardButton.onClick.AddListener(ExpandChallenge);
-        cardButton.interactable = isAvailable;
+    cardButton.onClick.AddListener(ExpandChallenge);
+    cardButton.interactable = isAvailable;
 
-        // Apply hub color to the background
-        originalColor = hubColor;
-        backgroundImage.color = originalColor;
+    // Apply hub color to the background
+    originalColor = hubColor;
+    backgroundImage.color = originalColor;
 
-        // Set the icon
-        iconImage.sprite = icon;
+    // Set the icon
+    iconImage.sprite = icon;
 
-        // Adjust text color for better contrast
-        challengeTitleText.color = GetContrastingTextColor(hubColor);
-    }
+    // Always use white text
+    challengeTitleText.color = Color.white;
+}
 
     public void OnPointerEnter(PointerEventData eventData)
     {
@@ -72,13 +72,7 @@ public class ChallengeCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     {
         return challengeTitleText.text.Replace("\n", " ");
     }
-
-    private Color GetContrastingTextColor(Color backgroundColor)
-    {
-        float brightness = (backgroundColor.r * 299 + backgroundColor.g * 587 + backgroundColor.b * 114) / 1000;
-        return brightness > 0.5f ? Color.black : Color.white;
-    }
-
+    
     private Color DarkenColor(Color color, float amount)
     {
         return new Color(

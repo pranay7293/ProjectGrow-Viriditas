@@ -4153,7 +4153,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.09411765, g: 0.09411765, b: 0.09411765, a: 1}
+  m_Color: {r: 0.85490197, g: 0.46666667, b: 0.3372549, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -4369,7 +4369,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Biosecurity Blitz
+  m_text: Biosecurity Hub
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f7e771ee2cc324d71a4787b67bcdef84, type: 2}
   m_sharedMaterial: {fileID: 8924705209787441560, guid: f7e771ee2cc324d71a4787b67bcdef84, type: 2}

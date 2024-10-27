@@ -159,10 +159,10 @@ public class InputManager : MonoBehaviourPunCallbacks
     {
         ToggleEurekaLog();
     }
-    if (GuideBoxManager.Instance.IsGuideDisplayVisible())
-    {
-        ToggleGuideDisplay();
-    }
+    // if (GuideBoxManager.Instance.IsGuideDisplayVisible())
+    // {
+    //     ToggleGuideDisplay();
+    // }
     SetUIActive(false);
 }
 

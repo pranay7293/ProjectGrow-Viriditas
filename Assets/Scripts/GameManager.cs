@@ -429,8 +429,8 @@ private System.Collections.IEnumerator GameStartSequence()
         }
     }
 
-    private bool hasTriggered5MinScenario = false;
-    private bool hasTriggered10MinScenario = false;
+    // private bool hasTriggered5MinScenario = false;
+    // private bool hasTriggered10MinScenario = false;
 
 //     public string GetCurrentActTitle()
 // {
@@ -468,36 +468,32 @@ private System.Collections.IEnumerator GameStartSequence()
     }
 
    private void CheckForEmergentScenario()
-    {
-        float gameTime = Time.time - gameStartTime;
+{
+    float gameTime = Time.time - gameStartTime;
 
-        if (!hasTriggered5MinScenario && gameTime >= 300f && gameTime < 301f)
+    if (gameTime >= 300f && gameTime < 301f)
+    {
+        if (PhotonNetwork.IsMasterClient)
         {
-            if (PhotonNetwork.IsMasterClient)
+            if (musicManager != null)
             {
-                // Debug.Log($"Triggering 5-minute scenario at {gameTime}");
-                if (musicManager != null)
-                {
-                    musicManager.StopMusic();
-                }
-                TriggerEmergentScenario();
-                hasTriggered5MinScenario = true;
+                musicManager.StopMusic();
             }
-        }
-        else if (!hasTriggered10MinScenario && gameTime >= 600f && gameTime < 601f)
-        {
-            if (PhotonNetwork.IsMasterClient)
-            {
-                // Debug.Log($"Triggering 10-minute scenario at {gameTime}");
-                if (musicManager != null)
-                {
-                    musicManager.StopMusic();
-                }
-                TriggerEmergentScenario();
-                hasTriggered10MinScenario = true;
-            }
+            TriggerEmergentScenario();
         }
     }
+    else if (gameTime >= 600f && gameTime < 601f)
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            if (musicManager != null)
+            {
+                musicManager.StopMusic();
+            }
+            TriggerEmergentScenario();
+        }
+    }
+}
 
     private async void TriggerEmergentScenario()
     {
