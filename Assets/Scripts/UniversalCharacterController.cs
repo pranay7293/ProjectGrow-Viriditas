@@ -661,7 +661,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
 
         if (Time.time - lastActionTime < MinimumActionDuration)
         {
-            Debug.Log($"{characterName}: Cannot move yet. Minimum action duration not met.");
+            // Debug.Log($"{characterName}: Cannot move yet. Minimum action duration not met.");
             return;
         }
 

@@ -56,7 +56,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         {"Celeste Dubois", "Gallery"},
         {"Dr. Cobalt Johnson", "Research Lab"},
         {"Dr. Eden Kapoor", "Medical Bay"},
-        {"Dr. Flora Tremblay", "Think Tank"},
+        {"Dr. Flora Tremblay", "Biosecurity Hub"},
         {"Indigo", "Maker Space"},
         {"Lilith Fernandez", "Media Center"},
         {"River Osei", "Economics Center"},
@@ -432,18 +432,18 @@ private System.Collections.IEnumerator GameStartSequence()
     private bool hasTriggered5MinScenario = false;
     private bool hasTriggered10MinScenario = false;
 
-    public string GetCurrentActTitle()
-{
-    if (hasTriggered5MinScenario && !hasTriggered10MinScenario)
-    {
-        return "ACT II";
-    }
-    else if (hasTriggered10MinScenario)
-    {
-        return "ACT III";
-    }
-    return "";
-}
+//     public string GetCurrentActTitle()
+// {
+//     if (hasTriggered5MinScenario && !hasTriggered10MinScenario)
+//     {
+//         return "ACT II";
+//     }
+//     else if (hasTriggered10MinScenario)
+//     {
+//         return "ACT III";
+//     }
+//     return "";
+// }
 
     private void CheckForMusicCues()
     {

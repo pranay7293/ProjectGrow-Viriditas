@@ -10,13 +10,13 @@ public static class TagSystem
         public const string Treat = "Treat";
         public const string Research = "Research";
         public const string Consult = "Consult";
-        public const string Debate = "Debate";
+        // public const string Debate = "Debate";
         public const string Strategize = "Strategize";
-        public const string Philosophize = "Philosophize";
+        // public const string Philosophize = "Philosophize";
         public const string Broadcast = "Broadcast";
         public const string Interview = "Interview";
         public const string Produce = "Produce";
-        public const string Ideate = "Ideate";
+        // public const string Ideate = "Ideate";
         public const string Prototype = "Prototype";
         public const string Pitch = "Pitch";
         public const string Tinker = "Tinker";
@@ -26,7 +26,7 @@ public static class TagSystem
         public const string Analyze = "Analyze";
         public const string Document = "Document";
         public const string Model = "Model";
-        public const string Forecast = "Forecast";
+        // public const string Forecast = "Forecast";
         public const string Trade = "Trade";
         public const string Create = "Create";
         public const string Exhibit = "Exhibit";
@@ -37,6 +37,11 @@ public static class TagSystem
         public const string Simulate = "Simulate";
         public const string Innovate = "Innovate";
         public const string Explore = "Explore";
+        // Biosecurity Update
+        public const string EvaluateRisks = "EvaluateRisks";
+        public const string EnforceSafeguards = "EnforceSafeguards"; 
+        public const string TrackThreats = "TrackThreats";
+        public const string DetectPatterns = "DetectPatterns";
     }
 
     // Milestone Tags
@@ -117,6 +122,11 @@ public static class TagSystem
         public const string CommercializeInnovation = "CommercializeInnovation";
         public const string BuildTeam = "BuildTeam";
         public const string BalanceProfitEthics = "BalanceProfitEthics";
+        //Biosecurity Update
+        public const string EvaluateRisks = "EvaluateRisks";
+        public const string EnforceSafeguards = "EnforceSafeguards";
+        public const string TrackThreats = "TrackThreats";
+        public const string DetectPatterns = "DetectPatterns";
     }
 
     public static int GetSliderIndexForTag(string tag, AISettings aiSettings = null, ChallengeData challengeData = null)
@@ -156,12 +166,12 @@ public static class TagSystem
                 (PersonalGoalTags.ResolveConflicts, 0.1f)
             }
         },
-        { ActionTags.Debate, new List<(string, float)>
-            {
-                (PersonalGoalTags.BalanceEthics, 0.1f),
-                (PersonalGoalTags.ResolveConflicts, 0.05f)
-            }
-        },
+        // { ActionTags.Debate, new List<(string, float)>
+        //     {
+        //         (PersonalGoalTags.BalanceEthics, 0.1f),
+        //         (PersonalGoalTags.ResolveConflicts, 0.05f)
+        //     }
+        // },
         { ActionTags.Strategize, new List<(string, float)>
             {
                 (MilestoneTags.PlanProduction, 0.05f),
@@ -169,12 +179,12 @@ public static class TagSystem
                 (PersonalGoalTags.EfficientSolution, 0.1f)
             }
         },
-        { ActionTags.Philosophize, new List<(string, float)>
-            {
-                (MilestoneTags.EstablishEthics, 0.05f),
-                (PersonalGoalTags.MaintainIntegrity, 0.1f)
-            }
-        },
+        // { ActionTags.Philosophize, new List<(string, float)>
+        //     {
+        //         (MilestoneTags.EstablishEthics, 0.05f),
+        //         (PersonalGoalTags.MaintainIntegrity, 0.1f)
+        //     }
+        // },
         { ActionTags.Broadcast, new List<(string, float)>
             {
                 (PersonalGoalTags.TranslateScience, 0.08f),
@@ -194,12 +204,12 @@ public static class TagSystem
                 (PersonalGoalTags.CommercializeInnovation, 0.1f)
             }
         },
-        { ActionTags.Ideate, new List<(string, float)>
-            {
-                (PersonalGoalTags.ProveCreativity, 0.1f),
-                (PersonalGoalTags.EfficientSolution, 0.05f)
-            }
-        },
+        // { ActionTags.Ideate, new List<(string, float)>
+        //     {
+        //         (PersonalGoalTags.ProveCreativity, 0.1f),
+        //         (PersonalGoalTags.EfficientSolution, 0.05f)
+        //     }
+        // },
         { ActionTags.Prototype, new List<(string, float)>
             {
                 (PersonalGoalTags.AdaptEarthSolutions, 0.1f),
@@ -259,13 +269,13 @@ public static class TagSystem
                 (PersonalGoalTags.BalanceInnovation, 0.05f)
             }
         },
-        { ActionTags.Forecast, new List<(string, float)>
-            {
-                (MilestoneTags.PlanProduction, 0.05f),
-                (PersonalGoalTags.BalanceSustainability, 0.1f),
-                (PersonalGoalTags.BalanceMission, 0.05f)
-            }
-        },
+        // { ActionTags.Forecast, new List<(string, float)>
+        //     {
+        //         (MilestoneTags.PlanProduction, 0.05f),
+        //         (PersonalGoalTags.BalanceSustainability, 0.1f),
+        //         (PersonalGoalTags.BalanceMission, 0.05f)
+        //     }
+        // },
         { ActionTags.Trade, new List<(string, float)>
             {
                 (MilestoneTags.PlanMarketEntry, 0.05f),
@@ -331,6 +341,31 @@ public static class TagSystem
                 (PersonalGoalTags.UncoverChallenges, 0.1f),
                 (PersonalGoalTags.ProveRelevance, 0.05f)
             }
+        },
+        // Adding new biosecurity mappings
+        { ActionTags.EvaluateRisks, new List<(string, float)>
+            {
+                (PersonalGoalTags.EvaluateRisks, 0.1f),
+                (MilestoneTags.IdentifyThreats, 0.05f)
+            }
+        },
+        { ActionTags.EnforceSafeguards, new List<(string, float)>
+            {
+                (PersonalGoalTags.EnforceSafeguards, 0.1f),
+                (MilestoneTags.EstablishProtocols, 0.05f)
+            }
+        },
+        { ActionTags.TrackThreats, new List<(string, float)>
+            {
+                (PersonalGoalTags.TrackThreats, 0.1f),
+                (MilestoneTags.CreateDetection, 0.05f)
+            }
+        },
+        { ActionTags.DetectPatterns, new List<(string, float)>
+            {
+                (PersonalGoalTags.DetectPatterns, 0.1f),
+                (MilestoneTags.IntegrateDefenses, 0.05f)
+            }
         }
     };
 
@@ -365,7 +400,12 @@ public static class TagSystem
         PersonalGoalTags.BalanceSustainability,
         PersonalGoalTags.CommercializeInnovation,
         PersonalGoalTags.BuildTeam,
-        PersonalGoalTags.BalanceProfitEthics
+        PersonalGoalTags.BalanceProfitEthics,
+        // Biosecurity Update
+        PersonalGoalTags.EvaluateRisks,
+        PersonalGoalTags.EnforceSafeguards,
+        PersonalGoalTags.TrackThreats,
+        PersonalGoalTags.DetectPatterns
     };
 
     public static List<string> MilestoneTagsList = new List<string>()
@@ -407,13 +447,13 @@ public static class TagSystem
         ActionTags.Treat,
         ActionTags.Research,
         ActionTags.Consult,
-        ActionTags.Debate,
+        // ActionTags.Debate,
         ActionTags.Strategize,
-        ActionTags.Philosophize,
+        // ActionTags.Philosophize,
         ActionTags.Broadcast,
         ActionTags.Interview,
         ActionTags.Produce,
-        ActionTags.Ideate,
+        // ActionTags.Ideate,
         ActionTags.Prototype,
         ActionTags.Pitch,
         ActionTags.Tinker,
@@ -423,7 +463,7 @@ public static class TagSystem
         ActionTags.Analyze,
         ActionTags.Document,
         ActionTags.Model,
-        ActionTags.Forecast,
+        // ActionTags.Forecast,
         ActionTags.Trade,
         ActionTags.Create,
         ActionTags.Exhibit,
@@ -433,7 +473,12 @@ public static class TagSystem
         ActionTags.Automate,
         ActionTags.Simulate,
         ActionTags.Innovate,
-        ActionTags.Explore
+        ActionTags.Explore,
+        // Biosecurity Update
+        ActionTags.EvaluateRisks,
+        ActionTags.EnforceSafeguards,
+        ActionTags.TrackThreats,
+        ActionTags.DetectPatterns
     };
 
     // Method to get tags for an action

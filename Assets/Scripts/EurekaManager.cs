@@ -98,7 +98,7 @@ public class EurekaManager : MonoBehaviourPunCallbacks
 
         AddRecentEureka(description);
 
-        Debug.Log($"Eureka triggered: {description}");
+        // Debug.Log($"Eureka triggered: {description}");
     }
 
     private void AddRecentEureka(string eurekaDescription)

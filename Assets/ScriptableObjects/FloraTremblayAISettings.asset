@@ -1,3 +1,32 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:52d6e15d962cefc15f7b248dec1dd7f002c701d83837e7ef53029a1bf230001b
-size 1220
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d329784c112644dba984b246ad1df88, type: 3}
+  m_Name: FloraTremblayAISettings
+  m_EditorClassIdentifier: 
+  characterRole: Biosecurity
+  characterBackground: Expert in biosecurity with focus on emerging threats. Specializes
+    in evaluating AI-enabled biological risks.
+  characterPersonality: Calm and articulate. Skilled at explaining complex ethical
+    issues. Skilled at identifying potential misuse scenarios. Balances innovation
+    with safety. Advocates for responsible development of biotechnology. Considers
+    multiple perspectives in moral dilemmas, often serving as a bridge between scientists
+    and the public.
+  decisionInterval: 10
+  interactionProbability: 0.5
+  personalGoals:
+  - Establish robust biosecurity frameworks.
+  - Evaluate emerging biological capabilities.
+  - Ensure responsible innovation.
+  personalGoalTags:
+  - EvaluateRisks
+  - EnforceSafeguards
+  - BalanceEthics

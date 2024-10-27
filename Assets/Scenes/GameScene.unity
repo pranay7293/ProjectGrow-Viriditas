@@ -2752,7 +2752,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab9dacc45c40c4380834c08973762a05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  apiKey: sk-proj-9tF8mPNf1vftTklO6QeMT3BlbkFJMVAr9UhUPvB4uIWlXhdf
   selectedModel: 0
   apiCallCooldown: 1
 --- !u!114 &218093919
@@ -9177,7 +9176,7 @@ PrefabInstance:
       objectReference: {fileID: 116802541643450836, guid: 5e22c67c443164b66bca99c223111133, type: 2}
     - target: {fileID: 6240556293611268935, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_Name
-      value: Think Tank
+      value: Biosecurity Hub
       objectReference: {fileID: 0}
     - target: {fileID: 6240556293611268935, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_TagString
@@ -9185,7 +9184,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6652841948526535206, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_text
-      value: Think Tank
+      value: "Anthropic\nBiosecurity \nHub"
       objectReference: {fileID: 0}
     - target: {fileID: 6652841948526535206, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_fontSize
@@ -9222,6 +9221,10 @@ PrefabInstance:
     - target: {fileID: 6652841948526535206, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_VerticalAlignment
       value: 512
+      objectReference: {fileID: 0}
+    - target: {fileID: 6652841948526535206, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
+      propertyPath: m_enableWordWrapping
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6652841948526535206, guid: fa7e407686f754f2c8ad4c84a4b568ad, type: 3}
       propertyPath: m_HorizontalAlignment
@@ -9305,36 +9308,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b66cfa53dc5846588c89d0704312c65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  locationName: Think Tank
+  locationName: Biosecurity Hub
   availableActions:
-  - actionName: Debate
-    description: Engage in Ethical Discussions
+  - actionName: Assess
+    description: Evaluate Risks
     baseSuccessRate: 50
     duration: 5
     requiredRole: 
-    actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    actionIcon: {fileID: 21300000, guid: c68594c7495c04932aa7929e74061170, type: 3}
     tags:
-    - Debate
-    - Philosophize
-  - actionName: Strategize
-    description: Develop Ethical Guidelines
+    - Assess
+    - EvaluateRisks
+  - actionName: Monitor
+    description: Track Capabilities
     baseSuccessRate: 50
     duration: 10
     requiredRole: 
-    actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    actionIcon: {fileID: 21300000, guid: c68594c7495c04932aa7929e74061170, type: 3}
     tags:
-    - Strategize
-    - Ideate
-    - Forecast
-  - actionName: Philosophize
-    description: Explore Moral Implications
+    - Monitor
+    - TrackThreats
+    - DetectPatterns
+  - actionName: Safeguard
+    description: Implement Controls
     baseSuccessRate: 50
     duration: 20
     requiredRole: 
-    actionIcon: {fileID: 21300000, guid: 8e777db10ebe1495b8be45fbe46b682a, type: 3}
+    actionIcon: {fileID: 21300000, guid: c68594c7495c04932aa7929e74061170, type: 3}
     tags:
-    - Philosophize
-    - Debate
+    - Safeguard
+    - EnforceSafeguards
     - Analyze
   locationColor: {r: 1, g: 0.6666667, b: 0.9607843, a: 1}
   eurekaEffectPrefab: {fileID: 1104492423884848973, guid: 21a578516fe20409e998e971459197cd, type: 3}
@@ -16350,7 +16353,6 @@ MonoBehaviour:
   - {fileID: 4615670957178042319}
   actionHoverColor: {r: 0.05, g: 0.525, b: 0.972, a: 1}
   actionDefaultColor: {r: 0.094, g: 0.094, b: 0.094, a: 1}
-  challengeIconImage: {fileID: 1447422507}
 --- !u!114 &1083345081
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21390,17 +21392,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1439228374}
   m_CullTransparentMesh: 1
---- !u!114 &1447422507 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 5112347074909983916, guid: f17d3293935e645b7969701718baa16e, type: 3}
-  m_PrefabInstance: {fileID: 4615670957178042316}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4615670957178042322}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1454992718
 GameObject:
   m_ObjectHideFlags: 0

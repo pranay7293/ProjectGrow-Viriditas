@@ -1356,6 +1356,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -70
       objectReference: {fileID: 0}
+    - target: {fileID: 8876983311362400195, guid: 4a07f5f2e9fd844748c07a7f4292d15f, type: 3}
+      propertyPath: m_text
+      value: Biosecurity
+      objectReference: {fileID: 0}
     - target: {fileID: 9141933302670819598, guid: 4a07f5f2e9fd844748c07a7f4292d15f, type: 3}
       propertyPath: m_Name
       value: CharacterButton_Dr.Flora
