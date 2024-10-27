@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 5.8469934, g: 3.6691422, b: 2.3790991, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -6443,32 +6443,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3767188924470239723, guid: 0c136c10dc4904e4fa48fba08faa448a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1805418430}
-    - targetCorrespondingSourceObject: {fileID: 9156908874973005519, guid: 0c136c10dc4904e4fa48fba08faa448a, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 465767619}
   m_SourcePrefab: {fileID: 100100000, guid: 0c136c10dc4904e4fa48fba08faa448a, type: 3}
 --- !u!4 &465767617 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6780883922464099104, guid: 0c136c10dc4904e4fa48fba08faa448a, type: 3}
   m_PrefabInstance: {fileID: 465767616}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &465767618 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 9156908874973005519, guid: 0c136c10dc4904e4fa48fba08faa448a, type: 3}
-  m_PrefabInstance: {fileID: 465767616}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &465767619
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 465767618}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4ed78b6cc896340d79e4a59a97e3760e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &474755909
 GameObject:
   m_ObjectHideFlags: 0
@@ -29249,6 +29229,7 @@ GameObject:
   - component: {fileID: 2000129824}
   - component: {fileID: 2000129823}
   - component: {fileID: 2000129822}
+  - component: {fileID: 2000129826}
   m_Layer: 0
   m_Name: UI
   m_TagString: Untagged
@@ -29327,6 +29308,22 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!114 &2000129826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2000129821}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2b89cd94a7c84d7cb8530fcef34dd3b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  referenceWidth4K: 3840
+  referenceHeight4K: 2160
+  referenceWidth1080p: 1920
+  referenceHeight1080p: 1080
 --- !u!1 &2013410473
 GameObject:
   m_ObjectHideFlags: 1

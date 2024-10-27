@@ -104,7 +104,7 @@ public class LocationManager : MonoBehaviourPunCallbacks
     {
         if (PhotonNetwork.IsMasterClient)
         {
-            Debug.Log($"Attempting to instantiate EurekaEffect at {transform.position}");
+            // Debug.Log($"Attempting to instantiate EurekaEffect at {transform.position}");
             GameObject eurekaEffect = PhotonNetwork.Instantiate("EurekaEffect", transform.position, Quaternion.identity);
             if (eurekaEffect == null)
             {

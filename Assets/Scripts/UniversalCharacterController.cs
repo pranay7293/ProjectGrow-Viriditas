@@ -655,7 +655,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
     {
         if (HasState(CharacterState.PerformingAction))
         {
-            Debug.Log($"{characterName}: Cannot move while performing action.");
+            // Debug.Log($"{characterName}: Cannot move while performing action.");
             return;
         }
 
