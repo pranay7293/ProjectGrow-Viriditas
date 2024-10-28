@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 5.8469934, g: 3.6691422, b: 2.3790991, a: 1}
+  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -10107,6 +10107,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 699744369}
   m_CullTransparentMesh: 1
+--- !u!1 &700119133 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3605601868895255272, guid: f17d3293935e645b7969701718baa16e, type: 3}
+  m_PrefabInstance: {fileID: 4615670957178042316}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &704250252 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 681060430991768957, guid: 8d1f5aaa4a4828e4a9f6425dda517fd5, type: 3}
@@ -16549,6 +16554,7 @@ MonoBehaviour:
   - {fileID: 4615670957178042321}
   - {fileID: 4615670957178042318}
   - {fileID: 4615670957178042317}
+  - {fileID: 700119133}
   stepText: {fileID: 1829914071}
   nextButton: {fileID: 1146654129}
   previousButton: {fileID: 977868670}

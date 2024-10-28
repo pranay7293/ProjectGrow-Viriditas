@@ -298,6 +298,8 @@ public class TutorialManager : MonoBehaviour
             return "Stand still in a location for 5 seconds to reveal available actions.\nActions are how you make progress.";
         case 4:
             return "Press F5 to open EurekaLog and see what happens when AI agents collaborate.";
+        case 5:
+            return "Every 5 min, the simulation presents 3 'What If?' scenarios based on all chats, discoveries and actions.\nClick to vote.";
         default:
             return "";
     }
