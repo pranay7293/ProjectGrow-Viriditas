@@ -258,7 +258,7 @@ public class CharacterProgressBar : MonoBehaviour
             cooldownSlider.value -= Time.deltaTime;
             yield return null;
         }
-        Debug.Log($"{characterController.characterName}: Cooldown finished.");
+        // Debug.Log($"{characterController.characterName}: Cooldown finished.");
         if (cooldownBarObject != null)
         {
             cooldownBarObject.SetActive(false);

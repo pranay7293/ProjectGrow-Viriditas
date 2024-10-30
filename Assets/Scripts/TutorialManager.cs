@@ -304,7 +304,7 @@ public class TutorialManager : MonoBehaviour
             return "";
     }
 }
-
+ 
     private void NextStep() => ShowStep(currentStepIndex + 1);
     private void PreviousStep() => ShowStep(currentStepIndex - 1);
 
