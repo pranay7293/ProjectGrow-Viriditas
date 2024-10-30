@@ -76,3 +76,6 @@ crashlytics-build.properties
 .env
 *.env
 .env.local
+
+/Assets/Resources/APIKeyConfig.asset
+/Assets/Resources/APIKeyConfig.asset.meta

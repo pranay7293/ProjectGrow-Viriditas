@@ -11,6 +11,7 @@ using System.IO;
 
 public class OpenAIService : MonoBehaviour
 {
+    [SerializeField] private APIKeyConfig apiKeyConfig;
     public static OpenAIService Instance { get; private set; }
 
     public enum OpenAIModel
@@ -49,28 +50,37 @@ public class OpenAIService : MonoBehaviour
 
     private void LoadEnvironmentVariables()
     {
-        try
-        {
-            string envPath = Path.Combine(Application.dataPath, "../.env");
-            if (File.Exists(envPath))
+        #if UNITY_EDITOR
+            // In editor, still try to load from .env first
+            try
             {
-                foreach (string line in File.ReadAllLines(envPath))
+                string envPath = Path.Combine(Application.dataPath, "../.env");
+                if (File.Exists(envPath))
                 {
-                    if (line.StartsWith("OPENAI_API_KEY="))
+                    foreach (string line in File.ReadAllLines(envPath))
                     {
-                        apiKey = line.Substring("OPENAI_API_KEY=".Length).Trim();
-                        break;
+                        if (line.StartsWith("OPENAI_API_KEY="))
+                        {
+                            apiKey = line.Substring("OPENAI_API_KEY=".Length).Trim();
+                            return;
+                        }
                     }
                 }
             }
-            else
+            catch (Exception e)
             {
-                Debug.LogError(".env file not found!");
+                Debug.LogError($"Error loading from .env: {e.Message}");
             }
-        }
-        catch (Exception e)
+        #endif
+
+        // Fall back to ScriptableObject config
+        if (apiKeyConfig != null)
         {
-            Debug.LogError($"Error loading environment variables: {e.Message}");
+            apiKey = apiKeyConfig.OpenAIKey;
+        }
+        else
+        {
+            Debug.LogError("API Key Config not assigned!");
         }
     }
 

@@ -2752,6 +2752,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab9dacc45c40c4380834c08973762a05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  apiKeyConfig: {fileID: 11400000, guid: 070544adbf9c4484981a272800dd0caf, type: 2}
   selectedModel: 0
   apiCallCooldown: 1
 --- !u!114 &218093919
