@@ -314,6 +314,12 @@ Tags: [comma-separated list of 3-5 tags from the provided list]";
         string fullPrompt = staticPrompt + dynamicPrompt;
         string response = await GetChatCompletionAsync(fullPrompt, OpenAIModel.O1Preview);
 
+        if (string.IsNullOrEmpty(response))
+        {
+            Debug.LogWarning("No response from OpenAI API when generating Eureka description.");
+            return ("An unexpected breakthrough occurred!", new List<string>());
+        }
+
         string description = "";
         List<string> generatedTags = new List<string>();
 
@@ -428,63 +434,79 @@ private List<EmergentScenarioGenerator.ScenarioData> ParseScenarioResponse(strin
         return string.IsNullOrEmpty(response) ? "Not sure how to respond to that..." : response;
     }
 
-    private async Task<string> GetChatCompletionAsync(string prompt, OpenAIModel model, int maxRetries = 3)
+   private async Task<string> GetChatCompletionAsync(string prompt, OpenAIModel model, int maxRetries = 3)
+{
+    if (string.IsNullOrEmpty(apiKey))
     {
-        if (string.IsNullOrEmpty(apiKey))
-        {
-            Debug.LogError("API key not loaded!");
-            return null;
-        }
-
-        await EnforceApiCooldown();
-
-        for (int attempt = 0; attempt < maxRetries; attempt++)
-        {
-            try
-            {
-                var requestBody = new
-                {
-                    model = ModelToString(model),
-                    messages = new[]
-                    {
-                        new { role = "user", content = prompt }
-                    },
-                    max_tokens = 300
-                };
-
-                var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
-
-                var response = await httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
-                var responseString = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    Debug.LogWarning($"OpenAI API request failed (Attempt {attempt + 1}/{maxRetries}): {responseString}");
-                    if (attempt == maxRetries - 1)
-                    {
-                        Debug.LogError($"OpenAI API request failed after {maxRetries} attempts: {responseString}");
-                        return null;
-                    }
-                    await Task.Delay((int)Math.Pow(2, attempt) * 1000);
-                    continue;
-                }
-
-                var responseJson = JObject.Parse(responseString);
-                return responseJson["choices"][0]["message"]["content"].ToString().Trim();
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"Error in OpenAI API request (Attempt {attempt + 1}/{maxRetries}): {e.Message}");
-                if (attempt == maxRetries - 1)
-                {
-                    return null;
-                }
-                await Task.Delay((int)Math.Pow(2, attempt) * 1000);
-            }
-        }
-
+        Debug.LogError("API key not loaded!");
         return null;
     }
+
+    await EnforceApiCooldown();
+
+    for (int attempt = 0; attempt < maxRetries; attempt++)
+    {
+        try
+        {
+            var requestBody = new
+            {
+                model = ModelToString(model),
+                messages = new[]
+                {
+                    new { role = "user", content = prompt }
+                },
+                // Include 'temperature' and 'top_p' only for models that support them
+                temperature = (model != OpenAIModel.O1Preview && model != OpenAIModel.FineTunedNaturalDialog) ? 0.7 : (double?)null,
+                top_p = (model != OpenAIModel.O1Preview && model != OpenAIModel.FineTunedNaturalDialog) ? 1.0 : (double?)null,
+                max_tokens = (model != OpenAIModel.O1Preview) ? 300 : (int?)null,
+                max_completion_tokens = (model == OpenAIModel.O1Preview) ? 5000 : (int?)null
+            };
+
+            // Remove null values from requestBody
+            var jsonRequestBody = JsonConvert.SerializeObject(requestBody, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            });
+
+            var content = new StringContent(jsonRequestBody, Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
+            var responseString = await response.Content.ReadAsStringAsync();
+
+            // Log the response for debugging
+            Debug.Log($"API Response: {responseString}");
+
+            var responseJson = JObject.Parse(responseString);
+
+            // Check for errors in the response
+            if (responseJson["error"] != null)
+            {
+                string errorMessage = responseJson["error"]["message"]?.ToString();
+                Debug.LogError($"OpenAI API returned an error: {errorMessage}");
+                return null;
+            }
+
+            if (responseJson["choices"] == null || !responseJson["choices"].Any())
+            {
+                Debug.LogError("OpenAI API returned no choices in the response.");
+                return null;
+            }
+
+            return responseJson["choices"][0]["message"]["content"].ToString().Trim();
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error in OpenAI API request (Attempt {attempt + 1}/{maxRetries}): {e.Message}");
+            if (attempt == maxRetries - 1)
+            {
+                return null;
+            }
+            await Task.Delay((int)Math.Pow(2, attempt) * 1000);
+        }
+    }
+
+    return null;
+}
 
     private async Task EnforceApiCooldown()
     {

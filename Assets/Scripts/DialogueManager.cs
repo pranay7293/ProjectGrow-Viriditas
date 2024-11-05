@@ -17,6 +17,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     [SerializeField] private TextMeshProUGUI agentDialogueText;
     [SerializeField] private Button[] generativeChoiceButtons;
     [SerializeField] private TextMeshProUGUI[] generativeChoiceTexts;
+    [SerializeField] private DialogueDisplayManager dialogueDisplayManager;
     [SerializeField] private GameObject customInputWindow;
     [SerializeField] private TMP_InputField customInputField;
     [SerializeField] private Button submitCustomInputButton;
@@ -138,29 +139,31 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     public async void InitiateDialogue(UniversalCharacterController agent)
     {
-        if (agent == null || currentState != DialogueState.Idle)
-        {
-            return;
-        }
+    if (agent == null || currentState != DialogueState.Idle)
+    {
+        return;
+    }
 
-        currentAgent = agent;
-        currentAgent.AddState(CharacterState.Chatting);
-        InputManager.Instance.StartDialogue();
+    currentAgent = agent;
+    currentAgent.AddState(CharacterState.Chatting);
+    InputManager.Instance.StartDialogue();
 
-        // Generate a dynamic greeting using OpenAIService
-        string greeting = await OpenAIService.Instance.GenerateAgentGreeting(currentAgent.characterName, currentAgent.aiSettings);
-        string initialDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentAgent.characterColor)}>{currentAgent.characterName}</color> says to you: \"{greeting}\"";
-        agentDialogueText.text = initialDialogue;
-        dialoguePanel.SetActive(true);
-        customInputField.text = "";
+    // Generate a dynamic greeting using OpenAIService
+    string greeting = await OpenAIService.Instance.GenerateAgentGreeting(currentAgent.characterName, currentAgent.aiSettings);
+    string initialDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentAgent.characterColor)}>{currentAgent.characterName}</color> says to you: \"{greeting}\"";
+    agentDialogueText.text = initialDialogue;
+    dialoguePanel.SetActive(true);
+    customInputField.text = "";
 
-        SetCustomInputActive(false);
+    // Show dialogue prompt by default
+    DialogueDisplayManager.Instance.ShowDialoguePrompt();
+    SetCustomInputActive(false);
 
-        AddToChatLog(currentAgent.characterName, initialDialogue); // Dialogue-related log
+    AddToChatLog(currentAgent.characterName, initialDialogue);
 
-        SetDialogueState(DialogueState.GeneratingResponse);
-        await GenerateAndDisplayGenerativeChoices();
-        SetDialogueState(DialogueState.WaitingForPlayerInput);
+    SetDialogueState(DialogueState.GeneratingResponse);
+    await GenerateAndDisplayGenerativeChoices();
+    SetDialogueState(DialogueState.WaitingForPlayerInput);
     }
 
     private async Task GenerateAndDisplayGenerativeChoices()
@@ -238,20 +241,28 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void SetCustomInputActive(bool active)
     {
-        isCustomInputActive = active;
-        if (customInputWindow != null)
+    isCustomInputActive = active;
+    if (customInputWindow != null)
+    {
+        if (active)
         {
-            customInputWindow.SetActive(active);
+            DialogueDisplayManager.Instance.ShowPlayerInput();
         }
         else
         {
-            Debug.LogWarning("DialogueManager: CustomInputWindow is not assigned.");
+            DialogueDisplayManager.Instance.ShowDialoguePrompt();
         }
+        customInputWindow.SetActive(active);
+    }
+    else
+    {
+        Debug.LogWarning("DialogueManager: CustomInputWindow is not assigned.");
+    }
 
-        if (active && customInputField != null)
-        {
-            customInputField.ActivateInputField();
-        }
+    if (active && customInputField != null)
+    {
+        customInputField.ActivateInputField();
+    }
     }
 
     public void SubmitCustomInput()
