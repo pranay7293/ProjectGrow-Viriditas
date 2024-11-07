@@ -15,11 +15,11 @@ public class OpenAIService : MonoBehaviour
     public static OpenAIService Instance { get; private set; }
 
     public enum OpenAIModel
-    {   
-    GPT4o,
-    GPT4oMini,
-    FineTunedNaturalDialog,
-    O1Preview
+    {
+        GPT4o,
+        GPT4oMini,
+        FineTunedNaturalDialog,
+        O1Preview
     }
 
     [SerializeField] private OpenAIModel selectedModel = OpenAIModel.GPT4o;
@@ -51,28 +51,28 @@ public class OpenAIService : MonoBehaviour
 
     private void LoadEnvironmentVariables()
     {
-        #if UNITY_EDITOR
-            // In editor, still try to load from .env first
-            try
+#if UNITY_EDITOR
+        // In editor, still try to load from .env first
+        try
+        {
+            string envPath = Path.Combine(Application.dataPath, "../.env");
+            if (File.Exists(envPath))
             {
-                string envPath = Path.Combine(Application.dataPath, "../.env");
-                if (File.Exists(envPath))
+                foreach (string line in File.ReadAllLines(envPath))
                 {
-                    foreach (string line in File.ReadAllLines(envPath))
+                    if (line.StartsWith("OPENAI_API_KEY="))
                     {
-                        if (line.StartsWith("OPENAI_API_KEY="))
-                        {
-                            apiKey = line.Substring("OPENAI_API_KEY=".Length).Trim();
-                            return;
-                        }
+                        apiKey = line.Substring("OPENAI_API_KEY=".Length).Trim();
+                        return;
                     }
                 }
             }
-            catch (Exception e)
-            {
-                Debug.LogError($"Error loading from .env: {e.Message}");
-            }
-        #endif
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error loading from .env: {e.Message}");
+        }
+#endif
 
         // Fall back to ScriptableObject config
         if (apiKeyConfig != null)
@@ -87,22 +87,22 @@ public class OpenAIService : MonoBehaviour
 
     private string ModelToString(OpenAIModel model)
     {
-    switch (model)
-    {
-        case OpenAIModel.GPT4o:
-            return "gpt-4o";
-        case OpenAIModel.GPT4oMini:
-            return "gpt-4o-mini";
-        case OpenAIModel.FineTunedNaturalDialog:
-            return "ft:gpt-4o-2024-08-06:karyo-studios:naturaldialog3:A7A1XgRr";
-        case OpenAIModel.O1Preview:
-            return "o1-preview"; 
-        default:
-            return "gpt-4o";
-    }
+        switch (model)
+        {
+            case OpenAIModel.GPT4o:
+                return "gpt-4o";
+            case OpenAIModel.GPT4oMini:
+                return "gpt-4o-mini";
+            case OpenAIModel.FineTunedNaturalDialog:
+                return "ft:gpt-4o-2024-08-06:karyo-studios:naturaldialog3:A7A1XgRr";
+            case OpenAIModel.O1Preview:
+                return "o1-preview";
+            default:
+                return "gpt-4o";
+        }
     }
 
-    public async Task<string> GenerateAgentGreeting(string characterName, AISettings aiSettings)
+    public async Task<string> GenerateAgentGreeting(string characterName, AISettings aiSettings, string interactionHistory)
     {
         if (string.IsNullOrEmpty(apiKey))
         {
@@ -112,7 +112,7 @@ public class OpenAIService : MonoBehaviour
 
         await EnforceApiCooldown();
 
-        string prompt = GenerateAgentGreetingPrompt(characterName, aiSettings);
+        string prompt = GenerateAgentGreetingPrompt(characterName, aiSettings, interactionHistory);
         string response = await GetChatCompletionAsync(prompt, OpenAIModel.FineTunedNaturalDialog);
 
         lastApiCallTime = Time.time;
@@ -153,7 +153,7 @@ public class OpenAIService : MonoBehaviour
         return choices;
     }
 
-    public async Task<string> GetAgentResponse(string characterName, string playerInput, AISettings aiSettings, string memoryContext = "", string reflection = "")
+    public async Task<string> GetAgentResponse(string characterName, string playerInput, AISettings aiSettings, string interactionHistory, string memoryContext = "", string reflection = "")
     {
         if (string.IsNullOrEmpty(apiKey))
         {
@@ -163,7 +163,7 @@ public class OpenAIService : MonoBehaviour
 
         await EnforceApiCooldown();
 
-        string prompt = GenerateAgentResponsePrompt(characterName, playerInput, aiSettings, memoryContext, reflection);
+        string prompt = GenerateAgentResponsePrompt(characterName, playerInput, aiSettings, interactionHistory, memoryContext, reflection);
         string response = await GetChatCompletionAsync(prompt, OpenAIModel.FineTunedNaturalDialog);
 
         lastApiCallTime = Time.time;
@@ -171,7 +171,7 @@ public class OpenAIService : MonoBehaviour
         return string.IsNullOrEmpty(response) ? "Hmm, I need to think about that..." : response.Trim();
     }
 
-    public async Task<string> GetAgentResponseToChoice(string characterName, string playerChoice, AISettings aiSettings, string memoryContext = "", string reflection = "")
+    public async Task<string> GetAgentResponseToChoice(string characterName, string playerChoice, AISettings aiSettings, string interactionHistory, string memoryContext = "", string reflection = "")
     {
         if (string.IsNullOrEmpty(apiKey))
         {
@@ -181,7 +181,7 @@ public class OpenAIService : MonoBehaviour
 
         await EnforceApiCooldown();
 
-        string prompt = GenerateAgentResponseToChoicePrompt(characterName, playerChoice, aiSettings, memoryContext, reflection);
+        string prompt = GenerateAgentResponseToChoicePrompt(characterName, playerChoice, aiSettings, interactionHistory, memoryContext, reflection);
         string response = await GetChatCompletionAsync(prompt, selectedModel);
 
         lastApiCallTime = Time.time;
@@ -189,11 +189,12 @@ public class OpenAIService : MonoBehaviour
         return string.IsNullOrEmpty(response) ? "Let me consider that option..." : response.Trim();
     }
 
-    private string GenerateAgentGreetingPrompt(string characterName, AISettings aiSettings)
+    private string GenerateAgentGreetingPrompt(string characterName, AISettings aiSettings, string interactionHistory)
     {
         return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
                $"Your personality: {aiSettings.characterPersonality}\n\n" +
-               "Initiate a conversation with a natural and friendly greeting that reflects your personality. " +
+               $"Recent interactions: {interactionHistory}\n\n" +
+               "Initiate a conversation with a natural and friendly greeting that reflects your personality and past interactions. " +
                "Keep it concise (max 15 words).";
     }
 
@@ -211,27 +212,29 @@ public class OpenAIService : MonoBehaviour
                "3. [Category]: [Decision]";
     }
 
-    private string GenerateAgentResponsePrompt(string characterName, string playerInput, AISettings aiSettings, string memoryContext = "", string reflection = "")
+    private string GenerateAgentResponsePrompt(string characterName, string playerInput, AISettings aiSettings, string interactionHistory, string memoryContext = "", string reflection = "")
     {
         List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
         string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join("; ", recentEurekas)}" : "";
 
         return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
                $"Your personality: {aiSettings.characterPersonality}\n" +
+               $"Recent interactions: {interactionHistory}\n" +
                $"Recent memories: {memoryContext}\n" +
                $"Your current reflection: {reflection}\n" +
                $"{eurekaContext}\n\n" +
                $"The player says: \"{playerInput}\"\n" +
-               "Respond naturally and in character.";
+               "Respond naturally and in character, considering your past interactions.";
     }
 
-    private string GenerateAgentResponseToChoicePrompt(string characterName, string playerChoice, AISettings aiSettings, string memoryContext = "", string reflection = "")
+    private string GenerateAgentResponseToChoicePrompt(string characterName, string playerChoice, AISettings aiSettings, string interactionHistory, string memoryContext = "", string reflection = "")
     {
         List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
         string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join("; ", recentEurekas)}" : "";
 
         return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
                $"Your personality: {aiSettings.characterPersonality}\n" +
+               $"Recent interactions: {interactionHistory}\n" +
                $"Recent memories: {memoryContext}\n" +
                $"Your current reflection: {reflection}\n" +
                $"{eurekaContext}\n\n" +

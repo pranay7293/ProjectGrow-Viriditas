@@ -481,6 +481,15 @@ public class AIManager : MonoBehaviourPunCallbacks
         }
     }
 
+    public void OnInteractionWithCharacter(string otherCharacterName, string interactionSummary)
+    {
+        // Record the interaction
+        npcData.AddMemory($"Interacted with {otherCharacterName}: {interactionSummary}", importance: 0.8f);
+
+        // Update relationship
+        npcData.UpdateRelationship(otherCharacterName, 0.1f); // Adjust change as needed
+    }
+
     public void RecordSignificantEvent(string eventDescription, float importance)
     {
         if (npcData != null)

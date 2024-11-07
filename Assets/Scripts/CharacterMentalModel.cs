@@ -99,7 +99,7 @@ namespace ProjectGrow.AI
         {
             PrioritizedMemory newMemory = new PrioritizedMemory(content, importance, DateTime.Now);
             Memories.Add(newMemory);
-            Memories = Memories.OrderByDescending(m => m.Importance).Take(MaxMemories).ToList();
+            Memories = Memories.OrderByDescending(m => m.Timestamp).ThenByDescending(m => m.Importance).Take(MaxMemories).ToList();
         }
 
         public void MemoryConsolidation()
@@ -138,9 +138,8 @@ namespace ProjectGrow.AI
             float score = memory.Importance;
             if (context.ToLower().Contains(memory.Content.ToLower()))
             {
-                score += 0.5f;
+                score += 1.0f; // Increase score for direct relevance
             }
-            // Add more relevance criteria as needed
             return score;
         }
 
@@ -161,6 +160,11 @@ namespace ProjectGrow.AI
                 Opinions[subject] = new Opinion();
             }
             Opinions[subject].UpdateOpinion(sentiment, confidence, OpinionUpdateRate);
+        }
+
+         public bool HasMetCharacter(string characterName)
+        {
+            return Memories.Any(m => m.Content.Contains($"Met {characterName}") || m.Content.Contains($"Interacted with {characterName}"));
         }
 
         public string MakeDecision(List<string> options, GameState currentState)

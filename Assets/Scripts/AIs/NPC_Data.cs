@@ -23,15 +23,24 @@ public class NPC_Data : MonoBehaviour
     public string GetCharacterBackground() => characterController.aiSettings.characterBackground;
     public string GetCharacterPersonality() => characterController.aiSettings.characterPersonality;
 
-    public void AddMemory(string memory)
+    public void AddMemory(string memory, float importance = 0.5f)
     {
-        mentalModel.AddMemory(memory, 0.5f);
+        mentalModel.AddMemory(memory, importance);
     }
 
     public List<string> GetMemories()
-{
-    return mentalModel.Memories.Select(m => m.Content).ToList();
-}
+    {
+        return mentalModel.Memories.Select(m => m.Content).ToList();
+    }
+
+    public List<string> GetMemoriesAboutCharacter(string characterName)
+    {
+        return mentalModel.Memories
+            .Where(m => m.Content.Contains(characterName))
+            .OrderByDescending(m => m.Timestamp)
+            .Select(m => m.Content)
+            .ToList();
+    }
 
     public void UpdateRelationship(string characterName, float change)
     {
@@ -45,15 +54,15 @@ public class NPC_Data : MonoBehaviour
 
     public float GetAverageRelationship()
     {
-    if (mentalModel.Relationships.Count == 0)
-        return 0f;
+        if (mentalModel.Relationships.Count == 0)
+            return 0f;
 
-    float sum = 0f;
-    foreach (var relationship in mentalModel.Relationships.Values)
-    {
-        sum += relationship;
-    }
-    return sum / mentalModel.Relationships.Count;
+        float sum = 0f;
+        foreach (var relationship in mentalModel.Relationships.Values)
+        {
+            sum += relationship;
+        }
+        return sum / mentalModel.Relationships.Count;
     }
 
     public void UpdateKnowledge(string key, string value)
@@ -78,7 +87,12 @@ public class NPC_Data : MonoBehaviour
     }
 
     public CharacterMentalModel GetMentalModel()
-{
-    return mentalModel;
-}
+    {
+        return mentalModel;
+    }
+
+    public bool HasMetCharacter(string characterName)
+    {
+        return mentalModel.HasMetCharacter(characterName);
+    }
 }
