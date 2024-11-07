@@ -22,12 +22,7 @@ public class DialogueDisplayManager : MonoBehaviour
 
     private void Start()
     {
-        if (dialogueDisplayPrompt != null && playerInputWindow != null)
-        {
-            dialogueDisplayPrompt.SetActive(true);
-            playerInputWindow.SetActive(false);
-        }
-        else
+        if (dialogueDisplayPrompt == null || playerInputWindow == null)
         {
             Debug.LogError("DialogueDisplayManager: Required UI elements are not assigned!");
         }
@@ -35,14 +30,20 @@ public class DialogueDisplayManager : MonoBehaviour
 
     public void ShowDialoguePrompt()
     {
-        dialogueDisplayPrompt.SetActive(true);
-        playerInputWindow.SetActive(false);
+        if (dialogueDisplayPrompt != null && playerInputWindow != null)
+        {
+            dialogueDisplayPrompt.SetActive(true);
+            playerInputWindow.SetActive(false);
+        }
     }
 
     public void ShowPlayerInput()
     {
-        dialogueDisplayPrompt.SetActive(false);
-        playerInputWindow.SetActive(true);
+        if (dialogueDisplayPrompt != null && playerInputWindow != null)
+        {
+            dialogueDisplayPrompt.SetActive(false);
+            playerInputWindow.SetActive(true);
+        }
     }
 
     public bool IsPlayerInputVisible()

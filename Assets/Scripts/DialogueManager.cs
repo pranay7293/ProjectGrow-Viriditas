@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text;
 using static CharacterState;
 
 public class DialogueManager : MonoBehaviourPunCallbacks
@@ -617,41 +618,126 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     // Method to handle Agent-to-Agent or NPC-to-NPC dialogues
     public async void TriggerAgentDialogue(UniversalCharacterController initiator, UniversalCharacterController target)
+{
+    if (initiator == null || target == null)
     {
-        if (initiator == null || target == null)
-        {
-            Debug.LogWarning("DialogueManager: Invalid characters for agent dialogue.");
-            return;
-        }
-
-        // Retrieve interaction history between initiator and target
-        string interactionHistoryInitiator = string.Join("; ", initiator.aiManager.npcData.GetMemoriesAboutCharacter(target.characterName));
-        string memoryContextInitiator = ""; // Additional context if needed
-        string reflectionInitiator = initiator.aiManager.npcData.GetMentalModel().Reflect();
-
-        // Initiator generates initial dialogue
-        string initialDialogue = await OpenAIService.Instance.GetAgentResponse(initiator.characterName, $"Initiate a conversation with {target.characterName}", initiator.aiSettings, interactionHistoryInitiator, memoryContextInitiator, reflectionInitiator);
-
-        // Record the interaction
-        initiator.aiManager.npcData.AddMemory($"Spoke to {target.characterName}: \"{initialDialogue}\"", importance: 0.7f);
-
-        AddToChatLog(initiator.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(initiator.characterColor)}>{initiator.characterName}</color> says to {target.characterName}: \"{initialDialogue}\"");
-
-        // Retrieve interaction history between target and initiator
-        string interactionHistoryTarget = string.Join("; ", target.aiManager.npcData.GetMemoriesAboutCharacter(initiator.characterName));
-        string memoryContextTarget = ""; // Additional context if needed
-        string reflectionTarget = target.aiManager.npcData.GetMentalModel().Reflect();
-
-        // Target generates response
-        string response = await OpenAIService.Instance.GetAgentResponse(target.characterName, initialDialogue, target.aiSettings, interactionHistoryTarget, memoryContextTarget, reflectionTarget);
-
-        // Record the interaction
-        target.aiManager.npcData.AddMemory($"Responded to {initiator.characterName}: \"{response}\"", importance: 0.7f);
-
-        AddToChatLog(target.characterName, $"<color=#{ColorUtility.ToHtmlStringRGB(target.characterColor)}>{target.characterName}</color> responds: \"{response}\"");
+        Debug.LogWarning("DialogueManager: Invalid characters for agent dialogue.");
+        return;
     }
 
-    // Helper Classes
+    // Check if they've met before
+    bool haveMet = initiator.aiManager.npcData.HasMetCharacter(target.characterName);
+    
+    // Get relationship context
+    float relationship = initiator.aiManager.npcData.GetRelationship(target.characterName);
+    
+    // Get recent interactions (last 5)
+    var recentInteractions = initiator.aiManager.npcData.GetMemoriesAboutCharacter(target.characterName)
+        .Take(5)
+        .ToList();
+
+    // Get relevant memories and current state
+    string initiatorMemory = string.Join(", ", initiator.aiManager.npcData.GetMentalModel()
+        .RetrieveRelevantMemories(target.characterName)
+        .Select(m => m.Content));
+    string initiatorReflection = initiator.aiManager.npcData.GetMentalModel().Reflect();
+
+    // Build conversation context
+    string conversationContext = BuildConversationContext(
+        haveMet,
+        relationship,
+        recentInteractions,
+        initiator.characterName,
+        target.characterName
+    );
+
+    // Generate initial dialogue
+    string initialDialogue = await OpenAIService.Instance.GetAgentResponse(
+        initiator.characterName,
+        $"Continue conversation with {target.characterName}",
+        initiator.aiSettings,
+        conversationContext,
+        initiatorMemory,
+        initiatorReflection
+    );
+
+    // Record the interaction with proper importance based on relationship
+    float interactionImportance = 0.5f + (relationship * 0.3f);
+    string memoryContent = haveMet ? 
+        $"Continued conversation with {target.characterName}: {initialDialogue}" :
+        $"Met {target.characterName} for the first time: {initialDialogue}";
+    
+    initiator.aiManager.npcData.AddMemory(memoryContent, interactionImportance);
+
+    AddToChatLog(initiator.characterName, 
+        $"<color=#{ColorUtility.ToHtmlStringRGB(initiator.characterColor)}>{initiator.characterName}</color> says to {target.characterName}: \"{initialDialogue}\"");
+
+    // Similar context building for target's response
+    bool targetHasMet = target.aiManager.npcData.HasMetCharacter(initiator.characterName);
+    float targetRelationship = target.aiManager.npcData.GetRelationship(initiator.characterName);
+    var targetRecentInteractions = target.aiManager.npcData.GetMemoriesAboutCharacter(initiator.characterName)
+        .Take(5)
+        .ToList();
+
+    string targetMemory = string.Join(", ", target.aiManager.npcData.GetMentalModel()
+        .RetrieveRelevantMemories(initiator.characterName)
+        .Select(m => m.Content));
+    string targetReflection = target.aiManager.npcData.GetMentalModel().Reflect();
+
+    string targetContext = BuildConversationContext(
+        targetHasMet,
+        targetRelationship,
+        targetRecentInteractions,
+        target.characterName,
+        initiator.characterName
+    );
+
+    // Generate response
+    string response = await OpenAIService.Instance.GetAgentResponse(
+        target.characterName,
+        initialDialogue,
+        target.aiSettings,
+        targetContext,
+        targetMemory,
+        targetReflection
+    );
+
+    // Record the interaction for target
+    float targetInteractionImportance = 0.5f + (targetRelationship * 0.3f);
+    string targetMemoryContent = targetHasMet ?
+        $"Responded to {initiator.characterName}: {response}" :
+        $"Met {initiator.characterName} for the first time: {response}";
+    
+    target.aiManager.npcData.AddMemory(targetMemoryContent, targetInteractionImportance);
+
+    AddToChatLog(target.characterName,
+        $"<color=#{ColorUtility.ToHtmlStringRGB(target.characterColor)}>{target.characterName}</color> responds: \"{response}\"");
+}
+
+private string BuildConversationContext(bool haveMet, float relationship, List<string> recentInteractions, string speaker, string listener)
+{
+    StringBuilder context = new StringBuilder();
+    
+    // Relationship context
+    if (haveMet)
+    {
+        context.AppendLine($"You have met {listener} before. Your relationship is " + 
+            (relationship > 0.5f ? "positive" :
+             relationship < -0.5f ? "negative" : "neutral"));
+        
+        context.AppendLine("\nRecent interactions:");
+        foreach (var interaction in recentInteractions)
+        {
+            context.AppendLine(interaction);
+        }
+    }
+    else
+    {
+        context.AppendLine($"This is your first time meeting {listener}.");
+    }
+
+    return context.ToString();
+}
     private class ChatLogEntry
     {
         public string Timestamp;

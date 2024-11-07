@@ -213,19 +213,20 @@ public class OpenAIService : MonoBehaviour
     }
 
     private string GenerateAgentResponsePrompt(string characterName, string playerInput, AISettings aiSettings, string interactionHistory, string memoryContext = "", string reflection = "")
-    {
-        List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
-        string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join("; ", recentEurekas)}" : "";
+{
+    List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
+    string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join("; ", recentEurekas)}" : "";
 
-        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
-               $"Your personality: {aiSettings.characterPersonality}\n" +
-               $"Recent interactions: {interactionHistory}\n" +
-               $"Recent memories: {memoryContext}\n" +
-               $"Your current reflection: {reflection}\n" +
-               $"{eurekaContext}\n\n" +
-               $"The player says: \"{playerInput}\"\n" +
-               "Respond naturally and in character, considering your past interactions.";
-    }
+    return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
+           $"Your personality: {aiSettings.characterPersonality}\n\n" +
+           $"Conversation Context:\n{interactionHistory}\n\n" +
+           $"Your relevant memories: {memoryContext}\n" +
+           $"Your current thoughts: {reflection}\n" +
+           $"Recent discoveries: {eurekaContext}\n\n" +
+           $"The other person says: \"{playerInput}\"\n\n" +
+           "Respond naturally and in character, maintaining conversation continuity. " +
+           "Reference past interactions if relevant. Keep response focused and contextual.";
+}
 
     private string GenerateAgentResponseToChoicePrompt(string characterName, string playerChoice, AISettings aiSettings, string interactionHistory, string memoryContext = "", string reflection = "")
     {
@@ -477,7 +478,7 @@ private List<EmergentScenarioGenerator.ScenarioData> ParseScenarioResponse(strin
             var responseString = await response.Content.ReadAsStringAsync();
 
             // Log the response for debugging
-            Debug.Log($"API Response: {responseString}");
+            // Debug.Log($"API Response: {responseString}");
 
             var responseJson = JObject.Parse(responseString);
 
