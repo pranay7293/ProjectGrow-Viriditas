@@ -24,8 +24,40 @@ public class NPC_Data : MonoBehaviour
     public string GetCharacterPersonality() => characterController.aiSettings.characterPersonality;
 
     public void AddMemory(string memory, float importance = 0.5f)
+{
+    // Support old method signature
+    mentalModel.AddMemory(memory, importance);
+    
+    // Also add to new system
+    string[] keywords = ExtractKeywords(memory);
+    mentalModel.MemoryStream.AddMemory(
+        memory,
+        importance,
+        MemoryStream.MemoryType.Observation,
+        keywords
+    );
+}
+
+    public void AddConversationMemory(string speaker, string content, float importance = 0.7f)
     {
-        mentalModel.AddMemory(memory, importance);
+        string memory = $"{speaker}: {content}";
+        string[] keywords = ExtractKeywords(memory);
+        mentalModel.MemoryStream.AddMemory(
+            memory, 
+            importance,
+            MemoryStream.MemoryType.Conversation,
+            keywords
+        );
+    }
+
+    private string[] ExtractKeywords(string text)
+    {
+        // Simple keyword extraction
+        return text.ToLower()
+                  .Split(' ')
+                  .Where(w => w.Length > 3)
+                  .Distinct()
+                  .ToArray();
     }
 
     public List<string> GetMemories()

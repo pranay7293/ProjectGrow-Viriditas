@@ -49,8 +49,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     }
 
     private DialogueState currentState = DialogueState.Idle;
-
-    // Chat Log Data Structures
     private Dictionary<string, List<ChatLogEntry>> chatLog = new Dictionary<string, List<ChatLogEntry>>();
     private List<string> characterList = new List<string>();
     private bool wasUIActiveLastFrame = false;
@@ -60,7 +58,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         if (Instance == null)
         {
             Instance = this;
-            // Ensure the UI is part of the scene hierarchy
             if (transform.parent == null)
             {
                 DontDestroyOnLoad(gameObject);
@@ -75,7 +72,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void InitializeUI()
     {
-        // Initialize Dialogue Panel
         if (dialoguePanel != null)
         {
             dialoguePanel.SetActive(false);
@@ -101,7 +97,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             customInputField.onEndEdit.AddListener(OnCustomInputEndEdit);
         }
 
-        // Initialize Chat Log Panel
         if (chatLogPanel != null)
         {
             chatLogPanel.SetActive(false);
@@ -113,7 +108,6 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             }
         }
 
-        // Initialize Generative Choice Buttons
         if (generativeChoiceButtons != null && generativeChoiceTexts != null)
         {
             for (int i = 0; i < generativeChoiceButtons.Length; i++)
@@ -129,40 +123,49 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             Debug.LogError("DialogueManager: GenerativeChoiceButtons or GenerativeChoiceTexts are not assigned.");
         }
 
-        // Initialize Chat Log Data Structures
         InitializeChatLog();
     }
 
     private void InitializeChatLog()
     {
-        // Initialize chat log structures if needed
+        chatLog.Clear();
+        characterList.Clear();
     }
 
     public async void InitiateDialogue(UniversalCharacterController agent)
     {
         if (agent == null || currentState != DialogueState.Idle)
-        {
             return;
-        }
 
         currentAgent = agent;
         currentAgent.AddState(CharacterState.Chatting);
         InputManager.Instance.StartDialogue();
 
-        // Retrieve interaction history
-        string interactionHistory = string.Join("; ", currentAgent.aiManager.npcData.GetMemoriesAboutCharacter("Player"));
+        // Get conversation history and relevant memories
+        var conversationHistory = currentAgent.aiManager.npcData.GetMentalModel().MemoryStream
+            .GetConversationHistory("Player");
+        string interactionHistory = string.Join("; ", conversationHistory.Select(m => m.Content));
 
-        // Generate a dynamic greeting using OpenAIService
-        string greeting = await OpenAIService.Instance.GenerateAgentGreeting(currentAgent.characterName, currentAgent.aiSettings, interactionHistory);
+        // Generate greeting using conversation context
+        string greeting = await OpenAIService.Instance.GenerateAgentGreeting(
+            currentAgent.characterName, 
+            currentAgent.aiSettings, 
+            interactionHistory
+        );
+
         string initialDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentAgent.characterColor)}>{currentAgent.characterName}</color> says to you: \"{greeting}\"";
         agentDialogueText.text = initialDialogue;
         dialoguePanel.SetActive(true);
         customInputField.text = "";
 
-        // Record the interaction
-        currentAgent.aiManager.npcData.AddMemory($"Greeted Player: \"{greeting}\"", importance: 0.7f);
+        // Record the interaction in memory stream
+        currentAgent.aiManager.npcData.GetMentalModel().AddConversationMemory(
+            currentAgent.characterName,
+            greeting,
+            "Player",
+            0.7f
+        );
 
-        // Show dialogue prompt by default
         DialogueDisplayManager.Instance.ShowDialoguePrompt();
         SetCustomInputActive(false);
 
@@ -176,15 +179,17 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     private async Task GenerateAndDisplayGenerativeChoices()
     {
         if (isGeneratingChoices)
-        {
             return;
-        }
 
         isGeneratingChoices = true;
         ShowLoadingIndicator(true);
 
         string context = GetCurrentContext();
-        currentChoices = await OpenAIService.Instance.GetGenerativeChoices(currentAgent.characterName, context, currentAgent.aiSettings);
+        currentChoices = await OpenAIService.Instance.GetGenerativeChoices(
+            currentAgent.characterName, 
+            context, 
+            currentAgent.aiSettings
+        );
 
         if (currentChoices == null || currentChoices.Count == 0)
         {
@@ -211,7 +216,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
                 string categoryText = choices[i].Category.ToString().ToUpper();
                 string optionText = choices[i].Text;
 
-                string colorHex = "#FFD700"; // Gold color for high-stake choices
+                string colorHex = "#FFD700";
                 generativeChoiceTexts[i].text = $"<color={colorHex}>[{categoryText}]</color> {optionText}";
                 int index = i;
                 generativeChoiceButtons[i].onClick.RemoveAllListeners();
@@ -233,7 +238,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         {
             string selectedOption = currentChoices[optionIndex].Text;
             ProcessPlayerChoice(selectedOption, isNaturalDialogue: false);
-            AddToChatLog("Player", $"<color=#FFD700>[{currentChoices[optionIndex].Category.ToString().ToUpper()}]</color> {selectedOption}"); // Dialogue-related log
+            AddToChatLog("Player", $"<color=#FFD700>[{currentChoices[optionIndex].Category.ToString().ToUpper()}]</color> {selectedOption}");
         }
         else
         {
@@ -248,28 +253,28 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
     private void SetCustomInputActive(bool active)
     {
-    isCustomInputActive = active;
-    if (customInputWindow != null)
-    {
-        if (active)
+        isCustomInputActive = active;
+        if (customInputWindow != null)
         {
-            DialogueDisplayManager.Instance.ShowPlayerInput();
+            if (active)
+            {
+                DialogueDisplayManager.Instance.ShowPlayerInput();
+            }
+            else
+            {
+                DialogueDisplayManager.Instance.ShowDialoguePrompt();
+            }
+            customInputWindow.SetActive(active);
         }
         else
         {
-            DialogueDisplayManager.Instance.ShowDialoguePrompt();
+            Debug.LogWarning("DialogueManager: CustomInputWindow is not assigned.");
         }
-        customInputWindow.SetActive(active);
-    }
-    else
-    {
-        Debug.LogWarning("DialogueManager: CustomInputWindow is not assigned.");
-    }
 
-    if (active && customInputField != null)
-    {
-        customInputField.ActivateInputField();
-    }
+        if (active && customInputField != null)
+        {
+            customInputField.ActivateInputField();
+        }
     }
 
     public void SubmitCustomInput()
@@ -282,7 +287,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             customInputField.text = "";
             SetCustomInputActive(false);
             ProcessPlayerChoice(playerInput, isNaturalDialogue: true);
-            AddToChatLog("Player", $"You: {playerInput}"); // Dialogue-related log
+            AddToChatLog("Player", $"You: {playerInput}");
         }
     }
 
@@ -300,12 +305,10 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         }
     }
 
-     private async void ProcessPlayerChoice(string playerChoice, bool isNaturalDialogue)
+    private async void ProcessPlayerChoice(string playerChoice, bool isNaturalDialogue)
     {
         if (currentState != DialogueState.WaitingForPlayerInput || isProcessingInput)
-        {
             return;
-        }
 
         SetDialogueState(DialogueState.ProcessingPlayerInput);
         isProcessingInput = true;
@@ -313,33 +316,51 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         string playerDialogue = $"You say to <color=#{ColorUtility.ToHtmlStringRGB(currentAgent.characterColor)}>{currentAgent.characterName}</color>: \"{playerChoice}\"";
         agentDialogueText.text = playerDialogue;
-        AddToChatLog("Player", playerDialogue); // Dialogue-related log
+        AddToChatLog("Player", playerDialogue);
         GameManager.Instance.AddPlayerAction(playerChoice);
 
-        // Record player's input as memory
-        currentAgent.aiManager.npcData.AddMemory($"Heard from Player: \"{playerChoice}\"", importance: 0.6f);
+        // Record player's input in memory stream
+        currentAgent.aiManager.npcData.GetMentalModel().AddConversationMemory(
+            "Player",
+            playerChoice,
+            currentAgent.characterName,
+            0.6f
+        );
 
-        // Retrieve interaction history
-        string interactionHistory = string.Join("; ", currentAgent.aiManager.npcData.GetMemoriesAboutCharacter("Player"));
-        string memoryContext = ""; // Additional context if needed
+        // Get relevant conversation history and memories
+        var relevantMemories = currentAgent.aiManager.npcData.GetMentalModel().MemoryStream
+            .RetrieveRelevantMemories(playerChoice);
+        string memoryContext = string.Join("\n", relevantMemories.Select(m => m.Content));
         string reflection = currentAgent.aiManager.npcData.GetMentalModel().Reflect();
 
-        string agentResponse;
-        if (isNaturalDialogue)
-        {
-            agentResponse = await OpenAIService.Instance.GetAgentResponse(currentAgent.characterName, playerChoice, currentAgent.aiSettings, interactionHistory, memoryContext, reflection);
-        }
-        else
-        {
-            agentResponse = await OpenAIService.Instance.GetAgentResponseToChoice(currentAgent.characterName, playerChoice, currentAgent.aiSettings, interactionHistory, memoryContext, reflection);
-        }
+        // Generate agent response
+        string agentResponse = await (isNaturalDialogue ?
+            OpenAIService.Instance.GetAgentResponse(
+                currentAgent.characterName,
+                playerChoice,
+                currentAgent.aiSettings,
+                memoryContext,
+                reflection
+            ) :
+            OpenAIService.Instance.GetAgentResponseToChoice(
+                currentAgent.characterName,
+                playerChoice,
+                currentAgent.aiSettings,
+                memoryContext,
+                reflection
+            ));
 
-        // Record the agent's response
-        currentAgent.aiManager.npcData.AddMemory($"Responded to Player: \"{agentResponse}\"", importance: 0.7f);
+        // Record agent's response in memory stream
+        currentAgent.aiManager.npcData.GetMentalModel().AddConversationMemory(
+            currentAgent.characterName,
+            agentResponse,
+            "Player",
+            0.7f
+        );
 
         string agentDialogue = $"<color=#{ColorUtility.ToHtmlStringRGB(currentAgent.characterColor)}>{currentAgent.characterName}</color> says to you: \"{agentResponse}\"";
         agentDialogueText.text = agentDialogue;
-        AddToChatLog(currentAgent.characterName, agentDialogue); // Dialogue-related log
+        AddToChatLog(currentAgent.characterName, agentDialogue);
         GameManager.Instance.UpdateGameState(currentAgent.characterName, agentResponse);
 
         SetDialogueState(DialogueState.GeneratingResponse);
@@ -353,9 +374,7 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     public void EndConversation()
     {
         if (currentState == DialogueState.Idle)
-        {
             return;
-        }
 
         if (currentAgent != null)
         {
@@ -387,11 +406,14 @@ public class DialogueManager : MonoBehaviourPunCallbacks
     {
         GameState currentState = GameManager.Instance.GetCurrentGameState();
         List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
-        string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join(", ", recentEurekas)}" : "";
-        return $"Current challenge: {currentState.CurrentChallenge.title}. Milestones: {string.Join(", ", currentState.CurrentChallenge.milestones)}. {eurekaContext}";
+        string eurekaContext = recentEurekas.Count > 0 ? 
+            $"Recent breakthroughs: {string.Join(", ", recentEurekas)}" : "";
+        
+        return $"Current challenge: {currentState.CurrentChallenge.title}. " +
+               $"Milestones: {string.Join(", ", currentState.CurrentChallenge.milestones)}. " +
+               eurekaContext;
     }
 
-    // Chat Log Methods
     public void AddToChatLog(string speaker, string message)
     {
         if (!chatLog.ContainsKey(speaker))
@@ -427,39 +449,32 @@ public class DialogueManager : MonoBehaviourPunCallbacks
             int seconds = Mathf.FloorToInt(totalSeconds % 60f);
             return $"{minutes:00}:{seconds:00}";
         }
-        else
-        {
-            return System.DateTime.Now.ToString("HH:mm:ss");
-        }
+        return System.DateTime.Now.ToString("HH:mm:ss");
     }
 
     private void UpdateChatLogDisplay()
     {
         if (chatLogScrollRect == null || !chatLogPanel.activeSelf)
-        {
             return;
-        }
 
         string selectedCharacter = characterFilter.options[characterFilter.value].text;
         List<ChatLogEntry> filteredLog;
 
         if (selectedCharacter == "All Characters")
         {
-            filteredLog = chatLog.SelectMany(kv => kv.Value).OrderBy(entry => entry.Timestamp).ToList();
+            filteredLog = chatLog.SelectMany(kv => kv.Value)
+                               .OrderBy(entry => entry.Timestamp)
+                               .ToList();
         }
         else
         {
-            if (chatLog.ContainsKey(selectedCharacter))
-            {
-                filteredLog = chatLog[selectedCharacter].OrderBy(entry => entry.Timestamp).ToList();
-            }
-            else
-            {
-                filteredLog = new List<ChatLogEntry>();
-            }
+            filteredLog = chatLog.ContainsKey(selectedCharacter) ?
+                chatLog[selectedCharacter].OrderBy(entry => entry.Timestamp).ToList() :
+                new List<ChatLogEntry>();
         }
 
-        chatLogText.text = string.Join("\n", filteredLog.Select(entry => $"[{entry.Timestamp}] {entry.Message}"));
+        chatLogText.text = string.Join("\n", 
+            filteredLog.Select(entry => $"[{entry.Timestamp}] {entry.Message}"));
 
         Canvas.ForceUpdateCanvases();
         chatLogScrollRect.verticalNormalizedPosition = 0f;
@@ -490,14 +505,17 @@ public class DialogueManager : MonoBehaviourPunCallbacks
 
         chatLogPanel.SetActive(!chatLogPanel.activeSelf);
         InputManager.Instance.SetUIActive(chatLogPanel.activeSelf);
+        
         if (chatLogPanel.activeSelf)
         {
             UpdateChatLogDisplay();
-            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 1f, fadeDuration));
+            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, 
+                chatLogCanvasGroup.alpha, 1f, fadeDuration));
         }
         else
         {
-            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, chatLogCanvasGroup.alpha, 0f, fadeDuration));
+            StartCoroutine(FadeCanvasGroup(chatLogCanvasGroup, 
+                chatLogCanvasGroup.alpha, 0f, fadeDuration));
         }
     }
 
@@ -513,13 +531,10 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         cg.alpha = end;
     }
 
-    // Processing Natural Dialogues Initiated by AI Agents
     public async void InitiateAgentDialogue(string agentName)
     {
         if (currentState != DialogueState.Idle)
-        {
             return;
-        }
 
         UniversalCharacterController agentNPC = GameManager.Instance.GetCharacterByName(agentName);
         if (agentNPC == null)
@@ -532,30 +547,41 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         currentAgent.AddState(CharacterState.Chatting);
         InputManager.Instance.StartDialogue();
 
-        // Retrieve interaction history
-        string interactionHistory = string.Join("; ", agentNPC.aiManager.npcData.GetMemoriesAboutCharacter("Player"));
-        string memoryContext = ""; // Additional context if needed
+        // Get conversation history and memories
+        var conversationHistory = agentNPC.aiManager.npcData.GetMentalModel().MemoryStream
+            .GetConversationHistory("Player");
+        string memoryContext = string.Join("\n", 
+            conversationHistory.Select(m => m.Content));
         string reflection = agentNPC.aiManager.npcData.GetMentalModel().Reflect();
 
-        // Agent initiates the conversation
-        string initialDialogue = await OpenAIService.Instance.GetAgentResponse(agentNPC.characterName, "", agentNPC.aiSettings, interactionHistory, memoryContext, reflection);
+        string initialDialogue = await OpenAIService.Instance.GetAgentResponse(
+            agentNPC.characterName,
+            "",
+            agentNPC.aiSettings,
+            memoryContext,
+            reflection
+        );
+
         agentDialogueText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(agentNPC.characterColor)}>{agentNPC.characterName}</color> says to you: \"{initialDialogue}\"";
         dialoguePanel.SetActive(true);
         customInputField.text = "";
 
         // Record the interaction
-        agentNPC.aiManager.npcData.AddMemory($"Initiated conversation with Player: \"{initialDialogue}\"", importance: 0.7f);
+        agentNPC.aiManager.npcData.GetMentalModel().AddConversationMemory(
+            agentNPC.characterName,
+            initialDialogue,
+            "Player",
+            0.7f
+        );
 
         SetCustomInputActive(false);
-
-        AddToChatLog(agentNPC.characterName, agentDialogueText.text); // Dialogue-related log
+        AddToChatLog(agentNPC.characterName, agentDialogueText.text);
 
         SetDialogueState(DialogueState.GeneratingResponse);
         await GenerateAndDisplayGenerativeChoices();
         SetDialogueState(DialogueState.WaitingForPlayerInput);
     }
 
-    // Handling Dialogue Requests from Agents
     public void HandleDialogueRequest(int agentViewID)
     {
         PhotonView agentView = PhotonView.Find(agentViewID);
@@ -575,169 +601,129 @@ public class DialogueManager : MonoBehaviourPunCallbacks
         DialogueRequestUI.Instance.ShowRequest(agentNPC);
     }
 
-    // Called when player accepts the dialogue request
     public async void AcceptDialogueRequest(UniversalCharacterController agentNPC)
     {
         if (agentNPC == null || currentState != DialogueState.Idle)
-        {
             return;
-        }
 
         currentAgent = agentNPC;
         currentAgent.AddState(CharacterState.Chatting);
         InputManager.Instance.StartDialogue();
 
-        // Retrieve interaction history
-        string interactionHistory = string.Join("; ", agentNPC.aiManager.npcData.GetMemoriesAboutCharacter("Player"));
-        string memoryContext = ""; // Additional context if needed
+        // Get conversation history and memories
+        var conversationHistory = agentNPC.aiManager.npcData.GetMentalModel().MemoryStream
+            .GetConversationHistory("Player");
+        string memoryContext = string.Join("\n", 
+            conversationHistory.Select(m => m.Content));
         string reflection = agentNPC.aiManager.npcData.GetMentalModel().Reflect();
 
-        // Agent initiates the conversation
-        string initialDialogue = await OpenAIService.Instance.GetAgentResponse(agentNPC.characterName, "", agentNPC.aiSettings, interactionHistory, memoryContext, reflection);
+        string initialDialogue = await OpenAIService.Instance.GetAgentResponse(
+            agentNPC.characterName,
+            "",
+            agentNPC.aiSettings,
+            memoryContext,
+            reflection
+        );
+
         agentDialogueText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(agentNPC.characterColor)}>{agentNPC.characterName}</color> says to you: \"{initialDialogue}\"";
         dialoguePanel.SetActive(true);
         customInputField.text = "";
 
         // Record the interaction
-        agentNPC.aiManager.npcData.AddMemory($"Initiated conversation with Player: \"{initialDialogue}\"", importance: 0.7f);
+        agentNPC.aiManager.npcData.GetMentalModel().AddConversationMemory(
+            agentNPC.characterName,
+            initialDialogue,
+            "Player",
+            0.7f
+        );
 
         SetCustomInputActive(false);
-
-        AddToChatLog(agentNPC.characterName, agentDialogueText.text); // Dialogue-related log
+        AddToChatLog(agentNPC.characterName, agentDialogueText.text);
 
         SetDialogueState(DialogueState.GeneratingResponse);
         await GenerateAndDisplayGenerativeChoices();
         SetDialogueState(DialogueState.WaitingForPlayerInput);
     }
 
-    // Called when player declines the dialogue request
     public void DeclineDialogueRequest()
     {
         DialogueRequestUI.Instance.HideRequest();
     }
 
-    // Method to handle Agent-to-Agent or NPC-to-NPC dialogues
-    public async void TriggerAgentDialogue(UniversalCharacterController initiator, UniversalCharacterController target)
-{
-    if (initiator == null || target == null)
+    public async void TriggerAgentDialogue(UniversalCharacterController initiator, 
+        UniversalCharacterController target)
     {
-        Debug.LogWarning("DialogueManager: Invalid characters for agent dialogue.");
-        return;
-    }
-
-    // Check if they've met before
-    bool haveMet = initiator.aiManager.npcData.HasMetCharacter(target.characterName);
-    
-    // Get relationship context
-    float relationship = initiator.aiManager.npcData.GetRelationship(target.characterName);
-    
-    // Get recent interactions (last 5)
-    var recentInteractions = initiator.aiManager.npcData.GetMemoriesAboutCharacter(target.characterName)
-        .Take(5)
-        .ToList();
-
-    // Get relevant memories and current state
-    string initiatorMemory = string.Join(", ", initiator.aiManager.npcData.GetMentalModel()
-        .RetrieveRelevantMemories(target.characterName)
-        .Select(m => m.Content));
-    string initiatorReflection = initiator.aiManager.npcData.GetMentalModel().Reflect();
-
-    // Build conversation context
-    string conversationContext = BuildConversationContext(
-        haveMet,
-        relationship,
-        recentInteractions,
-        initiator.characterName,
-        target.characterName
-    );
-
-    // Generate initial dialogue
-    string initialDialogue = await OpenAIService.Instance.GetAgentResponse(
-        initiator.characterName,
-        $"Continue conversation with {target.characterName}",
-        initiator.aiSettings,
-        conversationContext,
-        initiatorMemory,
-        initiatorReflection
-    );
-
-    // Record the interaction with proper importance based on relationship
-    float interactionImportance = 0.5f + (relationship * 0.3f);
-    string memoryContent = haveMet ? 
-        $"Continued conversation with {target.characterName}: {initialDialogue}" :
-        $"Met {target.characterName} for the first time: {initialDialogue}";
-    
-    initiator.aiManager.npcData.AddMemory(memoryContent, interactionImportance);
-
-    AddToChatLog(initiator.characterName, 
-        $"<color=#{ColorUtility.ToHtmlStringRGB(initiator.characterColor)}>{initiator.characterName}</color> says to {target.characterName}: \"{initialDialogue}\"");
-
-    // Similar context building for target's response
-    bool targetHasMet = target.aiManager.npcData.HasMetCharacter(initiator.characterName);
-    float targetRelationship = target.aiManager.npcData.GetRelationship(initiator.characterName);
-    var targetRecentInteractions = target.aiManager.npcData.GetMemoriesAboutCharacter(initiator.characterName)
-        .Take(5)
-        .ToList();
-
-    string targetMemory = string.Join(", ", target.aiManager.npcData.GetMentalModel()
-        .RetrieveRelevantMemories(initiator.characterName)
-        .Select(m => m.Content));
-    string targetReflection = target.aiManager.npcData.GetMentalModel().Reflect();
-
-    string targetContext = BuildConversationContext(
-        targetHasMet,
-        targetRelationship,
-        targetRecentInteractions,
-        target.characterName,
-        initiator.characterName
-    );
-
-    // Generate response
-    string response = await OpenAIService.Instance.GetAgentResponse(
-        target.characterName,
-        initialDialogue,
-        target.aiSettings,
-        targetContext,
-        targetMemory,
-        targetReflection
-    );
-
-    // Record the interaction for target
-    float targetInteractionImportance = 0.5f + (targetRelationship * 0.3f);
-    string targetMemoryContent = targetHasMet ?
-        $"Responded to {initiator.characterName}: {response}" :
-        $"Met {initiator.characterName} for the first time: {response}";
-    
-    target.aiManager.npcData.AddMemory(targetMemoryContent, targetInteractionImportance);
-
-    AddToChatLog(target.characterName,
-        $"<color=#{ColorUtility.ToHtmlStringRGB(target.characterColor)}>{target.characterName}</color> responds: \"{response}\"");
-}
-
-private string BuildConversationContext(bool haveMet, float relationship, List<string> recentInteractions, string speaker, string listener)
-{
-    StringBuilder context = new StringBuilder();
-    
-    // Relationship context
-    if (haveMet)
-    {
-        context.AppendLine($"You have met {listener} before. Your relationship is " + 
-            (relationship > 0.5f ? "positive" :
-             relationship < -0.5f ? "negative" : "neutral"));
-        
-        context.AppendLine("\nRecent interactions:");
-        foreach (var interaction in recentInteractions)
+        if (initiator == null || target == null)
         {
-            context.AppendLine(interaction);
+            Debug.LogWarning("DialogueManager: Invalid characters for agent dialogue.");
+            return;
         }
-    }
-    else
-    {
-        context.AppendLine($"This is your first time meeting {listener}.");
+
+        // Get conversation history between these agents
+        var conversationHistory = initiator.aiManager.npcData.GetMentalModel().MemoryStream
+            .GetConversationHistory(target.characterName);
+        
+        float relationship = initiator.aiManager.npcData.GetRelationship(target.characterName);
+        
+        string initiatorMemory = string.Join("\n", 
+            conversationHistory.Select(m => m.Content));
+        string initiatorReflection = initiator.aiManager.npcData.GetMentalModel().Reflect();
+
+        // Generate initial dialogue
+        string initialDialogue = await OpenAIService.Instance.GetAgentResponse(
+            initiator.characterName,
+            $"Continue conversation with {target.characterName}",
+            initiator.aiSettings,
+            initiatorMemory,
+            initiatorReflection
+        );
+
+        // Record the interaction
+        float interactionImportance = 0.5f + (relationship * 0.3f);
+        initiator.aiManager.npcData.GetMentalModel().AddConversationMemory(
+            initiator.characterName,
+            initialDialogue,
+            target.characterName,
+            interactionImportance
+        );
+
+        AddToChatLog(initiator.characterName,
+            $"<color=#{ColorUtility.ToHtmlStringRGB(initiator.characterColor)}>{initiator.characterName}</color> " +
+            $"says to {target.characterName}: \"{initialDialogue}\"");
+
+        // Get target's conversation history and generate response
+        var targetConversationHistory = target.aiManager.npcData.GetMentalModel().MemoryStream
+            .GetConversationHistory(initiator.characterName);
+        
+        float targetRelationship = target.aiManager.npcData.GetRelationship(initiator.characterName);
+        
+        string targetMemory = string.Join("\n", 
+            targetConversationHistory.Select(m => m.Content));
+        string targetReflection = target.aiManager.npcData.GetMentalModel().Reflect();
+
+        // Generate response
+        string response = await OpenAIService.Instance.GetAgentResponse(
+            target.characterName,
+            initialDialogue,
+            target.aiSettings,
+            targetMemory,
+            targetReflection
+        );
+
+        // Record the interaction for target
+        float targetInteractionImportance = 0.5f + (targetRelationship * 0.3f);
+        target.aiManager.npcData.GetMentalModel().AddConversationMemory(
+            target.characterName,
+            response,
+            initiator.characterName,
+            targetInteractionImportance
+        );
+
+        AddToChatLog(target.characterName,
+            $"<color=#{ColorUtility.ToHtmlStringRGB(target.characterColor)}>{target.characterName}</color> " +
+            $"responds: \"{response}\"");
     }
 
-    return context.ToString();
-}
     private class ChatLogEntry
     {
         public string Timestamp;
@@ -746,7 +732,6 @@ private string BuildConversationContext(bool haveMet, float relationship, List<s
     }
 }
 
-// Helper Classes for Generative Choices
 public class GenerativeChoiceOption
 {
     public string Text { get; set; }
