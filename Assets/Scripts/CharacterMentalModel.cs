@@ -85,6 +85,7 @@ namespace ProjectGrow.AI
 
         public string MakeDecision(List<string> options, GameState currentState)
         {
+            // Debug.Log($"{characterController.characterName}: Making a decision.");
             Dictionary<string, float> scores = new Dictionary<string, float>();
 
             foreach (var option in options)

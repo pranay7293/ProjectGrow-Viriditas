@@ -105,6 +105,7 @@ public class NPC_Data : MonoBehaviour
 
     public string MakeDecision(List<string> options, GameState currentState)
     {
+        Debug.Log($"{characterController.characterName}: Making a decision.");
         return mentalModel.MakeDecision(options, currentState);
     }
 

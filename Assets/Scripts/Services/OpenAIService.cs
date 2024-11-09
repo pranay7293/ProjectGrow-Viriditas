@@ -189,58 +189,125 @@ public class OpenAIService : MonoBehaviour
         return string.IsNullOrEmpty(response) ? "Let me consider that option..." : response.Trim();
     }
 
-    private string GenerateAgentGreetingPrompt(string characterName, AISettings aiSettings, string interactionHistory)
-    {
-        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
-               $"Your personality: {aiSettings.characterPersonality}\n\n" +
-               $"Recent interactions: {interactionHistory}\n\n" +
-               "Initiate a conversation with a natural and friendly greeting that reflects your personality and past interactions. " +
-               "Keep it concise (max 15 words).";
-    }
+   private string GenerateAgentGreetingPrompt(string characterName, AISettings aiSettings, string interactionHistory)
+{
+    bool hasMetBefore = !string.IsNullOrEmpty(interactionHistory);
+    string currentChallenge = GameManager.Instance.GetCurrentChallenge().title;
+    
+    return $@"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground}
+Your personality: {aiSettings.characterPersonality}
+
+Current challenge: {currentChallenge}
+Your personal goals: {string.Join(", ", aiSettings.personalGoals)}
+Your current work: You're working on {(hasMetBefore ? "our" : "the")} {currentChallenge} challenge.
+
+Interaction History:
+{(hasMetBefore ? interactionHistory : "This is your first time meeting this person.")}
+
+{(hasMetBefore ? 
+    "Continue the ongoing relationship by greeting them naturally, acknowledging your shared work on the challenge." : 
+    "Introduce yourself, mentioning your role and current work on the challenge.")}
+
+Guidelines:
+- {(hasMetBefore ? "Reference past interactions and shared progress" : "Make a proper first introduction")}
+- Stay focused on your role and the current challenge
+- Be natural and professional
+- Keep response concise (max 15 words)
+- {(hasMetBefore ? "Maintain conversation continuity" : "Establish initial connection")}";
+}
 
     private string GenerateGenerativeChoicesPrompt(string characterName, string context, AISettings aiSettings)
     {
-        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
-               $"Your personality: {aiSettings.characterPersonality}\n\n" +
-               $"Based on this context: {context}\n\n" +
-               $"Generate 3 high-stakes decisions that {characterName} might propose to the player. " +
-               $"Each decision should be impactful and fall into one of these categories: Ethical, Strategic, Emotional, Practical, Creative, Diplomatic, or RiskTaking.\n" +
-               $"Each decision should be concise (max 12 words) and clearly worded.\n" +
-               "Format your response as follows:\n" +
-               "1. [Category]: [Decision]\n" +
-               "2. [Category]: [Decision]\n" +
-               "3. [Category]: [Decision]";
+        return $@"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground}
+Your personality: {aiSettings.characterPersonality}
+
+Current context:
+{context}
+
+Your personal goals: {string.Join(", ", aiSettings.personalGoals)}
+
+Generate 3 high-stakes decisions that you might propose, considering:
+1. Your expertise and role
+2. The current challenge and context
+3. Your personal goals and motivations
+4. Recent developments and discoveries
+
+Each decision should:
+- Be impactful and meaningful
+- Relate to current context
+- Reflect your expertise
+- Fall into one of these categories: Ethical, Strategic, Emotional, Practical, Creative, Diplomatic, or RiskTaking
+- Be concise (max 12 words)
+
+Format your response as:
+1. [Category]: [Decision]
+2. [Category]: [Decision]
+3. [Category]: [Decision]";
     }
 
     private string GenerateAgentResponsePrompt(string characterName, string playerInput, AISettings aiSettings, string interactionHistory, string memoryContext = "", string reflection = "")
-{
-    List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
-    string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join("; ", recentEurekas)}" : "";
+    {
+        List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
+        string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join("; ", recentEurekas)}" : "";
+        
+        return $@"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground}
+Your personality: {aiSettings.characterPersonality}
 
-    return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
-           $"Your personality: {aiSettings.characterPersonality}\n\n" +
-           $"Conversation Context:\n{interactionHistory}\n\n" +
-           $"Your relevant memories: {memoryContext}\n" +
-           $"Your current thoughts: {reflection}\n" +
-           $"Recent discoveries: {eurekaContext}\n\n" +
-           $"The other person says: \"{playerInput}\"\n\n" +
-           "Respond naturally and in character, maintaining conversation continuity. " +
-           "Reference past interactions if relevant. Keep response focused and contextual.";
-}
+Current conversation context:
+{interactionHistory}
+
+Your relevant memories and thoughts:
+{memoryContext}
+Current reflection: {reflection}
+
+Challenge context:
+- Current challenge: {GameManager.Instance.GetCurrentChallenge().title}
+- Your personal goals: {string.Join(", ", aiSettings.personalGoals)}
+- Recent discoveries: {eurekaContext}
+
+The other person just said: ""{playerInput}""
+
+Respond naturally while:
+1. Maintaining conversation continuity - directly reference and build upon what was just said
+2. Keeping consistent with your previous statements in this conversation
+3. Drawing on relevant memories and past interactions
+4. Staying focused on current topics and goals
+5. Expressing your character's personality and expertise
+
+Keep your response focused and contextual. Show you're actively engaged in an ongoing conversation.";
+    }
 
     private string GenerateAgentResponseToChoicePrompt(string characterName, string playerChoice, AISettings aiSettings, string interactionHistory, string memoryContext = "", string reflection = "")
     {
         List<string> recentEurekas = EurekaManager.Instance.GetRecentEurekas();
         string eurekaContext = recentEurekas.Count > 0 ? $"Recent breakthroughs: {string.Join("; ", recentEurekas)}" : "";
 
-        return $"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground} " +
-               $"Your personality: {aiSettings.characterPersonality}\n" +
-               $"Recent interactions: {interactionHistory}\n" +
-               $"Recent memories: {memoryContext}\n" +
-               $"Your current reflection: {reflection}\n" +
-               $"{eurekaContext}\n\n" +
-               $"The player has chosen: \"{playerChoice}\"\n" +
-               "Provide a response that reflects your thoughts on this choice, keeping in character and being concise (max 50 words).";
+        return $@"You are {characterName}, a {aiSettings.characterRole}. {aiSettings.characterBackground}
+Your personality: {aiSettings.characterPersonality}
+
+Current conversation context:
+{interactionHistory}
+
+Your relevant memories and thoughts:
+{memoryContext}
+Current reflection: {reflection}
+
+Challenge context:
+- Current challenge: {GameManager.Instance.GetCurrentChallenge().title}
+- Your personal goals: {string.Join(", ", aiSettings.personalGoals)}
+- Recent discoveries: {eurekaContext}
+
+The other person has chosen this action: ""{playerChoice}""
+
+Respond while:
+1. Directly addressing their specific choice
+2. Maintaining conversation flow from previous exchanges
+3. Drawing on relevant memories and expertise
+4. Staying focused on current goals and challenge
+5. Keeping your character's personality consistent
+
+Provide a natural response that shows you're engaged in an ongoing conversation and considering their specific choice.
+Keep response concise (max 25 words) but maintain conversation continuity.";
     }
 
     private List<GenerativeChoiceOption> GetDefaultGenerativeChoices()
@@ -429,7 +496,7 @@ private List<EmergentScenarioGenerator.ScenarioData> ParseScenarioResponse(strin
               $"Recent memories: {memoryContext}\n\n" +
               $"Your current reflection: {reflection}\n\n" +
               $"{eurekaContext}\n\n{prompt}\n\n" +
-              "Respond in character, keeping your response concise (max 50 words) and natural. Consider your memories and current reflection in your response:"
+              "Respond in character, keeping your response concise (max 25 words) and natural. Consider your memories and current reflection in your response:"
             : prompt;
 
         string response = await GetChatCompletionAsync(fullPrompt, selectedModel);

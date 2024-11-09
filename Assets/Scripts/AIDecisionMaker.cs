@@ -18,6 +18,7 @@ public class AIDecisionMaker : MonoBehaviour
 
     public async Task<string> MakeDecision(AIManager aiManager, List<string> options, GameState gameState, string memoryContext, string reflection)
     {
+        // Debug.Log($"{characterController.characterName}: Making a decision.");
         string cacheKey = GenerateCacheKey(aiManager, options, gameState, memoryContext, reflection);
 
         if (decisionCache.TryGetValue(cacheKey, out CachedDecision cachedDecision))

@@ -609,7 +609,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         activeStates |= state;
         UpdateProgressBarState();
         
-        // Debug.Log($"{characterName}: Added state {state}. Previous states: {previousStates}, New states: {activeStates}");
+        Debug.Log($"{characterName}: Added state {state}. Previous states: {previousStates}, New states: {activeStates}");
     }
 
     public void RemoveState(CharacterState state)
@@ -622,7 +622,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         }
         UpdateProgressBarState();
         
-        // Debug.Log($"{characterName}: Removed state {state}. Previous states: {previousStates}, New states: {activeStates}");
+        Debug.Log($"{characterName}: Removed state {state}. Previous states: {previousStates}, New states: {activeStates}");
     }
 
     public bool HasState(CharacterState state)

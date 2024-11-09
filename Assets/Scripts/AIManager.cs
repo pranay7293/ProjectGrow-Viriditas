@@ -20,13 +20,15 @@ public class AIManager : MonoBehaviourPunCallbacks
     [SerializeField] private float decisionMakingInterval = 5f;
     [SerializeField] private float explorationProbability = 0.25f;
     [SerializeField] private float minActionDuration = 5f;
-    private float lastDecisionTime = 0f;
+    [SerializeField] private float maxIdleDuration = 10f; // New variable to force exit from Idle state
 
     public float interactionRadius = 10f;
 
+    private float lastDecisionTime = 0f;
     private float lastCollabConsiderationTime = 0f;
     private float lastActionTime = 0f;
     private float lastDialogueInitiationTime = 0f;
+    private float idleStartTime = 0f; // To track how long the agent has been idle
 
     private bool isInitialized = false;
     private bool isExecutingAction = false;
@@ -60,36 +62,39 @@ public class AIManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private IEnumerator DecisionMakingCoroutine()
-    {
-        while (true)
-        {
-            yield return new WaitForSeconds(decisionMakingInterval);
-            if (!isExecutingAction && Time.time - lastActionTime >= minActionDuration)
-            {
-                MakeDecision();
-            }
-        }
-    }
-
-    private void Update()
+private void Update()
 {
     if (!photonView.IsMine || !isInitialized || characterController == null) return;
 
-    if (Time.time - lastDecisionTime >= decisionMakingInterval && !isExecutingAction && Time.time - lastActionTime >= minActionDuration)
+    float currentDecisionInterval = decisionMakingInterval;
+    if (characterController.HasState(CharacterState.Idle))
+    {
+        currentDecisionInterval = decisionMakingInterval / 2f; // Make decisions more frequently when idle
+        if (Time.time - idleStartTime > maxIdleDuration)
+        {
+            // Force the agent to make a decision to exit Idle state
+            isExecutingAction = false;
+            idleStartTime = Time.time;
+            Debug.Log($"{characterController.characterName}: Forced exit from Idle state.");
+        }
+    }
+
+    // Add debug logs to monitor the agent's state
+    Debug.Log($"{characterController.characterName}: isExecutingAction={isExecutingAction}, Time since last decision={Time.time - lastDecisionTime}, Time since last action={Time.time - lastActionTime}");
+
+    if (Time.time - lastDecisionTime >= currentDecisionInterval && !isExecutingAction && Time.time - lastActionTime >= minActionDuration)
     {
         MakeDecision();
         lastDecisionTime = Time.time;
     }
 }
 
-
     private void MakeDecision()
     {
+        Debug.Log($"{characterController.characterName}: Making a decision.");
         if (!photonView.IsMine || !isInitialized || characterController == null) return;
 
         string chosenAction = ChooseAction();
-        // Debug.Log($"{characterController.characterName}: Chose action: {chosenAction}");
         ExecuteAction(chosenAction);
     }
 
@@ -109,8 +114,9 @@ public class AIManager : MonoBehaviourPunCallbacks
             actionWeights[action] = EvaluateActionWeight(action);
         }
 
+        // Debug.Log($"{characterController.characterName}: Action weights: {string.Join(", ", actionWeights.Select(kv => $"{kv.Key}:{kv.Value:F2}"))}");
+
         string chosenAction = WeightedRandomSelection(actionWeights);
-        // Debug.Log($"{characterController.characterName}: Action weights: {string.Join(", ", actionWeights.Select(kv => $"{kv.Key}:{kv.Value}"))}");
         return chosenAction;
     }
 
@@ -118,28 +124,102 @@ public class AIManager : MonoBehaviourPunCallbacks
     {
         float weight = 1f; // Base weight
 
+        // Get personal goals and completion status
+        var personalGoals = characterController.GetPersonalGoalTags();
+        var personalGoalCompletion = characterController.GetPersonalGoalCompletion();
+
+        // Get game state and current challenge
+        var gameState = GameManager.Instance.GetCurrentGameState();
+        var currentChallenge = gameState.CurrentChallenge;
+
+        // Determine goal completion ratio
+        int goalsAchieved = personalGoalCompletion.Count(kv => kv.Value);
+        int totalGoals = personalGoalCompletion.Count;
+        float goalCompletionRatio = totalGoals > 0 ? (float)goalsAchieved / totalGoals : 0f;
+
         switch (action)
         {
             case "MoveToNewLocation":
+                // Encourage moving to new locations
+                weight *= 3f; // Increase base weight
                 if (characterController.HasState(CharacterState.Idle))
+                    weight *= 2f;
+                if (characterController.currentLocation == null)
                     weight *= 2f;
                 break;
             case "PerformLocationAction":
                 if (characterController.currentLocation != null)
-                    weight *= 1.5f;
+                {
+                    weight *= 5f; // Increase weight significantly
+                    // Adjust weight based on actions available at the location
+                    var availableActions = characterController.currentLocation.GetAvailableActions(characterController.aiSettings.characterRole);
+                    foreach (var actionOption in availableActions)
+                    {
+                        float actionScore = EvaluateLocationAction(actionOption);
+                        weight += actionScore;
+                    }
+                }
+                else
+                {
+                    weight *= 2f;
+                }
                 break;
             case "InteractWithNearbyCharacter":
                 Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, interactionRadius);
                 int nearbyCharacters = nearbyColliders.Count(c => c.GetComponent<UniversalCharacterController>() != null);
-                weight *= (1f + (0.1f * nearbyCharacters));
+                weight *= (1f + (0.2f * nearbyCharacters)); // Increase the weight
                 break;
             case "Idle":
+                // Penalize idle action if agent hasn't achieved goals
+                if (goalCompletionRatio < 1f)
+                {
+                    // Reduce weight of Idle more aggressively
+                    weight *= 0.1f;
+                }
+                else
+                {
+                    weight *= 0.5f;
+                }
+
                 if (Time.time - lastActionTime < minActionDuration * 2)
                     weight *= 0.5f;
                 break;
         }
 
         return weight;
+    }
+
+    private float EvaluateLocationAction(LocationManager.LocationAction action)
+    {
+        float score = 0f;
+
+        // Increase score if action contributes to current challenge
+        if (GameManager.Instance.GetCurrentChallenge().title.ToLower().Contains(action.actionName.ToLower()))
+        {
+            score += 5f;
+        }
+
+        // Increase score if action helps achieve personal goals
+        int personalGoalMatches = characterController.aiSettings.personalGoalTags.Count(goalTag => action.actionName.ToLower().Contains(goalTag.ToLower()));
+        score += personalGoalMatches * 3f;
+
+        // Increase score based on tags
+        var tagsWithWeights = TagSystem.GetTagsForAction(action.actionName);
+        foreach (var (tag, weight) in tagsWithWeights)
+        {
+            if (characterController.aiSettings.personalGoalTags.Contains(tag))
+            {
+                score += weight * 2f;
+            }
+            else if (tag.StartsWith("Challenge"))
+            {
+                score += weight * 1f;
+            }
+        }
+
+        score += Random.Range(0f, 1f);
+
+        return score;
     }
 
     private string WeightedRandomSelection(Dictionary<string, float> weights)
@@ -190,7 +270,6 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     private IEnumerator MoveToNewLocationCoroutine()
     {
-        // Debug.Log($"{characterController.characterName}: Starting MoveToNewLocation");
         string bestLocation = EvaluateBestLocation();
         if (characterController.currentLocation == null || bestLocation != characterController.currentLocation.locationName)
         {
@@ -199,62 +278,75 @@ public class AIManager : MonoBehaviourPunCallbacks
                 Vector3 waypointNearLocation = WaypointsManager.Instance.GetWaypointNearLocation(bestLocation);
                 npcBehavior.MoveToPosition(waypointNearLocation);
                 yield return new WaitUntil(() => !characterController.HasState(CharacterState.Moving));
-                // Debug.Log($"{characterController.characterName}: Finished moving to new location");
             }
         }
         isExecutingAction = false;
     }
 
     private IEnumerator PerformLocationActionCoroutine()
+{
+    Debug.Log($"{characterController.characterName}: Starting PerformLocationActionCoroutine.");
+
+    if (characterController.currentLocation != null)
     {
-        // Debug.Log($"{characterController.characterName}: Starting PerformLocationAction");
-        if (characterController.currentLocation != null)
+        List<LocationManager.LocationAction> availableActions = characterController.currentLocation.GetAvailableActions(characterController.aiSettings.characterRole);
+        if (availableActions.Count > 0)
         {
-            List<LocationManager.LocationAction> availableActions = characterController.currentLocation.GetAvailableActions(characterController.aiSettings.characterRole);
-            if (availableActions.Count > 0)
-            {
-                LocationManager.LocationAction selectedAction = ChooseBestAction(availableActions);
-                characterController.StartAction(selectedAction);
-                yield return new WaitUntil(() => !characterController.HasState(CharacterState.PerformingAction));
-                // Debug.Log($"{characterController.characterName}: Finished performing location action");
-            }
+            LocationManager.LocationAction selectedAction = ChooseBestAction(availableActions);
+            characterController.StartAction(selectedAction);
+            yield return new WaitUntil(() => !characterController.HasState(CharacterState.PerformingAction));
         }
-        isExecutingAction = false;
     }
+    else
+    {
+        Debug.LogWarning($"{characterController.characterName}: No current location to perform action.");
+    }
+    isExecutingAction = false; // Ensure this is set
+    Debug.Log($"{characterController.characterName}: Ending PerformLocationActionCoroutine. isExecutingAction set to false.");
+}
 
     private IEnumerator InteractWithNearbyCharacterCoroutine()
-    {
-        // Debug.Log($"{characterController.characterName}: Starting InteractWithNearbyCharacter");
-        Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, interactionRadius);
-        List<UniversalCharacterController> nearbyCharacters = nearbyColliders
-            .Select(c => c.GetComponent<UniversalCharacterController>())
-            .Where(c => c != null && c != characterController)
-            .ToList();
+{
+    Debug.Log($"{characterController.characterName}: Starting InteractWithNearbyCharacterCoroutine.");
 
-        if (nearbyCharacters.Count > 0)
+    Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, interactionRadius);
+    List<UniversalCharacterController> nearbyCharacters = nearbyColliders
+        .Select(c => c.GetComponent<UniversalCharacterController>())
+        .Where(c => c != null && c != characterController)
+        .ToList();
+
+    if (nearbyCharacters.Count > 0)
+    {
+        UniversalCharacterController target = nearbyCharacters.OrderByDescending(EvaluateCollaborator).FirstOrDefault();
+        if (target != null)
         {
-            UniversalCharacterController target = nearbyCharacters[Random.Range(0, nearbyCharacters.Count)];
             if (target.IsPlayerControlled)
             {
                 InitiateDialogueWithPlayer(target);
+                yield return new WaitForSeconds(3f); // Simulate dialogue duration
             }
             else
             {
                 // Implement NPC-NPC interaction logic here
-                yield return new WaitForSeconds(3f); // Simulated interaction time
+                yield return new WaitForSeconds(3f); // Simulate interaction duration
             }
-            // Debug.Log($"{characterController.characterName}: Finished interacting with nearby character");
         }
-        isExecutingAction = false;
     }
+    else
+    {
+        Debug.Log($"{characterController.characterName}: No nearby characters to interact with.");
+    }
+
+    isExecutingAction = false;
+    Debug.Log($"{characterController.characterName}: Ending InteractWithNearbyCharacterCoroutine. isExecutingAction set to false.");
+}
 
     private IEnumerator IdleCoroutine()
     {
-        // Debug.Log($"{characterController.characterName}: Starting Idle");
         characterController.AddState(CharacterState.Idle);
+        idleStartTime = Time.time; // Start tracking idle time
         yield return new WaitForSeconds(Random.Range(3f, 7f));
         characterController.RemoveState(CharacterState.Idle);
-        // Debug.Log($"{characterController.characterName}: Finished Idle");
         isExecutingAction = false;
     }
 
@@ -270,14 +362,7 @@ public class AIManager : MonoBehaviourPunCallbacks
             List<LocationManager.LocationAction> actions = LocationManagerMaster.Instance.GetLocationActions(location, characterController.aiSettings.characterRole);
             foreach (var action in actions)
             {
-                if (!string.IsNullOrEmpty(characterController.currentObjective) && action.actionName.ToLower().Contains(characterController.currentObjective.ToLower()))
-                {
-                    score += 2f;
-                }
-                if (npcData.GetMentalModel().GoalImportance.TryGetValue(action.actionName, out float importance))
-                {
-                    score += importance;
-                }
+                score += EvaluateLocationAction(action);
             }
 
             List<UniversalCharacterController> charactersAtLocation = GameManager.Instance.GetAllCharacters()
@@ -302,21 +387,24 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     private LocationManager.LocationAction ChooseBestAction(List<LocationManager.LocationAction> actions)
     {
-        return actions.OrderByDescending(EvaluateAction).FirstOrDefault();
+        return actions.OrderByDescending(EvaluateLocationAction).FirstOrDefault();
     }
 
-    private float EvaluateAction(LocationManager.LocationAction action)
+    private float EvaluateCollaborator(UniversalCharacterController collaborator)
     {
         float score = 0f;
-        if (GameManager.Instance.GetCurrentChallenge().title.ToLower().Contains(action.actionName.ToLower()))
-        {
-            score += 2f;
-        }
-        score += characterController.aiSettings.personalGoalTags.Count(goalTag => action.actionName.ToLower().Contains(goalTag.ToLower())) * 1.5f;
-        score += TagSystem.GetTagsForAction(action.actionName)
-            .Count(t => t.tag.StartsWith("Challenge") || t.tag.StartsWith("PersonalGoal")) * 0.5f;
+        score += npcData.GetRelationship(collaborator.characterName) * 2f;
+        score += CountComplementarySkills(collaborator) * 1.5f;
+        score += (collaborator.currentLocation == characterController.currentLocation) ? 1f : 0f;
         score += Random.Range(0f, 0.5f);
         return score;
+    }
+
+    private int CountComplementarySkills(UniversalCharacterController collaborator)
+    {
+        var myTags = new HashSet<string>(characterController.aiSettings.personalGoalTags);
+        var theirTags = new HashSet<string>(collaborator.aiSettings.personalGoalTags);
+        return myTags.Union(theirTags).Count() - myTags.Count;
     }
 
     public void ConsiderCollaboration(UniversalCharacterController potentialCollaborator = null)
@@ -392,34 +480,17 @@ public class AIManager : MonoBehaviourPunCallbacks
         return eligibleCollaborators.OrderByDescending(EvaluateCollaborator).FirstOrDefault();
     }
 
-    private float EvaluateCollaborator(UniversalCharacterController collaborator)
-    {
-        float score = 0f;
-        score += npcData.GetRelationship(collaborator.characterName) * 2f;
-        score += CountComplementarySkills(collaborator) * 1.5f;
-        score += (collaborator.currentLocation == characterController.currentLocation) ? 1f : 0f;
-        score += Random.Range(0f, 0.5f);
-        return score;
-    }
-
-    private int CountComplementarySkills(UniversalCharacterController collaborator)
-    {
-        var myTags = new HashSet<string>(characterController.aiSettings.personalGoalTags);
-        var theirTags = new HashSet<string>(collaborator.aiSettings.personalGoalTags);
-        return myTags.Union(theirTags).Count() - myTags.Count;
-    }
-
     private string ChooseCollaborationAction(UniversalCharacterController collaborator)
-{
-    if (characterController.currentLocation == null) return null;
+    {
+        if (characterController.currentLocation == null) return null;
 
-    List<LocationManager.LocationAction> availableActions = characterController.currentLocation.GetAvailableActions(characterController.aiSettings.characterRole);
-    List<LocationManager.LocationAction> collaboratorActions = characterController.currentLocation.GetAvailableActions(collaborator.aiSettings.characterRole);
+        List<LocationManager.LocationAction> availableActions = characterController.currentLocation.GetAvailableActions(characterController.aiSettings.characterRole);
+        List<LocationManager.LocationAction> collaboratorActions = characterController.currentLocation.GetAvailableActions(collaborator.aiSettings.characterRole);
 
-    var commonActions = availableActions.Intersect(collaboratorActions, new LocationActionComparer());
+        var commonActions = availableActions.Intersect(collaboratorActions, new LocationActionComparer());
 
-    return commonActions.Any() ? commonActions.OrderByDescending(EvaluateAction).First().actionName : null;
-}
+        return commonActions.Any() ? commonActions.OrderByDescending(EvaluateLocationAction).First().actionName : null;
+    }
 
     public void InitiateDialogueWithPlayer(UniversalCharacterController player)
     {
@@ -542,7 +613,7 @@ public class AIManager : MonoBehaviourPunCallbacks
 
         float maxScore = scenarioScores.Values.Max();
         var topScenarios = scenarioScores.Where(kvp => Mathf.Approximately(kvp.Value, maxScore)).ToList();
-        
+
         return topScenarios[Random.Range(0, topScenarios.Count)].Key;
     }
 
