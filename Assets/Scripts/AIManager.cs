@@ -62,32 +62,32 @@ public class AIManager : MonoBehaviourPunCallbacks
         }
     }
 
-private void Update()
-{
-    if (!photonView.IsMine || !isInitialized || characterController == null) return;
-
-    float currentDecisionInterval = decisionMakingInterval;
-    if (characterController.HasState(CharacterState.Idle))
+    private void Update()
     {
-        currentDecisionInterval = decisionMakingInterval / 2f; // Make decisions more frequently when idle
-        if (Time.time - idleStartTime > maxIdleDuration)
+        if (!photonView.IsMine || !isInitialized || characterController == null) return;
+
+        float currentDecisionInterval = decisionMakingInterval;
+        if (characterController.HasState(CharacterState.Idle))
         {
-            // Force the agent to make a decision to exit Idle state
-            isExecutingAction = false;
-            idleStartTime = Time.time;
-            Debug.Log($"{characterController.characterName}: Forced exit from Idle state.");
+            currentDecisionInterval = decisionMakingInterval / 2f; // Make decisions more frequently when idle
+            if (Time.time - idleStartTime > maxIdleDuration)
+            {
+                // Force the agent to make a decision to exit Idle state
+                isExecutingAction = false;
+                idleStartTime = Time.time;
+                Debug.Log($"{characterController.characterName}: Forced exit from Idle state.");
+            }
+        }
+
+        // Add debug logs to monitor the agent's state
+        // Debug.Log($"{characterController.characterName}: isExecutingAction={isExecutingAction}, Time since last decision={Time.time - lastDecisionTime}, Time since last action={Time.time - lastActionTime}");
+
+        if (Time.time - lastDecisionTime >= currentDecisionInterval && !isExecutingAction && Time.time - lastActionTime >= minActionDuration)
+        {
+            MakeDecision();
+            lastDecisionTime = Time.time;
         }
     }
-
-    // Add debug logs to monitor the agent's state
-    Debug.Log($"{characterController.characterName}: isExecutingAction={isExecutingAction}, Time since last decision={Time.time - lastDecisionTime}, Time since last action={Time.time - lastActionTime}");
-
-    if (Time.time - lastDecisionTime >= currentDecisionInterval && !isExecutingAction && Time.time - lastActionTime >= minActionDuration)
-    {
-        MakeDecision();
-        lastDecisionTime = Time.time;
-    }
-}
 
     private void MakeDecision()
     {
@@ -96,6 +96,29 @@ private void Update()
 
         string chosenAction = ChooseAction();
         ExecuteAction(chosenAction);
+    }
+
+    public void ForceMoveToNewLocation()
+    {
+        if (!photonView.IsMine || !isInitialized || characterController == null) return;
+
+        // Stop any current actions (except PerformingAction)
+        if (characterController.HasState(CharacterState.Moving))
+        {
+            characterController.StopMoving();
+        }
+
+        // Get a new random destination
+        Vector3 newDestination = WaypointsManager.Instance.GetRandomWaypoint();
+
+        // Command the character to move to the new destination
+        characterController.MoveTo(newDestination);
+
+        // Update states
+        isExecutingAction = false;
+        lastActionTime = Time.time;
+
+        Debug.Log($"{characterController.characterName}: Forced to move to a new location.");
     }
 
     private string ChooseAction()
@@ -113,8 +136,6 @@ private void Update()
         {
             actionWeights[action] = EvaluateActionWeight(action);
         }
-
-        // Debug.Log($"{characterController.characterName}: Action weights: {string.Join(", ", actionWeights.Select(kv => $"{kv.Key}:{kv.Value:F2}"))}");
 
         string chosenAction = WeightedRandomSelection(actionWeights);
         return chosenAction;
@@ -284,62 +305,56 @@ private void Update()
     }
 
     private IEnumerator PerformLocationActionCoroutine()
-{
-    Debug.Log($"{characterController.characterName}: Starting PerformLocationActionCoroutine.");
-
-    if (characterController.currentLocation != null)
     {
-        List<LocationManager.LocationAction> availableActions = characterController.currentLocation.GetAvailableActions(characterController.aiSettings.characterRole);
-        if (availableActions.Count > 0)
+        if (characterController.currentLocation != null)
         {
-            LocationManager.LocationAction selectedAction = ChooseBestAction(availableActions);
-            characterController.StartAction(selectedAction);
-            yield return new WaitUntil(() => !characterController.HasState(CharacterState.PerformingAction));
+            List<LocationManager.LocationAction> availableActions = characterController.currentLocation.GetAvailableActions(characterController.aiSettings.characterRole);
+            if (availableActions.Count > 0)
+            {
+                LocationManager.LocationAction selectedAction = ChooseBestAction(availableActions);
+                characterController.StartAction(selectedAction);
+                yield return new WaitUntil(() => !characterController.HasState(CharacterState.PerformingAction));
+            }
         }
+        else
+        {
+            Debug.LogWarning($"{characterController.characterName}: No current location to perform action.");
+        }
+        isExecutingAction = false;
     }
-    else
-    {
-        Debug.LogWarning($"{characterController.characterName}: No current location to perform action.");
-    }
-    isExecutingAction = false; // Ensure this is set
-    Debug.Log($"{characterController.characterName}: Ending PerformLocationActionCoroutine. isExecutingAction set to false.");
-}
 
     private IEnumerator InteractWithNearbyCharacterCoroutine()
-{
-    Debug.Log($"{characterController.characterName}: Starting InteractWithNearbyCharacterCoroutine.");
-
-    Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, interactionRadius);
-    List<UniversalCharacterController> nearbyCharacters = nearbyColliders
-        .Select(c => c.GetComponent<UniversalCharacterController>())
-        .Where(c => c != null && c != characterController)
-        .ToList();
-
-    if (nearbyCharacters.Count > 0)
     {
-        UniversalCharacterController target = nearbyCharacters.OrderByDescending(EvaluateCollaborator).FirstOrDefault();
-        if (target != null)
+        Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, interactionRadius);
+        List<UniversalCharacterController> nearbyCharacters = nearbyColliders
+            .Select(c => c.GetComponent<UniversalCharacterController>())
+            .Where(c => c != null && c != characterController)
+            .ToList();
+
+        if (nearbyCharacters.Count > 0)
         {
-            if (target.IsPlayerControlled)
+            UniversalCharacterController target = nearbyCharacters.OrderByDescending(EvaluateCollaborator).FirstOrDefault();
+            if (target != null)
             {
-                InitiateDialogueWithPlayer(target);
-                yield return new WaitForSeconds(3f); // Simulate dialogue duration
-            }
-            else
-            {
-                // Implement NPC-NPC interaction logic here
-                yield return new WaitForSeconds(3f); // Simulate interaction duration
+                if (target.IsPlayerControlled)
+                {
+                    InitiateDialogueWithPlayer(target);
+                    yield return new WaitForSeconds(3f); // Simulate dialogue duration
+                }
+                else
+                {
+                    // Implement NPC-NPC interaction logic here
+                    yield return new WaitForSeconds(3f); // Simulate interaction duration
+                }
             }
         }
-    }
-    else
-    {
-        Debug.Log($"{characterController.characterName}: No nearby characters to interact with.");
-    }
+        else
+        {
+            Debug.Log($"{characterController.characterName}: No nearby characters to interact with.");
+        }
 
-    isExecutingAction = false;
-    Debug.Log($"{characterController.characterName}: Ending InteractWithNearbyCharacterCoroutine. isExecutingAction set to false.");
-}
+        isExecutingAction = false;
+    }
 
     private IEnumerator IdleCoroutine()
     {

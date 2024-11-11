@@ -26,6 +26,7 @@ public class InputManager : MonoBehaviourPunCallbacks
     [SerializeField] private KeyCode toggleEurekaLogKey = KeyCode.F5;
     [SerializeField] private KeyCode acceptDialogueRequestKey = KeyCode.Y;
     [SerializeField] private KeyCode declineDialogueRequestKey = KeyCode.N;
+    [SerializeField] private KeyCode forceMoveKey = KeyCode.Space;
     [SerializeField] private EurekaLogUI eurekaLogUI;
     [SerializeField] public float interactionDistance = 5f;
 
@@ -124,6 +125,12 @@ public class InputManager : MonoBehaviourPunCallbacks
             CloseAllUIElements();
         }
 
+        // Updated condition to prevent agents from moving when typing in dialogue or interacting with UI
+        if (Input.GetKeyDown(forceMoveKey) && !IsInDialogue && !IsUIActive && !IsPointerOverUIElement())
+        {
+            ForceAgentsToMove();
+        }
+
         if (DialogueRequestUI.Instance != null && DialogueRequestUI.Instance.IsRequestActive())
         {
             if (Input.GetKeyDown(acceptDialogueRequestKey))
@@ -138,33 +145,33 @@ public class InputManager : MonoBehaviourPunCallbacks
     }
 
     public void CloseAllUIElements()
-{
-    if (IsInDialogue)
     {
-        EndDialogue();
+        if (IsInDialogue)
+        {
+            EndDialogue();
+        }
+        if (IsChatLogOpen)
+        {
+            ToggleChatLog();
+        }
+        if (ActionLogManager.Instance.IsLogVisible())
+        {
+            ToggleActionLog();
+        }
+        if (GameManager.Instance.IsMilestonesDisplayVisible())
+        {
+            ToggleMilestones();
+        }
+        if (eurekaLogUI != null && eurekaLogUI.IsLogVisible())
+        {
+            ToggleEurekaLog();
+        }
+        // if (GuideBoxManager.Instance.IsGuideDisplayVisible())
+        // {
+        //     ToggleGuideDisplay();
+        // }
+        SetUIActive(false);
     }
-    if (IsChatLogOpen)
-    {
-        ToggleChatLog();
-    }
-    if (ActionLogManager.Instance.IsLogVisible())
-    {
-        ToggleActionLog();
-    }
-    if (GameManager.Instance.IsMilestonesDisplayVisible())
-    {
-        ToggleMilestones();
-    }
-    if (eurekaLogUI.IsLogVisible())
-    {
-        ToggleEurekaLog();
-    }
-    // if (GuideBoxManager.Instance.IsGuideDisplayVisible())
-    // {
-    //     ToggleGuideDisplay();
-    // }
-    SetUIActive(false);
-}
 
     private void CheckForInteractableCharacter()
     {
@@ -175,7 +182,7 @@ public class InputManager : MonoBehaviourPunCallbacks
 
         Vector3 rayOrigin = localPlayer.transform.position + Vector3.up * 1.5f;
         Vector3 forwardDirection = localPlayer.transform.forward;
-        
+
         Ray ray = new Ray(rayOrigin, forwardDirection);
         Debug.DrawRay(ray.origin, ray.direction * interactionDistance, Color.red);
 
@@ -197,7 +204,7 @@ public class InputManager : MonoBehaviourPunCallbacks
                         {
                             currentInteractableCharacter.HideOutline();
                         }
-                        
+
                         currentInteractableCharacter = character;
                         currentInteractableCharacter.ShowOutline();
                     }
@@ -277,25 +284,50 @@ public class InputManager : MonoBehaviourPunCallbacks
         Debug.Log("Toggle Personal Goals - Not yet implemented");
     }
 
-private void ToggleEurekaLog()
-{
-    if (eurekaLogUI != null)
+    private void ForceAgentsToMove()
     {
-        if (eurekaLogUI.IsLogVisible())
+        if (PhotonNetwork.IsMasterClient)
         {
-            eurekaLogUI.FadeOutEurekaLog();
+            var allAgents = FindObjectsOfType<UniversalCharacterController>();
+
+            foreach (var agent in allAgents)
+            {
+                if (!agent.IsPlayerControlled && agent.photonView.IsMine)
+                {
+                    // Check if the agent is not currently performing an action
+                    if (!agent.HasState(CharacterState.PerformingAction))
+                    {
+                        AIManager aiManager = agent.GetComponent<AIManager>();
+                        if (aiManager != null)
+                        {
+                            aiManager.ForceMoveToNewLocation();
+                        }
+                    }
+                }
+            }
+            Debug.Log("Forced all agents to move to new locations.");
+        }
+    }
+
+    private void ToggleEurekaLog()
+    {
+        if (eurekaLogUI != null)
+        {
+            if (eurekaLogUI.IsLogVisible())
+            {
+                eurekaLogUI.FadeOutEurekaLog();
+            }
+            else
+            {
+                eurekaLogUI.ToggleEurekaLog();
+            }
+            SetUIActive(eurekaLogUI.IsLogVisible());
         }
         else
         {
-            eurekaLogUI.ToggleEurekaLog();
+            Debug.LogWarning("EurekaLogUI reference is missing in InputManager");
         }
-        SetUIActive(eurekaLogUI.IsLogVisible());
     }
-    else
-    {
-        Debug.LogWarning("EurekaLogUI reference is missing in InputManager");
-    }
-}
 
     private void ToggleGuideDisplay()
     {
