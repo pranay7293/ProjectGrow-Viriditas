@@ -443,6 +443,7 @@ MonoBehaviour:
   decisionMakingInterval: 5
   explorationProbability: 0.2
   minActionDuration: 5
+  maxIdleDuration: 10
   interactionRadius: 5
 --- !u!114 &-8581686133794132729
 MonoBehaviour:

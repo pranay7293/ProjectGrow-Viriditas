@@ -21484,6 +21484,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1370560514}
   - component: {fileID: 1370560515}
+  - component: {fileID: 1370560516}
   m_Layer: 0
   m_Name: ForceMovementPrompt
   m_TagString: Untagged
@@ -21519,6 +21520,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1370560513}
   m_CullTransparentMesh: 1
+--- !u!114 &1370560516
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1370560513}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 643d19a36166e4a078811754374612a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  background: {fileID: 1893818667}
+  descriptionText: {fileID: 1600785005}
+  animationDuration: 0.1
+  scaleAmount: 0.95
 --- !u!1 &1410366980
 GameObject:
   m_ObjectHideFlags: 0
@@ -23374,6 +23391,7 @@ MonoBehaviour:
   forceMoveKey: 32
   eurekaLogUI: {fileID: 880575831}
   interactionDistance: 5
+  forceMovementPromptUI: {fileID: 1370560516}
 --- !u!1 &1565222544
 GameObject:
   m_ObjectHideFlags: 0

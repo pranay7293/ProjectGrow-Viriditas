@@ -29,6 +29,7 @@ public class InputManager : MonoBehaviourPunCallbacks
     [SerializeField] private KeyCode forceMoveKey = KeyCode.Space;
     [SerializeField] private EurekaLogUI eurekaLogUI;
     [SerializeField] public float interactionDistance = 5f;
+    [SerializeField] private ForceMovementPromptUI forceMovementPromptUI;
 
     private UniversalCharacterController localPlayer;
     private UniversalCharacterController currentInteractableCharacter;
@@ -166,10 +167,6 @@ public class InputManager : MonoBehaviourPunCallbacks
         {
             ToggleEurekaLog();
         }
-        // if (GuideBoxManager.Instance.IsGuideDisplayVisible())
-        // {
-        //     ToggleGuideDisplay();
-        // }
         SetUIActive(false);
     }
 
@@ -288,13 +285,17 @@ public class InputManager : MonoBehaviourPunCallbacks
     {
         if (PhotonNetwork.IsMasterClient)
         {
-            var allAgents = FindObjectsOfType<UniversalCharacterController>();
+            // Play visual feedback
+            if (forceMovementPromptUI != null)
+            {
+                forceMovementPromptUI.PlayPressEffect();
+            }
 
+            var allAgents = FindObjectsOfType<UniversalCharacterController>();
             foreach (var agent in allAgents)
             {
                 if (!agent.IsPlayerControlled && agent.photonView.IsMine)
                 {
-                    // Check if the agent is not currently performing an action
                     if (!agent.HasState(CharacterState.PerformingAction))
                     {
                         AIManager aiManager = agent.GetComponent<AIManager>();
@@ -305,7 +306,6 @@ public class InputManager : MonoBehaviourPunCallbacks
                     }
                 }
             }
-            Debug.Log("Forced all agents to move to new locations.");
         }
     }
 
@@ -354,6 +354,12 @@ public class InputManager : MonoBehaviourPunCallbacks
         {
             IsUIActive = active;
             UpdateCursorState();
+            
+            // Reset force movement prompt when UI becomes active
+            if (active && forceMovementPromptUI != null)
+            {
+                forceMovementPromptUI.ResetToDefault();
+            }
         }
     }
 
