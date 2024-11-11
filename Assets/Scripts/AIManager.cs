@@ -75,7 +75,7 @@ public class AIManager : MonoBehaviourPunCallbacks
                 // Force the agent to make a decision to exit Idle state
                 isExecutingAction = false;
                 idleStartTime = Time.time;
-                Debug.Log($"{characterController.characterName}: Forced exit from Idle state.");
+                // Debug.Log($"{characterController.characterName}: Forced exit from Idle state.");
             }
         }
 
@@ -91,7 +91,7 @@ public class AIManager : MonoBehaviourPunCallbacks
 
     private void MakeDecision()
     {
-        Debug.Log($"{characterController.characterName}: Making a decision.");
+        // Debug.Log($"{characterController.characterName}: Making a decision.");
         if (!photonView.IsMine || !isInitialized || characterController == null) return;
 
         string chosenAction = ChooseAction();
@@ -118,7 +118,7 @@ public class AIManager : MonoBehaviourPunCallbacks
         isExecutingAction = false;
         lastActionTime = Time.time;
 
-        Debug.Log($"{characterController.characterName}: Forced to move to a new location.");
+        // Debug.Log($"{characterController.characterName}: Forced to move to a new location.");
     }
 
     private string ChooseAction()

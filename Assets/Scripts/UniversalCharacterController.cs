@@ -505,7 +505,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
         RemoveState(CharacterState.Moving);
         AddState(CharacterState.Idle);
 
-        Debug.Log($"{characterName}: Stopped moving.");
+        // Debug.Log($"{characterName}: Stopped moving.");
     }
 
     public void ResumeMoving()
@@ -587,7 +587,7 @@ public class UniversalCharacterController : MonoBehaviourPunCallbacks, IPunObser
             AddState(CharacterState.Moving);
             RemoveState(CharacterState.Idle);
 
-            Debug.Log($"{characterName}: Moving to {destination}");
+            // Debug.Log($"{characterName}: Moving to {destination}");
         }
         else
         {

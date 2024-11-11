@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 4848597860858890664}
   - component: {fileID: 435024150062573254}
   m_Layer: 0
-  m_Name: CollabOption3
+  m_Name: CollabOption2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
